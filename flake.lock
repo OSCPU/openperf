@@ -1,0 +1,24 @@
+{
+  "nodes": {
+    "pkgs": {
+      "locked": {
+        "lastModified": 1712439257,
+        "narHash": "sha256-aSpiNepFOMk9932HOax0XwNxbA38GOUVOiXfUVPOrck=",
+        "path": "/nix/store/j10523yhkcc34478azkgcl70yzcx6j2j-source",
+        "rev": "ff0dbd94265ac470dda06a657d5fe49de93b4599",
+        "type": "path"
+      },
+      "original": {
+        "id": "pkgs",
+        "type": "indirect"
+      }
+    },
+    "root": {
+      "inputs": {
+        "pkgs": "pkgs"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}
