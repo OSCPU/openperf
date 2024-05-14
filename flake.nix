@@ -29,12 +29,25 @@
       name = "qemu-linux-riscv-dev";
 
       packages = [
+        stdpkgs.just
         packages.qemu-linux-riscv-dev
+        stdpkgs.gcc
+        stdpkgs.bear
+        stdpkgs.clang-tools
+        stdpkgs.spike
+        stdpkgs.dtc
         stdpkgs.nil
         stdpkgs.qemu
         unstablepkgs.pkgsCross.riscv64.buildPackages.gcc
         stdpkgs.pkgsCross.riscv64.opensbi
       ];
+
+      RISCV="${unstablepkgs.pkgsCross.riscv64.buildPackages.gcc}/bin";
+
+      shellHook = ''
+        export OPENPERF_HOME=`pwd`
+        export PATH="$OPENPERF_HOME/install/bin:$PATH"
+      '';
     };
 
     packages.qemu-linux-riscv-dev = let
