@@ -1,0 +1,8 @@
+
+COMPILER := "riscv64-unknown-linux-gnu-gcc"
+
+compile: 
+   {{COMPILER}} -e _start -nostdlib -fno-builtin -fno-stack-protector -fdata-sections -ffunction-sections -march=rv64im -mabi=lp64 -I$OPENPERF_HOME/src/common/klib/include -I$OPENPERF_HOME/src/common/am/include -o build/linpack linpack.c `find $OPENPERF_HOME/src/common/am -name '*.c'` `find $OPENPERF_HOME/src/common/soft-fp -name '*.c'` `find $OPENPERF_HOME/src/common/klib -name '*.c'` `find $OPENPERF_HOME/src/common/am -name '*.S'` -T$OPENPERF_HOME/src/common/am/src/linker.ld
+
+compile-native: 
+    gcc -e _start -nostdlib -fno-builtin -fno-stack-protector -I$OPENPERF_HOME/src/common/klib/include -I$OPENPERF_HOME/src/common/am/include -o build/linpack-native linpack.c `find $OPENPERF_HOME/src/common/am -name '*.c'` `find $OPENPERF_HOME/src/common/klib -name '*.c'` `find $OPENPERF_HOME/src/common/am -name '*.S'` -T$OPENPERF_HOME/src/common/am/src/linker.ld
