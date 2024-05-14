@@ -23,6 +23,13 @@
   } @ inputs: let
     stdpkgs = nixpkgs.legacyPackages.x86_64-linux;
     unstablepkgs = inputs.unstable.legacyPackages.x86_64-linux;
+    riscv-toolchain = import inputs.unstable {
+      localSystem = "x86_64-linux";
+      crossSystem = {
+        config="riscv64-unknown-linux-gnu";
+        gcc = {abi = "lp64";};
+      };
+    };
   in rec {
     formatter.x86_64-linux = stdpkgs.alejandra;
     devShells.x86_64-linux.default = stdpkgs.mkShell {
@@ -38,7 +45,8 @@
         stdpkgs.dtc
         stdpkgs.nil
         stdpkgs.qemu
-        unstablepkgs.pkgsCross.riscv64.buildPackages.gcc
+        # unstablepkgs.pkgsCross.riscv64.buildPackages.gcc
+        riscv-toolchain.buildPackages.gcc
         stdpkgs.pkgsCross.riscv64.opensbi
       ];
 
