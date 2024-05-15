@@ -96,9 +96,9 @@ void htif_console_putchar(uint8_t ch)
   magic_mem[3] = 1;
   do_tohost_fromhost(0, 0, (uintptr_t)magic_mem);
 #else
-  spinlock_lock(&htif_lock);
+  // spinlock_lock(&htif_lock);
     __set_tohost(1, 1, ch);
-  spinlock_unlock(&htif_lock);
+  // spinlock_unlock(&htif_lock);
 #endif
 }
 
