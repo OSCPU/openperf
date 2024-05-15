@@ -35,7 +35,7 @@
 #define FLT_DIG 6
 #define DBL_DIG 15
 
-#define DP
+#define SP
 
 #ifndef SP
 #ifndef DP
@@ -134,8 +134,6 @@ int main(int argc, char **argv)
 REAL linpack(long nreps, int arsize)
 
 {
-
-  printf("Not enough time taken, trying more reps...\n");
   REAL *a, *b;
   REAL norma, t1, kflops, tdgesl, tdgefa, totalt, toverhead, ops;
   int *ipvt, n, info, lda;
@@ -180,9 +178,9 @@ REAL linpack(long nreps, int arsize)
     tdgesl = 0.;
   if (toverhead < 0.)
     toverhead = 0.;
-  printf("%8ld %6.2f %6.2f%% %6.2f%% %6.2f%%  %9.3f\n", nreps, totalt,
-         100. * tdgefa / totalt, 100. * tdgesl / totalt,
-         100. * toverhead / totalt, kflops);
+  printf("%8ld %6ld %6ld%% %6ld%% %6ld%%  %9ld\n", nreps, (long)totalt,
+         (long)(100. * tdgefa / totalt), (long)(100. * tdgesl / totalt),
+         (long)(100. * toverhead / totalt), (long)kflops);
   return (totalt);
 }
 
@@ -835,5 +833,5 @@ static int idamax(int n, REAL *dx, int incx)
 static REAL second(void)
 
 {
-  return ((REAL)io_read(AM_TIMER_UPTIME).us / 1000000);
+  return ((REAL)io_read(AM_TIMER_UPTIME).us / 100000);
 }
