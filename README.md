@@ -1,8 +1,8 @@
-# QEMULinuxDevFlake
+# OPMark (Prototype of OpenPerf Project)
 
-This Flake give a Qemu RISC-V Linux runtime to run benchmark, aim to make test environment reproducible and result fair enough.
+This Flake give a Qemu RISC-V Linux / Spike bare metal runtime to run benchmark, aim to make test environment reproducible and result fair enough.
 
-## Benchmark Programs
+## Candidate Benchmark Programs
 
 [stress-ng - GPL 2.0 Licence](https://github.com/ColinIanKing/stress-ng)
 
@@ -31,3 +31,28 @@ This Flake give a Qemu RISC-V Linux runtime to run benchmark, aim to make test e
 ### Branch Prediction
 
 Verilator Model
+
+## Run Built-in QEMU VM
+
+A Nix Flake is provided for convenience, but not necessary dependency in the final project.
+
+With Nix installed, run `nix develop` to get the reproducible development environment.
+
+Run `vm` to launch QEMU.
+
+## Transplanted
+
+* Memory Access: STREAM
+* Floating-point Arithmetic: Linpack, Whetstone
+* Utils: soft-fp(cyl), abstract-machine, openlibm
+* Can build: Spike, RISC-V OpenOCD
+
+## Roadmap
+
+- [x] Run Configurable Linux on QEMU RISC-V Platform
+- [x] Basic Benchmark Programs
+- [x] Math Library
+- [ ] GEMM
+- [ ] Organize Build Scripts
+- [ ] More Complex Programs
+- [ ] Decide OpenPerf Project File Struct
