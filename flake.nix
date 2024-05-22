@@ -33,7 +33,7 @@
   in rec {
     formatter.x86_64-linux = stdpkgs.alejandra;
     devShells.x86_64-linux.default = stdpkgs.mkShell {
-      name = "qemu-linux-riscv-dev";
+      name = "opmark-riscv-dev";
 
       packages = [
         stdpkgs.just
@@ -41,13 +41,19 @@
         stdpkgs.gcc
         stdpkgs.bear
         stdpkgs.clang-tools
+        stdpkgs.libtool
         stdpkgs.spike
         stdpkgs.dtc
         stdpkgs.nil
         stdpkgs.qemu
-        # unstablepkgs.pkgsCross.riscv64.buildPackages.gcc
+        stdpkgs.gdb
+        unstablepkgs.pkgsCross.riscv64.buildPackages.gdb
         riscv-toolchain.buildPackages.gcc
         stdpkgs.pkgsCross.riscv64.opensbi
+        stdpkgs.automake
+        stdpkgs.autoconf
+        stdpkgs.texinfo
+        stdpkgs.pkg-config
       ];
 
       RISCV="${unstablepkgs.pkgsCross.riscv64.buildPackages.gcc}/bin";
