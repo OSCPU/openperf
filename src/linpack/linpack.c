@@ -178,9 +178,9 @@ REAL linpack(long nreps, int arsize)
     tdgesl = 0.;
   if (toverhead < 0.)
     toverhead = 0.;
-  printf("%8ld %6ld %6ld%% %6ld%% %6ld%%  %9ld\n", nreps, (long)totalt,
-         (long)(100. * tdgefa / totalt), (long)(100. * tdgesl / totalt),
-         (long)(100. * toverhead / totalt), (long)kflops);
+  printf("%8ld %6.2f %6.2f%% %6.2f%% %6.2f%%  %9.3f\n", nreps, totalt,
+         100. * tdgefa / totalt, 100. * tdgesl / totalt,
+         100. * toverhead / totalt, kflops);
   return (totalt);
 }
 
