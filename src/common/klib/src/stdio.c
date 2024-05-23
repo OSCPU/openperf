@@ -7,6 +7,13 @@
 
 static inline int isdigit(int ch) { return (ch >= '0') && (ch <= '9'); }
 
+static size_t strnlen(const char *s, size_t count)
+{
+  const char *sc;
+  for (sc = s; *sc != '\0' && count--; ++sc);
+  return sc - s;
+}
+
 static int skip_atoi(const char **s) {
   int i = 0;
 
@@ -103,10 +110,167 @@ static char *number(char *str, long num, int base, int size, int precision,
   return str;
 }
 
+#define SZ_NUM_BUF    32
+static char sprint_fe[SZ_NUM_BUF+1];
+
+static int ilog10(double n) /* 在整数输出中计算 log10(n) */
+{
+  int rv = 0;
+
+  while (n >= 10) { /* 右移小数位 */
+    if (n >= 100000) {
+      n /= 100000;
+      rv += 5;
+    } else {
+      n /= 10;
+      rv++;
+    }
+  }
+  while (n < 1) { /* 左移小数位 */
+    if (n < 0.00001) {
+      n *= 100000;
+      rv -= 5;
+    } else {
+      n *= 10;
+      rv--;
+    }
+  }
+  return rv;
+}
+// 整数位数
+static double i10x(int n) /* 计算 10^n 的整数输入 */
+{
+  double rv = 1;
+
+  while (n > 0) {
+    if (n >= 5) {
+      rv *= 100000;
+      n -= 5;
+    } else {
+      rv *= 10;
+      n--;
+    }
+  }
+  while (n < 0) { /* Right shift */
+    if (n <= -5) {
+      rv /= 100000;
+      n += 5;
+    } else {
+      rv /= 10;
+      n++;
+    }
+  }
+  return rv;
+}
+// 浮点数据转字符串%f,%e,%E
+// char* buf,       字符串缓存
+// double val,      浮点数
+// int prec,        小数位数
+// char fmt         类型标识
+static void ftoa(char *buf, double val, int prec, char fmt) {
+  int d;
+  int e = 0, m = 0;
+  char sign = 0;
+  double w;
+  const char *er = 0;
+  const char ds = '.';
+  unsigned int *pu = (unsigned int *)&val;
+  // 阶码全 1，尾数不为 0，不存在的数"NaN"
+  if (((pu[1] & 0x7ff00000) == 0x7ff00000) &&
+      (((pu[1] & 0xfffff) != 0) || (pu[0] != 0))) {
+    er = "NaN";
+  } else {
+    // 默认 6 位小数
+    if (prec < 0)
+      prec = 6;
+    // 符号处理
+    if (val < 0) {
+      val = 0 - val;
+      sign = '-';
+    } else {
+      sign = '+';
+    }
+    // 阶码全 1，尾数部分全 0，符号位为 0 表示正无穷。
+    // 阶码全 1，尾数部分全 0，符号位为 1 表示负无穷。
+    if (((pu[1] & 0x7fffffff) == 0x7ff00000) && (pu[0] == 0)) {
+      er = "INF";
+    }
+    //
+    else {
+      // ‘f’类型
+      if (fmt == 'f') {
+        val += i10x(0 - prec) / 2; /*用于四舍五入，比如 1.67 保留 1 位小数为 1.7 */
+        m = ilog10(val); /*整数位数*/
+        if (m < 0)
+          m = 0;
+        if (m + prec + 3 >= SZ_NUM_BUF)
+          er = "OV"; /* 最大缓存 */
+      } else {       /* E 类型 x.xxxxxxe+xx*/
+        if (val != 0) {
+          val += i10x(ilog10(val) - prec) /
+                 2; /* 用于四舍五入，prec 表示底数部分的小数位数*/
+          e = ilog10(val); /*整数位数*/
+
+          if (e > 99 || prec + 7 >= SZ_NUM_BUF) //指数范围，及最大缓存，
+          {
+            er = "OV";
+          } else {
+            if (e < -99)
+              e = -99;
+            val /= i10x(e); /* 计算底数 */
+          }
+        }
+      }
+    }
+    // 有效浮点
+    if (!er) {
+      // 符号位
+      if (sign == '-')
+        *buf++ = sign;
+
+      do {
+        /* 进入小数部分时插入小数分隔符 */
+        if (m == -1)
+          *buf++ = ds;
+        //剪掉最高的数字 d
+        w = i10x(m);
+        //
+        d = (int)(val / w);
+        val -= d * w;
+
+        *buf++ = (char)('0' + d); /* 记录 10 进制 */
+
+      } while (--m >= -prec);
+
+      if (fmt != 'f') {
+        *buf++ = (char)fmt;
+        if (e < 0) {
+          e = 0 - e;
+          *buf++ = '-';
+        } else {
+          *buf++ = '+';
+        }
+        *buf++ = (char)('0' + e / 10);
+        *buf++ = (char)('0' + e % 10);
+      }
+    }
+  }
+  // 特殊值
+  if (er) { // 符号
+    if (sign)
+      *buf++ = sign;
+    // 数据字符串
+    do {
+      *buf++ = *er++;
+    } while (*er);
+  }
+  *buf = 0; /* 结束符 */
+}
+
 int vsprintf(char *buf, const char *fmt, va_list args) {
   int len;
   unsigned long num;
-  int i, base;
+  int i, j, base;
   char *str;
   const char *s;
 
@@ -196,7 +360,7 @@ int vsprintf(char *buf, const char *fmt, va_list args) {
 
     case 's':
       s = va_arg(args, char *);
-      len = strlen(s);
+      len = strnlen(s, precision);
 
       if (!(flags & LEFT))
         while (len < field_width--)
@@ -224,6 +388,25 @@ int vsprintf(char *buf, const char *fmt, va_list args) {
         int *ip = va_arg(args, int *);
         *ip = (str - buf);
       }
+      continue;
+
+    case 'f': /* Floating point (decimal) */
+    case 'e': /* Floating point (e) */
+    case 'E': /* Floating point (E) */
+      // double 数据转字符串
+      ftoa(sprint_fe, va_arg(args, double), precision, *fmt); /* 浮点转字符串*/
+      // 右对齐 左侧补充空格
+      if (!(flags & LEFT)) {
+        for (j = strnlen(sprint_fe, SZ_NUM_BUF); j < field_width; j++)
+          *str++ = ' ';
+      }
+      // 数据主体
+      i = 0;
+      while (sprint_fe[i])
+        *str++ = sprint_fe[i++]; /* 主体 */
+      // 左对齐 右侧补充空格
+      while (j++ < field_width)
+        *str++ = ' ';
       continue;
 
     case '%':
