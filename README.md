@@ -52,7 +52,7 @@ Run `vm` to launch QEMU.
 - [x] Run Configurable Linux on QEMU RISC-V Platform
 - [x] Basic Benchmark Programs
 - [x] Math Library
-- [ ] GEMM
+- [x] GEMM
 - [ ] Organize Build Scripts
 - [ ] More Complex Programs
 - [ ] Decide OpenPerf Project File Struct
