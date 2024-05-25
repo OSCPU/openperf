@@ -1,7 +1,7 @@
 import '../compile.just'
 
 COMPILER := "riscv64-unknown-linux-gnu-gcc"
-NAME := "dhrystone"
-SRC := "dry.c"
+NAME := "stream"
+SRC := "stream.c"
 
 compile: _compile
