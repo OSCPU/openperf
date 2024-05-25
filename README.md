@@ -40,6 +40,12 @@ With Nix installed, run `nix develop` to get the reproducible development enviro
 
 Run `vm` to launch QEMU.
 
+## How to compile & run programs in Spike
+
+With `just` installed, run `just compile` then `just run` in the program source code directory.
+
+Or you can run commands manually. `Justfile` is extremely easy to read and understand.
+
 ## Transplanted
 
 * Memory Access: STREAM
@@ -53,6 +59,6 @@ Run `vm` to launch QEMU.
 - [x] Basic Benchmark Programs
 - [x] Math Library
 - [x] GEMM
-- [ ] Organize Build Scripts
+- [x] Organize Build Scripts
 - [ ] More Complex Programs
 - [ ] Decide OpenPerf Project File Struct
