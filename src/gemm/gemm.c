@@ -34,9 +34,9 @@ void display(double * matrix, int m, int n){
 
 int main(){
 
-    int m = 200;
-    int n = 200;
-    int k = 200;
+    int m = 100;
+    int n = 100;
+    int k = 100;
 
     double * A = (double*)malloc(m*k*sizeof(double));
     double * B = (double*)malloc(k*n*sizeof(double));

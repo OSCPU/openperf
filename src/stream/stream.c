@@ -162,6 +162,8 @@
 
 # define HLINE "-------------------------------------------------------------\n"
 
+#define DIS_OPENMP
+
 # ifndef MIN
 # define MIN(x,y) ((x)<(y)?(x):(y))
 # endif
