@@ -27,8 +27,9 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
-// #include "soft-fp.h"
-// #include "double.h"
+#include "soft-fp.h"
+#include "double.h"
+
 
 // UTItype
 // __fixunsdfti (DFtype a)
@@ -44,3 +45,4 @@
 
 //   return r;
 // }
+

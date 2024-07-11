@@ -27,8 +27,9 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
-// #include "soft-fp.h"
-// #include "single.h"
+#include "soft-fp.h"
+#include "single.h"
+
 
 // UTItype
 // __fixunssfti (SFtype a)
@@ -44,3 +45,4 @@
 
 //   return r;
 // }
+
