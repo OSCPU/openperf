@@ -53,10 +53,12 @@ C**********************************************************************
 
 /* standard C library headers required */
 #include <am.h>
+#include <bench.h>
 #include <klib.h>
 #include <klib-macros.h>
 #include <float.h>
 #include <openlibm.h>
+#include <stdint.h>
 
 /* the following is optional depending on the timing function used */
 
@@ -82,11 +84,6 @@ void P3(double X, double Y, double *Z);
 double T,T1,T2,E1[5];
 int J,K,L;
 
-int time(int *t)
-{
-	return (int)(io_read(AM_TIMER_UPTIME).us / 100000);
-}
-
 int
 main(int argc, char *argv[])
 {
@@ -99,11 +96,12 @@ main(int argc, char *argv[])
 
 	/* added for this version */
 	long loopstart;
-	long startsec, finisec;
+	uint64_t startsec, finisec;
 	float KIPS;
 	int continuous;
 
-	loopstart = 1000;		/* see the note about LOOP below */
+	//loopstart = 1000;		/* see the note about LOOP below */
+  loopstart = 30;
 	continuous = 0;
 
 LCONT:
@@ -112,7 +110,7 @@ C
 C	Start benchmark timing at this point.
 C
 */
-	startsec = time(0);
+	startsec = uptime();
 
 /*
 C
@@ -347,7 +345,7 @@ C
 C      Stop benchmark timing at this point.
 C
 */
-	finisec = time(0);
+	finisec = uptime();
 
 /*
 C----------------------------------------------------------------
@@ -376,7 +374,8 @@ C--------------------------------------------------------------------
 	if (continuous)
 		goto LCONT;
 
-	return(0);
+  printf("time: %s ms\n", format_time(finisec - startsec));
+	return 0;
 }
 
 void
