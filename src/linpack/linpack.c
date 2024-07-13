@@ -29,6 +29,8 @@
 */
 
 #include <am.h>
+#include <bench.h>
+#include <bench_malloc.h>
 #include <klib-macros.h>
 #include <klib.h>
 
@@ -79,22 +81,9 @@ static REAL ddot_ur(int n, REAL *dx, int incx, REAL *dy, int incy);
 static void dscal_ur(int n, REAL da, REAL *dx, int incx);
 static int idamax(int n, REAL *dx, int incx);
 static REAL second(void);
-
-static void *mempool;
-
-static char memory[1024];
-static char *free_mem = &memory[0];
-
-static char *myalloc(size_t size) {
-  while ((unsigned long)free_mem % 4 != 0)
-    free_mem++;
-  char *ret = free_mem;
-  free_mem += size;
-  return ret;
-}
-
 static double fabs(double x) { return x < 0 ? -x : x; }
 
+static void *mempool = NULL;
 int main(int argc, char **argv)
 
 {
@@ -104,13 +93,15 @@ int main(int argc, char **argv)
   volatile size_t malloc_arg;
   volatile MEM_T memreq;
 
+
   arsize = 100;
   arsize2d = (long)arsize * (long)arsize;
   memreq = arsize2d * sizeof(REAL) + (long)arsize * sizeof(REAL) +
            (long)arsize * sizeof(int);
   malloc_arg = (size_t)memreq;
+  uint64_t start_time, end_time;
 
-  if ((MEM_T)malloc_arg != memreq || (mempool = myalloc(malloc_arg)) == NULL) {
+  if ((MEM_T)malloc_arg != memreq || (mempool = bench_malloc(malloc_arg)) == NULL) {
     printf("Not enough memory available for given array size.\n");
     return 1;
   }
@@ -123,10 +114,13 @@ int main(int argc, char **argv)
   printf("    Reps Time(s) DGEFA   DGESL  OVERHEAD    KFLOPS\n");
   printf("----------------------------------------------------\n");
   nreps = 1;
+  start_time = uptime();
   while (linpack(nreps, arsize) < 10.) {
     nreps *= 2;
   }
-  free(mempool);
+  end_time = uptime();
+  bench_free(mempool);
+  printf("time: %s ms\n", format_time(end_time - start_time));
   printf("\n");
   return 0;
 }
@@ -833,5 +827,5 @@ static int idamax(int n, REAL *dx, int incx)
 static REAL second(void)
 
 {
-  return ((REAL)io_read(AM_TIMER_UPTIME).us / 100000);
+  return ((REAL)(uptime() / 1000));
 }
