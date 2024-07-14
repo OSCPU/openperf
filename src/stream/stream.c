@@ -41,6 +41,7 @@
 /*  5. Absolutely no warranty is expressed or implied.                        */
 /*----------------------------------------------------------------------------*/
 #include <am.h>
+#include <bench.h>
 #include <klib.h>
 #include <klib-macros.h>
 #include <float.h>
@@ -161,6 +162,8 @@
  *-----------------------------------------------------------------------*/
 
 # define HLINE "-------------------------------------------------------------\n"
+
+#define DIS_OPENMP
 
 # ifndef MIN
 # define MIN(x,y) ((x)<(y)?(x):(y))
@@ -390,6 +393,13 @@ main()
     checkSTREAMresults();
     printf(HLINE);
 
+    double total_time = avgtime[0]\
+                        + avgtime[1]\
+                        + avgtime[2]\
+                        + avgtime[3];
+
+    printf("time: %s ms\n", format_time((uint64_t)(total_time * 1000)));
+
     return 0;
 }
 
@@ -436,7 +446,7 @@ checktick()
 
 double mysecond()
 {
-        return ((double)io_read(AM_TIMER_UPTIME).us / 100000);
+        return ((double)uptime() / 1000);
 }
 
 #ifndef abs

@@ -27,20 +27,38 @@
  * $FreeBSD: head/lib/libc/riscv/_fpmath.h 362788 2020-06-29 19:30:35Z mhorne $
  */
 
+#include <stdint.h>
+
+// union IEEEl2bits {
+// 	long double	e;
+// 	struct {
+// 		unsigned long	manl	:64;
+// 		unsigned long	manh	:48;
+// 		unsigned int	exp	:15;
+// 		unsigned int	sign	:1;
+// 	} bits;
+// 	struct {
+// 		unsigned long	manl	:64;
+// 		unsigned long	manh	:48;
+// 		unsigned int	expsign	:16;
+// 	} xbits;
+// };
+
 union IEEEl2bits {
 	long double	e;
 	struct {
-		unsigned long	manl	:64;
-		unsigned long	manh	:48;
-		unsigned int	exp	:15;
-		unsigned int	sign	:1;
+		uint64_t	manl	:64;
+		uint64_t	manh	:48;
+		uint32_t	exp	:15;
+		uint32_t	sign	:1;
 	} bits;
 	struct {
-		unsigned long	manl	:64;
-		unsigned long	manh	:48;
-		unsigned int	expsign	:16;
+		uint64_t	manl	:64;
+		uint64_t	manh	:48;
+		uint32_t	expsign	:16;
 	} xbits;
 };
+
 
 #define	LDBL_NBIT	0
 #define	LDBL_IMPLICIT_NBIT

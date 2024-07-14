@@ -46,6 +46,18 @@ With `just` installed, run `just compile` then `just run` in the program source 
 
 Or you can run commands manually. `Justfile` is extremely easy to read and understand.
 
+## Development Environment & Testing
+
+```sh
+cd am-kernel # This project would be a submodule in am-kernel when it's finish
+git clone git@github.com:Yakkhini/OPMark.git
+cd OPMark
+# git switch [branch] # Maybe you want to contribute to another branch
+cp -r src/common/stdio.c $AM_HOME/klib/src/stdio.c # We improve printf functions feature, like print float numbers
+cd src/linpack # Run a sub program to ensure build system working
+make ARCH=riscv32-nemu run
+```
+
 ## Transplanted
 
 * Memory Access: STREAM
@@ -60,5 +72,8 @@ Or you can run commands manually. `Justfile` is extremely easy to read and under
 - [x] Math Library
 - [x] GEMM
 - [x] Organize Build Scripts
-- [ ] More Complex Programs
+- [x] More Complex Programs
+- [ ] Embedded into am-kernel
+- [ ] Handle with Licence
+- [ ] Merge into single benchmark program
 - [ ] Decide OpenPerf Project File Struct

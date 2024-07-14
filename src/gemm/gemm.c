@@ -1,11 +1,6 @@
-#include "gemm.h"
+#include <gemm.h>
 
 #define A(i,j) a[(j)*lda + (i)]
-
-long time()
-{
-	return (io_read(AM_TIMER_UPTIME).us);
-}
 
 void serial_init(int m, int n, double * a, int lda){
     int count = 1;
@@ -34,30 +29,31 @@ void display(double * matrix, int m, int n){
 
 int main(){
 
-    int m = 200;
-    int n = 200;
-    int k = 200;
+    int m = 100;
+    int n = 100;
+    int k = 100;
 
+    //TODO: calculate the memory size.
     double * A = (double*)malloc(m*k*sizeof(double));
     double * B = (double*)malloc(k*n*sizeof(double));
     double * C = (double*)malloc(m*n*sizeof(double));
+    assert(A);
+    assert(B);
+    assert(C);
 
     memset(A,0,m*k*sizeof(double));
     memset(B,0,k*n*sizeof(double));
     memset(C,0,m*n*sizeof(double));
 
-    long start,finish;
-    double gflops = 2.0 * m*n*k * 1.0e-09;
-    srand((unsigned)time(NULL));
+    uint64_t start_time, finish_time;
+    //srand((unsigned)time(NULL));
 
     random_init(m,k,A,m);
     random_init(k,n,B,k);
 
-    start = time();
+    start_time = uptime();
     matmul(m,n,k,A,m,B,k,C,m);
-    finish = time();
-
-    double duration =  (double)(finish-start) / 100000;
+    finish_time = uptime();
 
     if(m<=8){
         printf("Matrix A : \n");
@@ -70,6 +66,6 @@ int main(){
         display(C,m,n);
     }
     
-    printf("Dot product took %f seconds GFLOPS : %f\n",duration,gflops/duration);
+    printf("time: %s ms \n", format_time(finish_time - start_time));
     return 0;
 }
