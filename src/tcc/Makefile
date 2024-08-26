@@ -9,6 +9,9 @@ INC_PATH += 	../common/openlibm/include \
 			./include \
 			../common/bench/include
 
+CFLAGS += -D__BENCH_TEST__
+ASFLAGS += -D__BENCH_TEST__
+
 include $(AM_HOME)/Makefile
 
 BENCH_LINKAGE += $(addsuffix -$(ARCH).a, $(join \

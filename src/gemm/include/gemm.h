@@ -1,5 +1,6 @@
 #include <am.h>
 #include <bench.h>
+#include <bench_malloc.h>
 #include <klib.h>
 #include <klib-macros.h>
 

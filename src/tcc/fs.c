@@ -1,6 +1,6 @@
-#include "fs.h"
+#include <fs.h>
 #include <stdarg.h>
-#include <printf.h>
+#include <bench_printf.h>
 
 extern uint8_t ramdisk_start;
 extern uint8_t ramdisk_end;
@@ -24,14 +24,14 @@ typedef struct {
 
 size_t invalid_read(void *buf, size_t offset, size_t len) {
   // panic("should not reach here");
-  my_printf("should not reach here\n");
+  bench_printf("should not reach here\n");
   assert(0);
   return 0;
 }
 
 size_t invalid_write(const void *buf, size_t offset, size_t len) {
   // panic("should not reach here");
-  my_printf("should not reach here\n");
+  bench_printf("should not reach here\n");
   assert(0);
   return 0;
 }
@@ -82,7 +82,7 @@ int fs_open(const char *pathname, int flags, int mode)
       return fs_num;    
     }
   }
-  my_printf("assert :no this file : %s\n", pathname);
+  bench_printf("assert :no this file : %s\n", pathname);
   assert(0);
 }
 
@@ -154,7 +154,7 @@ size_t fs_lseek(int fd, size_t offset, int whence)
 
   if((new_offset < 0 || new_offset > file->size)) // 超出范围
   {
-    my_printf("file offset out of bound\n");
+    bench_printf("file offset out of bound\n");
     return -1;
   }
 
@@ -179,7 +179,7 @@ int fs_printf(int fd, const char *fmt, ...)
   char s[512];
   va_list arg;
   va_start( arg, fmt );
-  int len = my_vsprintf(s, fmt, arg);
+  int len = bench_vsprintf(s, fmt, arg);
   fs_write(fd, s, len);
   return len;
 }

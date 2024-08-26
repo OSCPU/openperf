@@ -420,7 +420,7 @@ ST_FUNC int cstr_vprintf(CString *cstr, const char *fmt, va_list ap)
         size = cstr->size_allocated - cstr->size;
         va_copy(v, ap);
         // len = vsnprintf((char*)cstr->data + cstr->size, size, fmt, v);
-        len = my_vsprintf((char*)cstr->data + cstr->size, fmt, v);
+        len = bench_vsprintf((char*)cstr->data + cstr->size, fmt, v);
         va_end(v);
         if (len > 0 && len < size)
             break;
@@ -544,9 +544,9 @@ ST_FUNC const char *get_tok_str(int v, CValue *cv)
     case TOK_CULLONG:
         /* XXX: not quite exact, but only useful for testing  */
 #ifdef _WIN32
-        sprintf(p, "%u", (unsigned)cv->i);
+        bench_sprintf(p, "%u", (unsigned)cv->i);
 #else
-        sprintf(p, "%llu", (unsigned long long)cv->i);
+        bench_sprintf(p, "%llu", (unsigned long long)cv->i);
 #endif
         break;
     case TOK_LCHAR:
@@ -619,7 +619,7 @@ ST_FUNC const char *get_tok_str(int v, CValue *cv)
                 q += 3;
             }
         if (v >= 127) {
-            sprintf(cstr_buf.data, "<%02x>", v);
+            bench_sprintf(cstr_buf.data, "<%02x>", v);
             return cstr_buf.data;
         }
         addv:
@@ -630,7 +630,7 @@ ST_FUNC const char *get_tok_str(int v, CValue *cv)
             return table_ident[v - TOK_IDENT]->str;
         } else if (v >= SYM_FIRST_ANOM) {
             /* special name for anonymous symbol */
-            sprintf(p, "L.%u", v - SYM_FIRST_ANOM);
+            bench_sprintf(p, "L.%u", v - SYM_FIRST_ANOM);
         } else {
             /* should never happen */
             return NULL;

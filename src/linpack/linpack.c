@@ -88,13 +88,14 @@ int main(int argc, char **argv)
 
 {
   ioe_init();
+  bench_malloc_init();
   int arsize;
   long arsize2d, nreps;
   volatile size_t malloc_arg;
   volatile MEM_T memreq;
 
 
-  arsize = 100;
+  arsize = 270;
   arsize2d = (long)arsize * (long)arsize;
   memreq = arsize2d * sizeof(REAL) + (long)arsize * sizeof(REAL) +
            (long)arsize * sizeof(int);
@@ -102,17 +103,17 @@ int main(int argc, char **argv)
   uint64_t start_time, end_time;
 
   if ((MEM_T)malloc_arg != memreq || (mempool = bench_malloc(malloc_arg)) == NULL) {
-    printf("Not enough memory available for given array size.\n");
+    //printf("Not enough memory available for given array size.\n");
     return 1;
   }
 
-  printf("LINPACK benchmark, %s precision.\n", PREC);
-  printf("Machine precision:  %d digits.\n", BASE10DIG);
-  printf("Array size %d X %d.\n", arsize, arsize);
-  printf("Memory required:  %ldK.\n", (memreq + 512L) >> 10);
-  printf("Average rolled and unrolled performance:\n\n");
-  printf("    Reps Time(s) DGEFA   DGESL  OVERHEAD    KFLOPS\n");
-  printf("----------------------------------------------------\n");
+  //printf("LINPACK benchmark, %s precision.\n", PREC);
+  //printf("Machine precision:  %d digits.\n", BASE10DIG);
+  //printf("Array size %d X %d.\n", arsize, arsize);
+  //printf("Memory required:  %ldK.\n", (memreq + 512L) >> 10);
+  //printf("Average rolled and unrolled performance:\n\n");
+  //printf("    Reps Time(s) DGEFA   DGESL  OVERHEAD    KFLOPS\n");
+  //printf("----------------------------------------------------\n");
   nreps = 1;
   start_time = uptime();
   while (linpack(nreps, arsize) < 10.) {
@@ -121,7 +122,6 @@ int main(int argc, char **argv)
   end_time = uptime();
   bench_free(mempool);
   printf("time: %s ms\n", format_time(end_time - start_time));
-  printf("\n");
   return 0;
 }
 
@@ -172,9 +172,9 @@ REAL linpack(long nreps, int arsize)
     tdgesl = 0.;
   if (toverhead < 0.)
     toverhead = 0.;
-  printf("%8ld %6.2f %6.2f%% %6.2f%% %6.2f%%  %9.3f\n", nreps, totalt,
-         100. * tdgefa / totalt, 100. * tdgesl / totalt,
-         100. * toverhead / totalt, kflops);
+  //printf("%8ld %6.2f %6.2f%% %6.2f%% %6.2f%%  %9.3f\n", nreps, totalt,
+         //100. * tdgefa / totalt, 100. * tdgesl / totalt,
+         //100. * toverhead / totalt, kflops);
   return (totalt);
 }
 

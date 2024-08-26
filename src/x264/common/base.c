@@ -84,7 +84,7 @@ void x264_log_default( void *p_unused, int i_level, const char *psz_fmt, va_list
     // x264_vfprintf( stderr, psz_fmt, arg );    
     x264_printf("x264 [%s]: ", psz_prefix);
     char s[512];
-    my_vsprintf( s, psz_fmt, arg ); // printf("length = %d\n", length);
+    bench_vsprintf( s, psz_fmt, arg ); // printf("length = %d\n", length);
 
     for(int i = 0; s[i] != '\0'; i++)
     {

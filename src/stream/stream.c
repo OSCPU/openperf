@@ -90,7 +90,7 @@
  */
 #if (STREAM_ARRAY_SIZE+0) > 0
 #else 
-#   define STREAM_ARRAY_SIZE 100000
+#   define STREAM_ARRAY_SIZE 200000
 #endif
 /*  2) STREAM runs each kernel "NTIMES" times and reports the *best* result
  *         for any iteration after the first, therefore the minimum value

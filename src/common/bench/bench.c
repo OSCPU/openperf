@@ -20,3 +20,21 @@ char *format_time(uint64_t us) {
   }
   return buf;
 }
+
+// FNV hash
+uint32_t checksum(void *start, void *end) {
+  const uint32_t x = 16777619;
+  uint32_t h1 = 2166136261u;
+  for (uint8_t *p = (uint8_t*)start; p + 4 < (uint8_t*)end; p += 4) {
+    for (int i = 0; i < 4; i ++) {
+      h1 = (h1 ^ p[i]) * x;
+    }
+  }
+  int32_t hash = (uint32_t)h1;
+  hash += hash << 13;
+  hash ^= hash >> 7;
+  hash += hash << 3;
+  hash ^= hash >> 17;
+  hash += hash << 5;
+  return hash;
+}

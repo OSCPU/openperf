@@ -101,7 +101,7 @@ main(int argc, char *argv[])
 	int continuous;
 
 	//loopstart = 1000;		/* see the note about LOOP below */
-  loopstart = 30;
+  loopstart = 200;
 	continuous = 0;
 
 LCONT:

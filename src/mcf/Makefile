@@ -3,7 +3,7 @@ NAME = mcf
 
 BENCH_LIBS = bench openlibm soft-fp
 
-SRCS = 	main.c mcf.c pqueue.c test.c
+SRCS = 	main.c mcf.c pqueue.c $(shell realpath ./test-gen/test.c)
 
 INC_PATH += 	../common/openlibm/include \
 			../common/openlibm/src \

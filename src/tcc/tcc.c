@@ -236,6 +236,8 @@ char *argv1[]={
 
 int main(int argc0, char **argv0)
 {
+
+  bench_malloc_init();
     TCCState *s, *s1;
     int ret, opt, n = 0, t = 0, done;
     uint64_t start_time = 0, end_time = 0;

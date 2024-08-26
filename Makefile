@@ -14,7 +14,7 @@ $(shell > $(RESULT))
 ALL = mcf x264 tcc stream linpack gemm whetstone
 
 all: $(BENCH_LIBS) $(ALL)
-	@echo "test list [$(words $(ALL)) item(s)]:" $(ALL)
+	@echo "OpenPerf [$(words $(ALL)) item(s)]:" $(ALL)
 
 $(ALL): %: $(BENCH_LIBS) latest
 	@{\
@@ -35,6 +35,7 @@ run: $(BENCH_LIBS) all
 	@cat $(RESULT) | grep -E -o "time: ([0-9]*\.[0-9]*) ms" | awk '{sum += $$2} END {print sum " ms"}'
 	@rm $(RESULT)
 
+libs: $(BENCH_LIBS)
 
 CLEAN_ALL = $(dir $(shell find . -mindepth 2 -name Makefile))
 clean-all: $(CLEAN_ALL)
@@ -42,7 +43,7 @@ clean-all: $(CLEAN_ALL)
 $(CLEAN_ALL):
 	-@$(MAKE) -s -C $@ clean
 
-.PHONY: $(BENCH_LIBS) $(CLEAN_ALL) $(ALL) all run clean-all latest
+.PHONY: $(BENCH_LIBS) $(CLEAN_ALL) $(ALL) all run clean-all latest libs
 
 latest:
 

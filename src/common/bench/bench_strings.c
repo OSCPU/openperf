@@ -93,14 +93,12 @@ unsigned long strtoul(const char *pstart, char **pend, int base)
 
   assert (base > 2 && base < 36); 
 
-  // 去掉前导空格和+ - 符号 
   do { 
       c = *s++; 
-  } while ((c == ' ')); 
+  } while (c == ' '); 
   if (c == '-' || c == '+'){ 
       c = *s++;         
   } 
-  //判断进制,并去除前导0x或者0 
   if ((base == 0 || base == 16) && 
       c == '0' && (*s == 'x' || *s == 'X') && 
       ((s[1] >= '0' && s[1] <= '9') || 
@@ -140,14 +138,12 @@ unsigned long long strtoull(const char *pstart, char **pend, int base)
 
   assert (base > 2 && base < 36); 
 
-  // 去掉前导空格和+ - 符号 
   do { 
       c = *s++; 
   } while ((c == ' ')); 
   if (c == '-' || c == '+'){ 
       c = *s++;         
   } 
-  //判断进制,并去除前导0x或者0 
   if ((base == 0 || base == 16) && 
       c == '0' && (*s == 'x' || *s == 'X') && 
       ((s[1] >= '0' && s[1] <= '9') || 
@@ -188,7 +184,6 @@ long strtol(const char *pstart, char **pend, int base)
 
   assert (base > 2 && base < 36); 
 
-  // 去掉前导空格和+ - 符号 
   do { 
       c = *s++; 
   } while ((c == ' ')); 
@@ -196,7 +191,7 @@ long strtol(const char *pstart, char **pend, int base)
     sign = (c == '-') ? -1: 1;
     c = *s++;         
   } 
-  //判断进制,并去除前导0x或者0 
+
   if ((base == 0 || base == 16) && 
       c == '0' && (*s == 'x' || *s == 'X') && 
       ((s[1] >= '0' && s[1] <= '9') || 
@@ -237,7 +232,6 @@ long long strtoll(const char *pstart, char **pend, int base)
 
   assert (base > 2 && base < 36); 
 
-  // 去掉前导空格和+ - 符号 
   do { 
       c = *s++; 
   } while ((c == ' ')); 
@@ -245,7 +239,7 @@ long long strtoll(const char *pstart, char **pend, int base)
     sign = (c == '-') ? -1: 1;
     c = *s++;         
   } 
-  //判断进制,并去除前导0x或者0 
+
   if ((base == 0 || base == 16) && 
       c == '0' && (*s == 'x' || *s == 'X') && 
       ((s[1] >= '0' && s[1] <= '9') || 
@@ -285,7 +279,6 @@ double strtod(const char *pstart, char **pend)
   double sign = 1.0;
   double frac = 0.1;
 
-  // 去掉前导空格和+ - 符号 
   do { 
       c = *s++; 
   } while ((c == ' ')); 
@@ -330,7 +323,6 @@ long double strtold(const char *pstart, char **pend)
   long double sign = 1.0;
   long double frac = 0.1;
 
-  // 去掉前导空格和+ - 符号 
   do { 
       c = *s++; 
   } while ((c == ' ')); 
@@ -375,7 +367,6 @@ float strtof(const char *pstart, char **pend)
   float sign = 1.0;
   float frac = 0.1;
 
-  // 去掉前导空格和+ - 符号 
   do { 
       c = *s++; 
   } while ((c == ' ')); 

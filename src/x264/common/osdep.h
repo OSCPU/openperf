@@ -38,10 +38,10 @@
 #include <klib-macros.h>
 #include <openlibm.h>
 #include <inttypes.h>
-#include <strings.h>
 #include <x264.h>
 #include <bench_malloc.h>
-#include <printf.h>
+#include <bench_printf.h>
+#include <bench_strings.h>
 
 
 // #define strtok_r(str,delim,save) strtok(str,delim)
@@ -85,8 +85,8 @@
 // #endif
 
 
-#define sprintf my_sprintf
-#define x264_printf my_printf
+#define sprintf bench_sprintf
+#define x264_printf bench_printf
 
 // #define x264_fopen       fopen
 // #define x264_rename      rename
