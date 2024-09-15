@@ -1,14 +1,17 @@
-#define ETL_NO_SMALL_CHAR_SUPPORT 0
+#include <cpuemu.h>
 #include "uint.h"
 #include "Tile.h"
 #include "mm.h"
+
+#include <etl/vector.h>
+#include <etl/queue.h>
  
 using namespace etl;
 
 // static uint64_t trace_count = 0;
 static uint64_t main_time = 0;
 Tile top;
-mm_magic_t mem = mm_magic_t(1L << 16, 8);;
+mm_magic_t mem = mm_magic_t(8);
 
 void tick(bool verbose, bool done_reset) {
   main_time++;
@@ -23,6 +26,8 @@ void tick(bool verbose, bool done_reset) {
   top.io_nasti_r_bits_id = UInt<5>(mem.r_id());
   top.io_nasti_r_bits_resp = UInt<2>(mem.r_resp());
   top.io_nasti_r_bits_last = UInt<1>(mem.r_last());
+  // check address because memcpy is not working
+  printf("mem.r_data() %p, &top.io_nasti_r_bits_data %p\n", mem.r_data(), &top.io_nasti_r_bits_data);
   memcpy(&top.io_nasti_r_bits_data, mem.r_data(), 8);
 
   top.eval(true, verbose, done_reset);
@@ -49,9 +54,16 @@ void tick(bool verbose, bool done_reset) {
 
 }
 
-int main(int argc, char** argv) {
+void rvmini() {
+  // etl::vector<char, 256> dummy_data(256);
+  // etl::queue<uint64_t, 256> bresp(256);
+  // etl::queue<mm_rresp_t, 256> rresp(256);
+  // printf("dummy_data: %p, bresp: %p, rresp: %p\n", &dummy_data[0], &bresp.front(), &rresp.front());
+
   uint64_t timeout = 1000L;
   // cout << "Enabling waves..." << endl;
+  mem = mm_magic_t(8);
+  mem.init(0x8000);
   load_mem(mem.get_data()); 
   top.reset = UInt<1>(1);
   // cout << "Starting simulation!" << endl;
@@ -71,6 +83,6 @@ int main(int argc, char** argv) {
     tick(true, true); 
   }
 
-  return 0;
+  return;
 
 }

@@ -1,23 +1,39 @@
-#define ETL_NO_SMALL_CHAR_SUPPORT 0
+#include "etl/queue.h"
 // See LICENSE for license details.
 
 #include "mm.h"
-#include <etl/vector.h>
+#undef assert
 #include <am.h>
 #include <klib.h>
 
-mm_magic_t::mm_magic_t(size_t size, size_t word_size):
-  data(new char[size]),
-  size(size),
+extern uint8_t ramdisk_start;
+extern uint8_t ramdisk_end;
+
+mm_magic_t::mm_magic_t(size_t word_size):
+  // use ramdisk_start as data
+  // data((char*)&ramdisk_start),
+  size(&ramdisk_end - &ramdisk_start),
   word_size(word_size), 
   store_inflight(false)
 {
-  dummy_data.resize(word_size);
 }
 
 mm_magic_t::~mm_magic_t()
 {
-  delete [] data;
+}
+
+void mm_magic_t::init(size_t sz) {
+  this->data = (char *)malloc(sz);
+
+  this->dummy_data = etl::vector<char, 256>();
+  this->bresp = etl::queue<uint64_t, 256>();
+  this->rresp = etl::queue<mm_rresp_t, 256>();
+  // printf("dummy_data: %d, bresp: %d, rresp: %d\n", this->dummy_data.size(), this->bresp.front(), this->rresp.front());
+  // print their address
+
+  this->dummy_data.push_back(0);
+  this->bresp.push(0);
+  printf("dummy_data: %p, bresp: %p, rresp: %p\n", &this->dummy_data[0], &this->bresp.front(), &this->rresp.front());
 }
 
 void mm_magic_t::write(uint64_t addr, char *data) {
@@ -117,17 +133,10 @@ void mm_magic_t::tick(
   }
 }
 
-extern uint8_t ramdisk_start;
-extern uint8_t ramdisk_end;
-
-#define MAX_PROGRAM_SIZE ((&ramdisk_start) - (&ramdisk_end))
+#define MAX_PROGRAM_SIZE ((&ramdisk_end - &ramdisk_start))
 
 void load_mem(char* mem)
 {
-  // print mem address
-  printf("mem address: %p\n", &mem);
-  memset(&mem, 0, MAX_PROGRAM_SIZE);
-  memcpy(&mem, &ramdisk_start, &ramdisk_end - &ramdisk_start);
-
+  memcpy(mem, &ramdisk_start, MAX_PROGRAM_SIZE);
   return;
 }

@@ -1,5 +1,10 @@
 NAME = cpuemu
 
-SRCS = top.cc resource.S mm.cc
+# SRCS = test/top.cc resource.S test/mm.cc
+# SRCS = train/emu.cc train/lshrdi3.c resource.S bench.cc
+
+SRCS = main.cc resource.S bench.cc test/top.cc test/mm.cc train/emu.cc train/lshrdi3.c
+
+CXXFLAGS += -Wno-c++20-compat
 
 include $(AM_HOME)/Makefile

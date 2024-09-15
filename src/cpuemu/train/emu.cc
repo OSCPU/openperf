@@ -1,7 +1,7 @@
-#define ETL_NO_SMALL_CHAR_SUPPORT 0
+#include <cpuemu.h>
 #include <SimTop.h>
+#undef assert
 #include <am.h>
-#include <bench.h>
 #include <klib.h>
 
 extern uint8_t ramdisk_start;
@@ -24,7 +24,7 @@ void load_program() {
   return;
 }
 
-int main(int argc, char **argv) {
+void nutshell() {
   load_program();
 
   memcpy(cpu.mem.rdata_mem.mem, &program, program_sz);
@@ -49,10 +49,8 @@ int main(int argc, char **argv) {
       printf("%c", cpu.io_uart_out_ch);
       // fflush(stdout);
     }
+
   }
 
-  uint64_t totaltime = uptime() - 2800000000;
-  printf("time: %s ms\n", format_time(totaltime));
-
-  return 0;
+  return;
 }

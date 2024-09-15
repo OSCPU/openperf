@@ -1,12 +1,9 @@
-#ifndef UINT_H_
-#define UINT_H_
+#ifndef _UINT_H_
+#define _UINT_H_
 
+#include <cpuemu.h>
 #include <etl/algorithm.h>
 #include <etl/array.h>
-
-uint64_t rng64() {
-  return 0;
-}
 
 // Internal RNG
 namespace {
