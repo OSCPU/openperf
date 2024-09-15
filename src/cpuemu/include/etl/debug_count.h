@@ -34,6 +34,7 @@ SOFTWARE.
 #include "platform.h"
 #include "atomic.h"
 
+#include <assert.h>
 #include <stdint.h>
 
 ///\defgroup debug_count debug count

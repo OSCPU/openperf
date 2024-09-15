@@ -38,6 +38,8 @@ SOFTWARE.
   #define __USE_C99_MATH
 #endif
 
+#include <float.h>
+#include <math.h>
 
 #include "limits.h"
 #include "type_traits.h"

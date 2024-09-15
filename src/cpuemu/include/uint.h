@@ -1,6 +1,8 @@
 #ifndef _UINT_H_
 #define _UINT_H_
 
+#include <etl/profiles/cpp17_no_stl.h>
+#include <etl/platform.h>
 #include <cpuemu.h>
 #include <etl/algorithm.h>
 #include <etl/array.h>

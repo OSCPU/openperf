@@ -45,6 +45,7 @@ SOFTWARE.
 #include "exception.h"
 #include "memory.h"
 #include "exception.h"
+#include "binary.h"
 #include "flags.h"
 
 #include <stddef.h>

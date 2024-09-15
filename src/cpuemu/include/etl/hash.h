@@ -39,6 +39,7 @@ SOFTWARE.
 #include "fnv_1.h"
 #include "type_traits.h"
 #include "static_assert.h"
+#include "math.h"
 
 #include <stdint.h>
 #include <stdlib.h>

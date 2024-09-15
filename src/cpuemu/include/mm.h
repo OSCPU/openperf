@@ -17,7 +17,7 @@ struct mm_rresp_t
   mm_rresp_t(uint64_t id, etl::vector<char, 256> data, bool last)
   {
     this->id = id;
-    this->data = data;
+    this->data = etl::vector<char, 256>();
     this->last = last;
   }
 
@@ -31,9 +31,9 @@ struct mm_rresp_t
 class mm_magic_t
 {
  public:
-  mm_magic_t(size_t size, size_t word_size);
+  mm_magic_t(size_t word_size);
   ~mm_magic_t();
-  void init(size_t sz, int word_size);
+  void init(size_t sz);
   char* get_data() { return data; }
   size_t get_size() { return size; }
 
@@ -88,9 +88,11 @@ class mm_magic_t
   uint64_t store_id;
   uint64_t store_size;
   uint64_t store_count;
+  // etl::vector<char, 256> dummy_data;
+  // etl::queue<uint64_t, 256> bresp;
+  // etl::queue<mm_rresp_t, 256> rresp;
   etl::vector<char, 256> dummy_data;
   etl::queue<uint64_t, 256> bresp;
-
   etl::queue<mm_rresp_t, 256> rresp;
 
   uint64_t cycle;

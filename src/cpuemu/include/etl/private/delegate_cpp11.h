@@ -197,7 +197,18 @@ namespace etl
     ETL_NODISCARD
     static ETL_CONSTEXPR14 delegate create()
     {
-      return delegate(method_instance_stub<T, Instance, Method>);
+      return delegate(method_instance_stub<T, Method, Instance>);
+    }
+
+    //*************************************************************************
+    /// Create from instance method (Compile time).
+    /// New API
+    //*************************************************************************
+    template <typename T, TReturn(T::* Method)(TParams...), T& Instance>
+    ETL_NODISCARD
+    static ETL_CONSTEXPR14 delegate create()
+    {
+      return delegate(method_instance_stub<T, Method, Instance>);
     }
 
     //*************************************************************************
@@ -207,7 +218,18 @@ namespace etl
     ETL_NODISCARD
     static ETL_CONSTEXPR14 delegate create()
     {
-      return delegate(const_method_instance_stub<T, Instance, Method>);
+      return delegate(const_method_instance_stub<T, Method, Instance>);
+    }
+
+    //*************************************************************************
+    /// Create from const instance method (Compile time).
+    /// New API
+    //*************************************************************************
+    template <typename T, TReturn(T::* Method)(TParams...) const, T const& Instance>
+    ETL_NODISCARD
+    static ETL_CONSTEXPR14 delegate create()
+    {
+      return delegate(const_method_instance_stub<T, Method, Instance>);
     }
 
 #if !(defined(ETL_COMPILER_GCC) && (__GNUC__ <= 8))
@@ -217,7 +239,7 @@ namespace etl
     //*************************************************************************
     template <typename T, T& Instance>
     ETL_NODISCARD
-      static ETL_CONSTEXPR14 delegate create()
+    static ETL_CONSTEXPR14 delegate create()
     {
       return delegate(operator_instance_stub<T, Instance>);
     }
@@ -274,7 +296,17 @@ namespace etl
     template <typename T, T& Instance, TReturn(T::* Method)(TParams...)>
     ETL_CONSTEXPR14 void set()
     {
-      assign(ETL_NULLPTR, method_instance_stub<T, Instance, Method>);
+      assign(ETL_NULLPTR, method_instance_stub<T, Method, Instance>);
+    }
+
+    //*************************************************************************
+    /// Set from instance method (Compile time).
+    /// New API
+    //*************************************************************************
+    template <typename T, TReturn(T::* Method)(TParams...), T& Instance>
+    ETL_CONSTEXPR14 void set()
+    {
+      assign(ETL_NULLPTR, method_instance_stub<T, Method, Instance>);
     }
 
     //*************************************************************************
@@ -283,7 +315,17 @@ namespace etl
     template <typename T, T const& Instance, TReturn(T::* Method)(TParams...) const>
     ETL_CONSTEXPR14 void set()
     {
-      assign(ETL_NULLPTR, const_method_instance_stub<T, Instance, Method>);
+      assign(ETL_NULLPTR, const_method_instance_stub<T, Method, Instance>);
+    }
+
+    //*************************************************************************
+    /// Set from const instance method (Compile time).
+    /// New API
+    //*************************************************************************
+    template <typename T, TReturn(T::* Method)(TParams...) const, T const& Instance>
+    ETL_CONSTEXPR14 void set()
+    {
+      assign(ETL_NULLPTR, const_method_instance_stub<T, Method, Instance>);
     }
 
     //*************************************************************************
@@ -309,6 +351,7 @@ namespace etl
     /// 'void' return.
     //*************************************************************************
     template <typename TRet = TReturn>
+    ETL_CONSTEXPR14
     typename etl::enable_if_t<etl::is_same<TRet, void>::value, bool>
       call_if(TParams... args) const
     {
@@ -328,6 +371,7 @@ namespace etl
     /// Non 'void' return.
     //*************************************************************************
     template <typename TRet = TReturn>
+    ETL_CONSTEXPR14
     typename etl::enable_if_t<!etl::is_same<TRet, void>::value, etl::optional<TReturn>>
       call_if(TParams... args) const
     {
@@ -523,7 +567,7 @@ namespace etl
     //*************************************************************************
     /// Stub call for a member function. Compile time instance.
     //*************************************************************************
-    template <typename T, T& Instance, TReturn(T::*Method)(TParams...)>
+    template <typename T, TReturn(T::*Method)(TParams...), T& Instance>
     static ETL_CONSTEXPR14 TReturn method_instance_stub(void*, TParams... params)
     {
       return (Instance.*Method)(etl::forward<TParams>(params)...);
@@ -532,7 +576,7 @@ namespace etl
     //*************************************************************************
     /// Stub call for a const member function. Compile time instance.
     //*************************************************************************
-    template <typename T, const T& Instance, TReturn(T::*Method)(TParams...) const>
+    template <typename T, TReturn(T::*Method)(TParams...) const, const T& Instance>
     static ETL_CONSTEXPR14 TReturn const_method_instance_stub(void*, TParams... params)
     {
       return (Instance.*Method)(etl::forward<TParams>(params)...);

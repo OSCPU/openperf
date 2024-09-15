@@ -3,6 +3,7 @@
 
 #include "uint.h"
 #include "sint.h"
+#undef assert
 #include <am.h>
 #include <klib.h>
 #include <cstdlib>
