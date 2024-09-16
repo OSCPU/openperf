@@ -17,12 +17,14 @@ void random_init(int m, int n, double * a, int lda){
     }
 }
 
+extern bench_gemm_config config;
+
 int main(){
 
     bench_malloc_init();
-    int m = 110;
-    int n = 110;
-    int k = 110;
+    int m = config.m;
+    int n = config.n;
+    int k = config.k;
 
     //TODO: calculate the memory size.
     double * A = (double*)bench_malloc(m*k*sizeof(double));

@@ -8,35 +8,12 @@
 #include <limits.h>
 #include <x264.h>
 
-
-typedef struct {
-  uint32_t width;
-  uint32_t height;
-  uint32_t fps;
-} bench_x264_config;
-
-#if defined (__BENCH_TEST__)
-//Use a macro to do this
-static bench_x264_config config = {128, 40, 24};
-static Finfo filelist[] = {
-  {"/share/video/bad-apple.yuv", 368640, 0, NULL, NULL},
-  {"/share/video/out.h264", 4096, 368640, NULL, NULL}
-};
-#elif defined (__BENCH_TRAIN__)
-static bench_x264_config config = {64, 20, 24};
-static Finfo filelist[] = {
-  {"/share/video/bad-apple.yuv", 138240, 0, NULL, NULL},
-  {"/share/video/out.h264", 4096, 138240, NULL, NULL}
-};
-#elif defined (__BENCH_HUGE__)
-#else //default to ref
-
-#endif
-
+extern bench_x264_config config;
+extern Finfo filelist[];
 
 int main(const char *args) {
   bench_malloc_init();
-  fs_init(filelist, 2);
+  fs_init(filelist, config.files_num);
 
   uint64_t start_time = uptime(), end_time = ULLONG_MAX;
   int width = config.width;

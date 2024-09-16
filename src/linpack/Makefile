@@ -1,8 +1,9 @@
 NAME = linpack
 
+
 BENCH_LIBS = bench openlibm soft-fp
 
-SRCS = linpack.c
+SRCS = linpack.c ./configs/$(mainargs)-config.c
 
 INC_PATH += 	../common/openlibm/include \
 			../common/openlibm/src \

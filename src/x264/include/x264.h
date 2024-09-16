@@ -1027,6 +1027,14 @@ X264_API void x264_encoder_intra_refresh( x264_t * );
  *      Returns 0 on success, negative on failure. */
 X264_API int x264_encoder_invalidate_reference( x264_t *, int64_t pts );
 
+
+typedef struct {
+  uint32_t width;
+  uint32_t height;
+  uint32_t fps;
+  uint32_t files_num;
+} bench_x264_config;
+
 #ifdef __cplusplus
 }
 #endif

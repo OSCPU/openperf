@@ -2,6 +2,7 @@
 #include <fs.h>
 #include <klib.h>
 #include <klib-macros.h>
+#include <bench_printf.h>
 #include <stdint.h>
 #include <stdio.h>
 
@@ -47,7 +48,7 @@ int fs_open(const char *pathname, int flags, int mode)
       return fs_num;
     }
   }
-  printf("assert no this file : %s\n", pathname);
+  bench_printf("assert no this file : %s\n", pathname);
   assert(0);
 }
 size_t fs_read(int fd, void *buf, size_t len)
@@ -123,7 +124,7 @@ size_t fs_lseek(int fd, size_t offset, int whence)
 
   if((new_offset < 0 || new_offset > file->size))
   {
-    printf("file offset out of bound\n");
+    bench_printf("file offset out of bound\n");
     return -1;
   }
 
@@ -134,4 +135,11 @@ size_t fs_lseek(int fd, size_t offset, int whence)
 int fs_close(int fd)
 {
   return 0;
+}
+
+int fs_tell(int fd)
+{
+  assert(file_table);
+  Finfo *file = &file_table[fd];
+  return file->open_offset;
 }

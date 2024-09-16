@@ -1,9 +1,10 @@
-NAME = x264
+NAME = x264-$(mainargs)
 
 BENCH_LIBS = bench openlibm soft-fp
 
+mainargs ?= ref
 
-SRCS = 	main.c resources.S fs.c 
+SRCS = 	main.c ./resources/resources-$(mainargs).S ./configs/$(mainargs)-config.c fs.c
 SRCS += $(shell find ./common/ -name "*.c")
 SRCS += $(shell find ./encoder/ -name "*.c" -not -name "rdo.c" -not -name "slicetype.c")
 
@@ -12,22 +13,11 @@ INC_PATH += ../common/openlibm/include \
 			./include \
 			../common/bench/include
 
+DST_DIR   := $(WORK_DIR)/build/$(ARCH)-$(mainargs)
 
 include $(AM_HOME)/Makefile
 
-ifeq ($(mainargs), test)
-CFLAGS += -D__BENCH_TEST__
-ASFLAGS += -D__BENCH_TEST__
-else ifeq ($(mainargs), train)
-CFLAGS += -D__BENCH_TRAIN__
-ASFLAGS += -D__BENCH_TRAIN__
-else ifeq ($(mainargs), huge)
-CFLAGS += -D__BENCH_HUGE__
-ASFLAGS += _D__BENCH_HUGE__
-else
-CFLAGS += -D__BENCH_REF__
-ASFLAGS += _D__BENCH_REF__
-endif
+CFLAGS += -Wno-array-bounds
 
 BENCH_LINKAGE += $(addsuffix -$(ARCH).a, $(join \
 					 $(addsuffix /build/, $(addprefix $(WORK_DIR)/../common/, $(BENCH_LIBS))), \

@@ -1,9 +1,10 @@
 NAME = gemm
 
+mainargs ?= ref
 
 BENCH_LIBS = bench openlibm soft-fp
 
-SRCS = gemm.c matmul.c
+SRCS = gemm.c matmul.c ./configs/$(mainargs)-config.c
 
 INC_PATH += 	../common/openlibm/include \
 			../common/openlibm/src \

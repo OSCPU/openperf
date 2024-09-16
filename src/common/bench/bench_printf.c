@@ -16,6 +16,7 @@
 
 #define SZ_NUM_BUF    32
 static char sprint_fe[SZ_NUM_BUF+1];
+#define PRINT_BUF_SIZE 512
  
 static const char *digits = "0123456789abcdefghijklmnopqrstuvwxyz";
 static const char *upper_digits = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -162,7 +163,7 @@ static double i10x(int n)
     return rv;
 }
 
-static void ftoa(char* buf, double val, int prec, char fmt)                   
+static void ftoa(char* buf, double val, int prec, char fmt)
 {
     int d;
     int e = 0, m = 0;
@@ -467,7 +468,7 @@ int bench_sprintf( char *s, const char *fmt, ... )
 
 int bench_printf(const char *fmt, ... )
 {
-    char s[512];
+    char s[PRINT_BUF_SIZE];
     va_list arg;
     va_start( arg, fmt );
     int length = bench_vsprintf( s, fmt, arg );
@@ -478,8 +479,3 @@ int bench_printf(const char *fmt, ... )
     }
     return length;
 }
-
-// int my_printf(const char *fmt, ...) {
-//   return 0;
-// 
-// }
