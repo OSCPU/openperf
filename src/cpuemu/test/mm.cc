@@ -22,18 +22,21 @@ mm_magic_t::~mm_magic_t()
 {
 }
 
-void mm_magic_t::init(size_t sz) {
+void mm_magic_t::init(size_t sz, etl::vector<char, 256> *dummy_data_address, etl::queue<uint64_t, 256> *bresp_address, etl::queue<mm_rresp_t, 256> *rresp_address) {
   this->data = (char *)malloc(sz);
 
-  this->dummy_data = etl::vector<char, 256>();
-  this->bresp = etl::queue<uint64_t, 256>();
-  this->rresp = etl::queue<mm_rresp_t, 256>();
+  // this->dummy_data = etl::vector<char, 256>();
+  // this->bresp = etl::queue<uint64_t, 256>();
+  // this->rresp = etl::queue<mm_rresp_t, 256>();
   // printf("dummy_data: %d, bresp: %d, rresp: %d\n", this->dummy_data.size(), this->bresp.front(), this->rresp.front());
   // print their address
 
-  this->dummy_data.push_back(0);
-  this->bresp.push(0);
-  printf("dummy_data: %p, bresp: %p, rresp: %p\n", &this->dummy_data[0], &this->bresp.front(), &this->rresp.front());
+  // this->dummy_data.push_back(0);
+  // this->bresp.push(0);
+  this->dummy_data = dummy_data_address;
+  this->bresp = bresp_address;
+  this->rresp = rresp_address;
+  // printf("dummy_data: %p, bresp: %p, rresp: %p\n", &this->dummy_data[0], &this->bresp->front(), &this->rresp->front());
 }
 
 void mm_magic_t::write(uint64_t addr, char *data) {
@@ -95,7 +98,7 @@ void mm_magic_t::tick(
     uint64_t start_addr = (ar_addr / word_size) * word_size;
     for (size_t i = 0; i <= ar_len; i++) {
       auto dat = read(start_addr + i * word_size);
-      rresp.push(mm_rresp_t(ar_id, dat, i == ar_len));
+      rresp->push(mm_rresp_t(ar_id, dat, i == ar_len));
     }
   }
 
@@ -114,21 +117,21 @@ void mm_magic_t::tick(
 
     if (store_count == 0) {
       store_inflight = false;
-      bresp.push(store_id);
+      bresp->push(store_id);
     }
   }
 
   if (b_fire)
-    bresp.pop();
+    bresp->pop();
 
   if (r_fire)
-    rresp.pop();
+    rresp->pop();
 
   cycle++;
 
   if (reset) {
-    while (!bresp.empty()) bresp.pop();
-    while (!rresp.empty()) rresp.pop();
+    while (!bresp->empty()) bresp->pop();
+    while (!rresp->empty()) rresp->pop();
     cycle = 0;
   }
 }

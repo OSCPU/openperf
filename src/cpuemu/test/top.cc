@@ -5,8 +5,6 @@
 
 #include <etl/vector.h>
 #include <etl/queue.h>
- 
-using namespace etl;
 
 // static uint64_t trace_count = 0;
 static uint64_t main_time = 0;
@@ -27,7 +25,7 @@ void tick(bool verbose, bool done_reset) {
   top.io_nasti_r_bits_resp = UInt<2>(mem.r_resp());
   top.io_nasti_r_bits_last = UInt<1>(mem.r_last());
   // check address because memcpy is not working
-  printf("mem.r_data() %p, &top.io_nasti_r_bits_data %p\n", mem.r_data(), &top.io_nasti_r_bits_data);
+  // printf("mem.r_data() %p, &top.io_nasti_r_bits_data %p\n", mem.r_data(), &top.io_nasti_r_bits_data);
   memcpy(&top.io_nasti_r_bits_data, mem.r_data(), 8);
 
   top.eval(true, verbose, done_reset);
@@ -55,15 +53,15 @@ void tick(bool verbose, bool done_reset) {
 }
 
 void rvmini() {
-  // etl::vector<char, 256> dummy_data(256);
-  // etl::queue<uint64_t, 256> bresp(256);
-  // etl::queue<mm_rresp_t, 256> rresp(256);
+  etl::vector<char, 256> dummy_data(256);
+  etl::queue<uint64_t, 256> bresp;
+  etl::queue<mm_rresp_t, 256> rresp;
   // printf("dummy_data: %p, bresp: %p, rresp: %p\n", &dummy_data[0], &bresp.front(), &rresp.front());
 
   uint64_t timeout = 1000L;
   // cout << "Enabling waves..." << endl;
   mem = mm_magic_t(8);
-  mem.init(0x8000);
+  mem.init(0x8000, &dummy_data, &bresp, &rresp);
   load_mem(mem.get_data()); 
   top.reset = UInt<1>(1);
   // cout << "Starting simulation!" << endl;
@@ -75,6 +73,12 @@ void rvmini() {
   top.io_host_fromhost_bits = UInt<32>(0);
   top.io_host_fromhost_valid = UInt<1>(0);
   // cout << "while" <<endl;
+
+  // currently the simulation looks like stuck in same
+  // pc in client program. To turn on the info output,
+  // uncomment "Tile.h" : 6294 line.
+  //
+  // The reset pc value override in "Tile.h" : 6312 line.
   do {
     tick(true,true);
   } while(!top.io_host_tohost.as_single_word() && main_time < timeout);

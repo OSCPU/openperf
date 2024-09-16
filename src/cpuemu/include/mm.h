@@ -33,21 +33,22 @@ class mm_magic_t
  public:
   mm_magic_t(size_t word_size);
   ~mm_magic_t();
-  void init(size_t sz);
+  void init(size_t sz, etl::vector<char, 256> *, etl::queue<uint64_t, 256> *, etl::queue<mm_rresp_t, 256> *);
   char* get_data() { return data; }
   size_t get_size() { return size; }
 
   bool ar_ready() { return true; }
   bool aw_ready() { return !store_inflight; }
   bool w_ready() { return store_inflight; }
-  bool b_valid() { return !bresp.empty(); }
+  bool b_valid() { return !bresp->empty(); }
   uint64_t b_resp() { return 0; }
-  uint64_t b_id() { return b_valid() ? bresp.front() : 0; }
-  bool r_valid() { return !rresp.empty(); }
+  uint64_t b_id() { return b_valid() ? bresp->front() : 0; }
+  bool r_valid() { return !rresp->empty(); }
   uint64_t r_resp() { return 0; }
-  uint64_t r_id() { return r_valid() ? rresp.front().id: 0; }
-  void *r_data() { return r_valid() ? &rresp.front().data[0] : &dummy_data[0]; }
-  bool r_last() { return r_valid() ? rresp.front().last : false; }
+  uint64_t r_id() { return r_valid() ? rresp->front().id: 0; }
+  // void *r_data() { return r_valid() ? &(rresp->front().data[0]) : &(dummy_data[0]); }
+  void *r_data() { return r_valid() ? &(rresp->front().data[0]) : &(dummy_data->front()); }
+  bool r_last() { return r_valid() ? rresp->front().last : false; }
 
   void tick
   (
@@ -91,9 +92,9 @@ class mm_magic_t
   // etl::vector<char, 256> dummy_data;
   // etl::queue<uint64_t, 256> bresp;
   // etl::queue<mm_rresp_t, 256> rresp;
-  etl::vector<char, 256> dummy_data;
-  etl::queue<uint64_t, 256> bresp;
-  etl::queue<mm_rresp_t, 256> rresp;
+  etl::vector<char, 256> *dummy_data;
+  etl::queue<uint64_t, 256> *bresp;
+  etl::queue<mm_rresp_t, 256> *rresp;
 
   uint64_t cycle;
 };
