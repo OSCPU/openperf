@@ -6310,9 +6310,11 @@ typedef struct Tile {
     }
     UInt<33> core$dpath$pc$next;
     if (UNLIKELY(reset)) {
-      UInt<33> core$dpath$_T_156 = UInt<32>(0x200) - UInt<32>(0x4);
-      UInt<32> core$dpath$_T_158 = core$dpath$_T_156.tail<1>();
-      core$dpath$pc$next = core$dpath$_T_158.pad<33>();
+      // UInt<33> core$dpath$_T_156 = UInt<32>(0x200) - UInt<32>(0x4);
+      // UInt<32> core$dpath$_T_158 = core$dpath$_T_156.tail<1>();
+      // core$dpath$pc$next = core$dpath$_T_158.pad<33>();
+      // core$dpath$pc$next = UInt<32>(0x80000000);
+      core$dpath$pc$next = 0x80000000;
     } else {
       core$dpath$pc$next = core$dpath$npc;
     }
