@@ -6291,7 +6291,8 @@ typedef struct Tile {
     if (update_registers) core.dpath.pc_check = core$dpath$pc_check$next;
   }
   void EVAL_25() {
-    if (UNLIKELY(done_reset && update_registers && verbose && core$dpath$_T_301)) printf("PC: %08" PRIx64 ", INST: %08" PRIx64 ", REG[%2" PRIu64 "] <- %08" PRIx64 "\n", core.dpath.ew_pc.as_single_word(), core.dpath.ew_inst.as_single_word(), core$dpath$_T_296.as_single_word(), core$dpath$_T_298.as_single_word());
+    // toggle log
+    // if (UNLIKELY(done_reset && update_registers && verbose && core$dpath$_T_301)) printf("PC: %08x"  ", INST: %08x"  ", REG[%2x"  "] <- %08x"  "\n", core.dpath.ew_pc.as_single_word(), core.dpath.ew_inst.as_single_word(), core$dpath$_T_296.as_single_word(), core$dpath$_T_298.as_single_word());
   }
   void EVAL_26() {
     PARTflags[26] = false;
