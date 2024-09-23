@@ -2,8 +2,8 @@
 // #include <stdlib.h>
 // #include <float.h>
 #include <klib.h>
-#include "pqueue.h"
-#include <printf.h>
+#include <pqueue.h>
+#include <bench_printf.h>
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -16,7 +16,7 @@ PQUEUE *pqinit(PQUEUE *pqueue, int n)
     // initialize the queue;
     pqueue->_d = (PQDATUM *)bench_malloc(sizeof(PQDATUM) * n);
     if ( pqueue->_d == NULL) {
-        my_printf("\nError: Unable to malloc <pqinit>.\n");
+        bench_printf("\nError: Unable to malloc <pqinit>.\n");
         assert(0);
     }
     
@@ -29,7 +29,6 @@ int pqinsert(PQUEUE *pqueue, PQDATUM a_d, int *pos)
 {
     // insert an item into the queue;
     // return 1 if item was inserted; 0 otherwise;
-    // 向队列中插入一个项目； 如果插入了项目则返回 1； 否则为 0；
 
     PQDATUM *tmp;
     int i, newsize;
@@ -41,7 +40,7 @@ int pqinsert(PQUEUE *pqueue, PQDATUM a_d, int *pos)
         newsize = pqueue->_size + pqueue->_step;
         tmp = (PQDATUM *)bench_realloc( pqueue->_d, sizeof(PQDATUM) * newsize);
         if ( tmp == NULL) {
-            my_printf("\nError: Unable to my_realloc <pqinsert>.\n");
+            bench_printf("\nError: Unable to my_realloc <pqinsert>.\n");
             assert(0);
             //return 0;
         }
@@ -106,7 +105,7 @@ int pqdeckey(PQUEUE *pqueue, PQDATUM a_d, int *pos)
 
     i = pos[ node(&a_d)];
     if ( node(&pqueue->_d[i]) != node(&a_d))
-        my_printf("wrong\n");
+        bench_printf("wrong\n");
     while ( i > 1 && get_distance(pqueue->_d[i / 2]) > get_distance(a_d)) {
         pqueue->_d[i] = pqueue->_d[i / 2];
         pos[ node(&pqueue->_d[i])] = i;

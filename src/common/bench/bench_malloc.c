@@ -1,13 +1,14 @@
 #include <bench_malloc.h>
 #include <klib.h>
+#include <am.h>
+#include <stdint.h>
 
-#if !defined (__ISA_NATIVE__)
-extern char _end;
-static intptr_t program_break = (intptr_t)&_end;  // program break一开始的位置位于_end
+static intptr_t program_break = 0;
 
 static void *sbrk(intptr_t increment) {
+  assert(program_break);
   intptr_t ret_addr = -1;
-  intptr_t new_program_break = program_break + increment; // 被调用时, 根据记录的program break位置和参数increment, 计算出新program break
+  intptr_t new_program_break = program_break + increment;
   ret_addr = program_break;
   program_break = new_program_break;
   return (void *)ret_addr;
@@ -49,13 +50,19 @@ static void *malloc_base() {
     return b;
 }
 
-Chunk malloc_chunk_find(size_t s, Chunk *heap) {
+//We need this function because we use variable `heap`
+//and it is initialized in run time.
+void bench_malloc_init() {
+  program_break = (intptr_t)heap.start;
+}
+
+static Chunk malloc_chunk_find(size_t s, Chunk *heap) {
     Chunk c = malloc_base();
     for (; c && (!c->free || c->size < s); *heap = c, c = c->next);
     return c;
 }
 
-void malloc_merge_next(Chunk c) {
+static void malloc_merge_next(Chunk c) {
     c->size = c->size + c->next->size + sizeof(struct chunk);
     c->next = c->next->next;
     if (c->next) {
@@ -63,7 +70,7 @@ void malloc_merge_next(Chunk c) {
     }
 }
 
-void malloc_split_next(Chunk c, size_t size) {
+static void malloc_split_next(Chunk c, size_t size) {
     Chunk newc = (Chunk)((char*) c + size);
     newc->prev = c;
     newc->next = c->next;
@@ -142,34 +149,11 @@ void *bench_realloc(void *ptr, size_t size) {
     return newptr;
 }
 
-// 在理应释放全部堆区的时候直接将堆指针归零，简单粗暴
 void bench_all_free() {
-  program_break = (intptr_t)&_end;
-}
-#else
-#include <stdlib.h>
-void *bench_malloc(size_t size) {
-  return malloc(size);
-}
-
-void *bench_calloc(size_t number, size_t size) {
-  return calloc(number, size);
-}
-
-void *bench_realloc(void *p, size_t size) {
-  return realloc(p, size);
-}
-
-void bench_free(void *ptr) {
-  free(ptr);
-}
-
-void bench_all_free() {
-
+  program_break = (intptr_t)heap.start;
 }
 
 
 
-#endif //__ARCH_NATIVE__
 
 

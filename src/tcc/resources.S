@@ -1,9 +1,17 @@
 .section .data
 .global ramdisk_start, ramdisk_end
 ramdisk_start:
-.incbin "tests/dummy.c"
-.incbin "tests/ex1"
-.incbin "tests/trm.c"
+#if defined (__BENCH_TEST__)
+.incbin "input/test.c"
+.incbin "input/test"
+.incbin "input/trm.c"
+#elif defined (__BENCH_TRAIN__)
+.incbin "input/trm.c"
+.incbin "input/trap.h"
+.incbin "input/train.c"
+.incbin "input/train"
+#else //default to ref
+#endif
 ramdisk_end:
 
 

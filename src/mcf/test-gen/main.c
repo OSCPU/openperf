@@ -13,8 +13,8 @@ int main(int argc, char *argv[])
     gettimeofday( &tv_start, NULL);
     srand(tv_start.tv_usec);
 
-    FILE *fp = fopen("test.c", "w");    
-    fprintf(fp, "#include \"test.h\"\n\n");   // 记录此时的偏移，最后需要打印三个变量
+    FILE *fp = fopen("test.c", "w");
+    fprintf(fp, "#include \"input.h\"\n\n");   // 记录此时的偏移，最后需要打印三个变量
     int num_write = ftell(fp);
     int edge_num_write = 0;
 

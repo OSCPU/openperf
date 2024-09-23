@@ -32,10 +32,10 @@
 #include <openlibm.h>
 
 #include <fs.h>
-#include <printf.h>
+#include <bench_printf.h>
 #include <bench_malloc.h>
 #include <bench.h>
-#include <strings.h>
+#include <bench_strings.h>
 // #include <stdlib.h>
 // #include <stdio.h>
 /* gnu headers use to #define __attribute__ to empty for non-gcc compilers */
