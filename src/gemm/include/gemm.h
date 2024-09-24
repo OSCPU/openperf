@@ -6,6 +6,7 @@
 #include <stdint.h>
 
 
+#define TEST
 typedef struct {
   uint32_t m;
   uint32_t n;

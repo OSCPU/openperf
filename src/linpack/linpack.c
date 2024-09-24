@@ -31,48 +31,18 @@
 #include <am.h>
 #include <bench.h>
 #include <bench_malloc.h>
+#include <bench_debug.h>
 #include <klib-macros.h>
 #include <klib.h>
+#include <linpack.h>
 
-#define FLT_DIG 6
-#define DBL_DIG 15
-
-#define SP
-
-#ifndef SP
-#ifndef DP
-#define DP
-#endif
-#endif
-
-#ifdef SP
-#define ZERO 0.0
-#define ONE 1.0
-#define PREC "Single"
-#define BASE10DIG FLT_DIG
-
-typedef float REAL;
-#endif
-
-#ifdef DP
-#define ZERO 0.0e0
-#define ONE 1.0e0
-#define PREC "Double"
-#define BASE10DIG DBL_DIG
-
-typedef double REAL;
-#endif
-
-/* 2022-07-26: Macro defined for memreq variable to resolve warnings
- *             during malloc check
- */
-#define MEM_T long
+extern bench_linpack_config config;
 
 static REAL linpack (long nreps, int arsize);
 static void matgen (REAL *a, int lda, int n, REAL *b, REAL *norma);
 static void dgefa (REAL *a, int lda, int n, int *ipvt, int *info, int roll);
 static void dgesl (REAL *a, int lda, int n, int *ipvt, REAL *b, int job,
-                   int roll);
+             int roll);
 static void daxpy_r (int n, REAL da, REAL *dx, int incx, REAL *dy, int incy);
 static REAL ddot_r (int n, REAL *dx, int incx, REAL *dy, int incy);
 static void dscal_r (int n, REAL da, REAL *dx, int incx);
@@ -81,110 +51,69 @@ static REAL ddot_ur (int n, REAL *dx, int incx, REAL *dy, int incy);
 static void dscal_ur (int n, REAL da, REAL *dx, int incx);
 static int idamax (int n, REAL *dx, int incx);
 static REAL second (void);
-static double
-fabs (double x)
-{
-  return x < 0 ? -x : x;
-}
+static inline double fabs(double x) { return x < 0 ? -x : x; }
 
 static void *mempool = NULL;
-int
-main (int argc, char **argv)
+int main(int argc, char **argv)
 
 {
-  ioe_init ();
-  bench_malloc_init ();
+  ioe_init();
+  bench_malloc_init();
   int arsize;
   long arsize2d, nreps;
   volatile size_t malloc_arg;
   volatile MEM_T memreq;
 
-  arsize = 270;
+  arsize = config.arsize;
   arsize2d = (long)arsize * (long)arsize;
-  memreq = arsize2d * sizeof (REAL) + (long)arsize * sizeof (REAL)
-           + (long)arsize * sizeof (int);
+  memreq = arsize2d * sizeof(REAL) + (long)arsize * sizeof(REAL) +
+           (long)arsize * sizeof(int);
   malloc_arg = (size_t)memreq;
   uint64_t start_time, end_time;
 
-  if ((MEM_T)malloc_arg != memreq
-      || (mempool = bench_malloc (malloc_arg)) == NULL)
-    {
-      // printf("Not enough memory available for given array size.\n");
-      return 1;
-    }
+  if ((MEM_T)malloc_arg != memreq ||
+      (mempool = bench_malloc(malloc_arg)) == NULL) {
+      BENCH_LOG(ERROR, "Not enough memory available for given array size.\n");
+    return 1;
+  }
 
-  // printf("LINPACK benchmark, %s precision.\n", PREC);
-  // printf("Machine precision:  %d digits.\n", BASE10DIG);
-  // printf("Array size %d X %d.\n", arsize, arsize);
-  // printf("Memory required:  %ldK.\n", (memreq + 512L) >> 10);
-  // printf("Average rolled and unrolled performance:\n\n");
-  // printf("    Reps Time(s) DGEFA   DGESL  OVERHEAD    KFLOPS\n");
-  // printf("----------------------------------------------------\n");
   nreps = 1;
-  start_time = uptime ();
-  while (linpack (nreps, arsize) < 10.)
-    {
-      nreps *= 2;
-    }
-  end_time = uptime ();
-  bench_free (mempool);
-  printf ("time: %s ms\n", format_time (end_time - start_time));
+  start_time = uptime();
+  while (linpack(nreps, arsize) < 10.) {
+    nreps *= 2;
+  }
+  end_time = uptime();
+  bench_free(mempool);
+  BENCH_LOG(INFO, "time: %s", format_time(end_time - start_time));
   return 0;
 }
 
-REAL
-linpack (long nreps, int arsize)
+REAL linpack(long nreps, int arsize)
 
 {
   REAL *a, *b;
-  REAL norma, t1, kflops, tdgesl, tdgefa, totalt, toverhead, ops;
+  REAL norma, totalt;
   int *ipvt, n, info, lda;
   long i, arsize2d;
 
   lda = arsize;
   n = arsize / 2;
   arsize2d = (long)arsize * (long)arsize;
-  ops = ((2.0 * n * n * n) / 3.0 + 2.0 * n * n);
   a = (REAL *)mempool;
   b = a + arsize2d;
   ipvt = (int *)&b[arsize];
-  tdgesl = 0;
-  tdgefa = 0;
-  totalt = second ();
-  for (i = 0; i < nreps; i++)
-    {
-      matgen (a, lda, n, b, &norma);
-      t1 = second ();
-      dgefa (a, lda, n, ipvt, &info, 1);
-      tdgefa += second () - t1;
-      t1 = second ();
-      dgesl (a, lda, n, ipvt, b, 0, 1);
-      tdgesl += second () - t1;
-    }
-  for (i = 0; i < nreps; i++)
-    {
-      matgen (a, lda, n, b, &norma);
-      t1 = second ();
-      dgefa (a, lda, n, ipvt, &info, 0);
-      tdgefa += second () - t1;
-      t1 = second ();
-      dgesl (a, lda, n, ipvt, b, 0, 0);
-      tdgesl += second () - t1;
-    }
-  totalt = second () - totalt;
-  if (totalt < 0.5 || tdgefa + tdgesl < 0.2)
-    return (0.);
-  kflops = 2. * nreps * ops / (1000. * (tdgefa + tdgesl));
-  toverhead = totalt - tdgefa - tdgesl;
-  if (tdgefa < 0.)
-    tdgefa = 0.;
-  if (tdgesl < 0.)
-    tdgesl = 0.;
-  if (toverhead < 0.)
-    toverhead = 0.;
-  // printf("%8ld %6.2f %6.2f%% %6.2f%% %6.2f%%  %9.3f\n", nreps, totalt,
-  // 100. * tdgefa / totalt, 100. * tdgesl / totalt,
-  // 100. * toverhead / totalt, kflops);
+  totalt = second();
+  for (i = 0; i < nreps; i++) {
+    matgen(a, lda, n, b, &norma);
+    dgefa(a, lda, n, ipvt, &info, 1);
+    dgesl(a, lda, n, ipvt, b, 0, 1);
+  }
+  for (i = 0; i < nreps; i++) {
+    matgen(a, lda, n, b, &norma);
+    dgefa(a, lda, n, ipvt, &info, 0);
+    dgesl(a, lda, n, ipvt, b, 0, 0);
+  }
+  totalt = second() - totalt;
   return (totalt);
 }
 
@@ -193,8 +122,7 @@ linpack (long nreps, int arsize)
 ** We would like to declare a[][lda], but c does not allow it.  In this
 ** function, references to a[i][j] are written a[lda*i+j].
 */
-static void
-matgen (REAL *a, int lda, int n, REAL *b, REAL *norma)
+static void matgen(REAL *a, int lda, int n, REAL *b, REAL *norma)
 
 {
   int init, i, j;
@@ -202,12 +130,11 @@ matgen (REAL *a, int lda, int n, REAL *b, REAL *norma)
   init = 1325;
   *norma = 0.0;
   for (j = 0; j < n; j++)
-    for (i = 0; i < n; i++)
-      {
-        init = (int)((long)3125 * (long)init % 65536L);
-        a[lda * j + i] = (init - 32768.0) / 16384.0;
-        *norma = (a[lda * j + i] > *norma) ? a[lda * j + i] : *norma;
-      }
+    for (i = 0; i < n; i++) {
+      init = (int)((long)3125 * (long)init % 65536L);
+      a[lda * j + i] = (init - 32768.0) / 16384.0;
+      *norma = (a[lda * j + i] > *norma) ? a[lda * j + i] : *norma;
+    }
   for (i = 0; i < n; i++)
     b[i] = 0.0;
   for (j = 0; j < n; j++)
@@ -266,8 +193,7 @@ matgen (REAL *a, int lda, int n, REAL *b, REAL *norma)
 **   blas daxpy,dscal,idamax
 **
 */
-static void
-dgefa (REAL *a, int lda, int n, int *ipvt, int *info, int roll)
+static void dgefa(REAL *a, int lda, int n, int *ipvt, int *info, int roll)
 
 {
   REAL t;
@@ -275,116 +201,101 @@ dgefa (REAL *a, int lda, int n, int *ipvt, int *info, int roll)
 
   /* gaussian elimination with partial pivoting */
 
-  if (roll)
-    {
-      *info = 0;
-      nm1 = n - 1;
-      if (nm1 >= 0)
-        for (k = 0; k < nm1; k++)
-          {
-            kp1 = k + 1;
+  if (roll) {
+    *info = 0;
+    nm1 = n - 1;
+    if (nm1 >= 0)
+      for (k = 0; k < nm1; k++) {
+        kp1 = k + 1;
 
-            /* find l = pivot index */
+        /* find l = pivot index */
 
-            l = idamax (n - k, &a[lda * k + k], 1) + k;
-            ipvt[k] = l;
+        l = idamax(n - k, &a[lda * k + k], 1) + k;
+        ipvt[k] = l;
 
-            /* zero pivot implies this column already
-               triangularized */
+        /* zero pivot implies this column already
+           triangularized */
 
-            if (a[lda * k + l] != ZERO)
-              {
+        if (a[lda * k + l] != ZERO) {
 
-                /* interchange if necessary */
+          /* interchange if necessary */
 
-                if (l != k)
-                  {
-                    t = a[lda * k + l];
-                    a[lda * k + l] = a[lda * k + k];
-                    a[lda * k + k] = t;
-                  }
-
-                /* compute multipliers */
-
-                t = -ONE / a[lda * k + k];
-                dscal_r (n - (k + 1), t, &a[lda * k + k + 1], 1);
-
-                /* row elimination with column indexing */
-
-                for (j = kp1; j < n; j++)
-                  {
-                    t = a[lda * j + l];
-                    if (l != k)
-                      {
-                        a[lda * j + l] = a[lda * j + k];
-                        a[lda * j + k] = t;
-                      }
-                    daxpy_r (n - (k + 1), t, &a[lda * k + k + 1], 1,
-                             &a[lda * j + k + 1], 1);
-                  }
-              }
-            else
-              (*info) = k;
+          if (l != k) {
+            t = a[lda * k + l];
+            a[lda * k + l] = a[lda * k + k];
+            a[lda * k + k] = t;
           }
-      ipvt[n - 1] = n - 1;
-      if (a[lda * (n - 1) + (n - 1)] == ZERO)
-        (*info) = n - 1;
-    }
-  else
-    {
-      *info = 0;
-      nm1 = n - 1;
-      if (nm1 >= 0)
-        for (k = 0; k < nm1; k++)
-          {
-            kp1 = k + 1;
 
-            /* find l = pivot index */
+          /* compute multipliers */
 
-            l = idamax (n - k, &a[lda * k + k], 1) + k;
-            ipvt[k] = l;
+          t = -ONE / a[lda * k + k];
+          dscal_r(n - (k + 1), t, &a[lda * k + k + 1], 1);
 
-            /* zero pivot implies this column already
-               triangularized */
+          /* row elimination with column indexing */
 
-            if (a[lda * k + l] != ZERO)
-              {
-
-                /* interchange if necessary */
-
-                if (l != k)
-                  {
-                    t = a[lda * k + l];
-                    a[lda * k + l] = a[lda * k + k];
-                    a[lda * k + k] = t;
-                  }
-
-                /* compute multipliers */
-
-                t = -ONE / a[lda * k + k];
-                dscal_ur (n - (k + 1), t, &a[lda * k + k + 1], 1);
-
-                /* row elimination with column indexing */
-
-                for (j = kp1; j < n; j++)
-                  {
-                    t = a[lda * j + l];
-                    if (l != k)
-                      {
-                        a[lda * j + l] = a[lda * j + k];
-                        a[lda * j + k] = t;
-                      }
-                    daxpy_ur (n - (k + 1), t, &a[lda * k + k + 1], 1,
-                              &a[lda * j + k + 1], 1);
-                  }
-              }
-            else
-              (*info) = k;
+          for (j = kp1; j < n; j++) {
+            t = a[lda * j + l];
+            if (l != k) {
+              a[lda * j + l] = a[lda * j + k];
+              a[lda * j + k] = t;
+            }
+            daxpy_r(n - (k + 1), t, &a[lda * k + k + 1], 1, &a[lda * j + k + 1],
+                    1);
           }
-      ipvt[n - 1] = n - 1;
-      if (a[lda * (n - 1) + (n - 1)] == ZERO)
-        (*info) = n - 1;
-    }
+        } else
+          (*info) = k;
+      }
+    ipvt[n - 1] = n - 1;
+    if (a[lda * (n - 1) + (n - 1)] == ZERO)
+      (*info) = n - 1;
+  } else {
+    *info = 0;
+    nm1 = n - 1;
+    if (nm1 >= 0)
+      for (k = 0; k < nm1; k++) {
+        kp1 = k + 1;
+
+        /* find l = pivot index */
+
+        l = idamax(n - k, &a[lda * k + k], 1) + k;
+        ipvt[k] = l;
+
+        /* zero pivot implies this column already
+           triangularized */
+
+        if (a[lda * k + l] != ZERO) {
+
+          /* interchange if necessary */
+
+          if (l != k) {
+            t = a[lda * k + l];
+            a[lda * k + l] = a[lda * k + k];
+            a[lda * k + k] = t;
+          }
+
+          /* compute multipliers */
+
+          t = -ONE / a[lda * k + k];
+          dscal_ur(n - (k + 1), t, &a[lda * k + k + 1], 1);
+
+          /* row elimination with column indexing */
+
+          for (j = kp1; j < n; j++) {
+            t = a[lda * j + l];
+            if (l != k) {
+              a[lda * j + l] = a[lda * j + k];
+              a[lda * j + k] = t;
+            }
+            daxpy_ur(n - (k + 1), t, &a[lda * k + k + 1], 1,
+                     &a[lda * j + k + 1], 1);
+          }
+        } else
+          (*info) = k;
+      }
+    ipvt[n - 1] = n - 1;
+    if (a[lda * (n - 1) + (n - 1)] == ZERO)
+      (*info) = n - 1;
+  }
 }
 
 /*
@@ -448,140 +359,116 @@ dgefa (REAL *a, int lda, int n, int *ipvt, int *info, int roll)
 **
 **   blas daxpy,ddot
 */
-static void
-dgesl (REAL *a, int lda, int n, int *ipvt, REAL *b, int job, int roll)
+static void dgesl(REAL *a, int lda, int n, int *ipvt, REAL *b, int job,
+                  int roll)
 
 {
   REAL t;
   int k, kb, l, nm1;
 
-  if (roll)
-    {
-      nm1 = n - 1;
-      if (job == 0)
-        {
+  if (roll) {
+    nm1 = n - 1;
+    if (job == 0) {
 
-          /* job = 0 , solve  a * x = b   */
-          /* first solve  l*y = b         */
+      /* job = 0 , solve  a * x = b   */
+      /* first solve  l*y = b         */
 
-          if (nm1 >= 1)
-            for (k = 0; k < nm1; k++)
-              {
-                l = ipvt[k];
-                t = b[l];
-                if (l != k)
-                  {
-                    b[l] = b[k];
-                    b[k] = t;
-                  }
-                daxpy_r (n - (k + 1), t, &a[lda * k + k + 1], 1, &b[k + 1], 1);
-              }
-
-          /* now solve  u*x = y */
-
-          for (kb = 0; kb < n; kb++)
-            {
-              k = n - (kb + 1);
-              b[k] = b[k] / a[lda * k + k];
-              t = -b[k];
-              daxpy_r (k, t, &a[lda * k + 0], 1, &b[0], 1);
-            }
+      if (nm1 >= 1)
+        for (k = 0; k < nm1; k++) {
+          l = ipvt[k];
+          t = b[l];
+          if (l != k) {
+            b[l] = b[k];
+            b[k] = t;
+          }
+          daxpy_r(n - (k + 1), t, &a[lda * k + k + 1], 1, &b[k + 1], 1);
         }
-      else
-        {
 
-          /* job = nonzero, solve  trans(a) * x = b  */
-          /* first solve  trans(u)*y = b             */
+      /* now solve  u*x = y */
 
-          for (k = 0; k < n; k++)
-            {
-              t = ddot_r (k, &a[lda * k + 0], 1, &b[0], 1);
-              b[k] = (b[k] - t) / a[lda * k + k];
-            }
+      for (kb = 0; kb < n; kb++) {
+        k = n - (kb + 1);
+        b[k] = b[k] / a[lda * k + k];
+        t = -b[k];
+        daxpy_r(k, t, &a[lda * k + 0], 1, &b[0], 1);
+      }
+    } else {
 
-          /* now solve trans(l)*x = y     */
+      /* job = nonzero, solve  trans(a) * x = b  */
+      /* first solve  trans(u)*y = b             */
 
-          if (nm1 >= 1)
-            for (kb = 1; kb < nm1; kb++)
-              {
-                k = n - (kb + 1);
-                b[k] = b[k]
-                       + ddot_r (n - (k + 1), &a[lda * k + k + 1], 1,
-                                 &b[k + 1], 1);
-                l = ipvt[k];
-                if (l != k)
-                  {
-                    t = b[l];
-                    b[l] = b[k];
-                    b[k] = t;
-                  }
-              }
+      for (k = 0; k < n; k++) {
+        t = ddot_r(k, &a[lda * k + 0], 1, &b[0], 1);
+        b[k] = (b[k] - t) / a[lda * k + k];
+      }
+
+      /* now solve trans(l)*x = y     */
+
+      if (nm1 >= 1)
+        for (kb = 1; kb < nm1; kb++) {
+          k = n - (kb + 1);
+          b[k] =
+              b[k] + ddot_r(n - (k + 1), &a[lda * k + k + 1], 1, &b[k + 1], 1);
+          l = ipvt[k];
+          if (l != k) {
+            t = b[l];
+            b[l] = b[k];
+            b[k] = t;
+          }
         }
     }
-  else
-    {
-      nm1 = n - 1;
-      if (job == 0)
-        {
+  } else {
+    nm1 = n - 1;
+    if (job == 0) {
 
-          /* job = 0 , solve  a * x = b   */
-          /* first solve  l*y = b         */
+      /* job = 0 , solve  a * x = b   */
+      /* first solve  l*y = b         */
 
-          if (nm1 >= 1)
-            for (k = 0; k < nm1; k++)
-              {
-                l = ipvt[k];
-                t = b[l];
-                if (l != k)
-                  {
-                    b[l] = b[k];
-                    b[k] = t;
-                  }
-                daxpy_ur (n - (k + 1), t, &a[lda * k + k + 1], 1, &b[k + 1],
-                          1);
-              }
-
-          /* now solve  u*x = y */
-
-          for (kb = 0; kb < n; kb++)
-            {
-              k = n - (kb + 1);
-              b[k] = b[k] / a[lda * k + k];
-              t = -b[k];
-              daxpy_ur (k, t, &a[lda * k + 0], 1, &b[0], 1);
-            }
+      if (nm1 >= 1)
+        for (k = 0; k < nm1; k++) {
+          l = ipvt[k];
+          t = b[l];
+          if (l != k) {
+            b[l] = b[k];
+            b[k] = t;
+          }
+          daxpy_ur(n - (k + 1), t, &a[lda * k + k + 1], 1, &b[k + 1], 1);
         }
-      else
-        {
 
-          /* job = nonzero, solve  trans(a) * x = b  */
-          /* first solve  trans(u)*y = b             */
+      /* now solve  u*x = y */
 
-          for (k = 0; k < n; k++)
-            {
-              t = ddot_ur (k, &a[lda * k + 0], 1, &b[0], 1);
-              b[k] = (b[k] - t) / a[lda * k + k];
-            }
+      for (kb = 0; kb < n; kb++) {
+        k = n - (kb + 1);
+        b[k] = b[k] / a[lda * k + k];
+        t = -b[k];
+        daxpy_ur(k, t, &a[lda * k + 0], 1, &b[0], 1);
+      }
+    } else {
 
-          /* now solve trans(l)*x = y     */
+      /* job = nonzero, solve  trans(a) * x = b  */
+      /* first solve  trans(u)*y = b             */
 
-          if (nm1 >= 1)
-            for (kb = 1; kb < nm1; kb++)
-              {
-                k = n - (kb + 1);
-                b[k] = b[k]
-                       + ddot_ur (n - (k + 1), &a[lda * k + k + 1], 1,
-                                  &b[k + 1], 1);
-                l = ipvt[k];
-                if (l != k)
-                  {
-                    t = b[l];
-                    b[l] = b[k];
-                    b[k] = t;
-                  }
-              }
+      for (k = 0; k < n; k++) {
+        t = ddot_ur(k, &a[lda * k + 0], 1, &b[0], 1);
+        b[k] = (b[k] - t) / a[lda * k + k];
+      }
+
+      /* now solve trans(l)*x = y     */
+
+      if (nm1 >= 1)
+        for (kb = 1; kb < nm1; kb++) {
+          k = n - (kb + 1);
+          b[k] =
+              b[k] + ddot_ur(n - (k + 1), &a[lda * k + k + 1], 1, &b[k + 1], 1);
+          l = ipvt[k];
+          if (l != k) {
+            t = b[l];
+            b[l] = b[k];
+            b[k] = t;
+          }
         }
     }
+  }
 }
 
 /*
@@ -589,8 +476,7 @@ dgesl (REAL *a, int lda, int n, int *ipvt, REAL *b, int job, int roll)
 ** Jack Dongarra, linpack, 3/11/78.
 ** ROLLED version
 */
-static void
-daxpy_r (int n, REAL da, REAL *dx, int incx, REAL *dy, int incy)
+static void daxpy_r(int n, REAL da, REAL *dx, int incx, REAL *dy, int incy)
 
 {
   int i, ix, iy;
@@ -600,25 +486,23 @@ daxpy_r (int n, REAL da, REAL *dx, int incx, REAL *dy, int incy)
   if (da == ZERO)
     return;
 
-  if (incx != 1 || incy != 1)
-    {
+  if (incx != 1 || incy != 1) {
 
-      /* code for unequal increments or equal increments != 1 */
+    /* code for unequal increments or equal increments != 1 */
 
-      ix = 1;
-      iy = 1;
-      if (incx < 0)
-        ix = (-n + 1) * incx + 1;
-      if (incy < 0)
-        iy = (-n + 1) * incy + 1;
-      for (i = 0; i < n; i++)
-        {
-          dy[iy] = dy[iy] + da * dx[ix];
-          ix = ix + incx;
-          iy = iy + incy;
-        }
-      return;
+    ix = 1;
+    iy = 1;
+    if (incx < 0)
+      ix = (-n + 1) * incx + 1;
+    if (incy < 0)
+      iy = (-n + 1) * incy + 1;
+    for (i = 0; i < n; i++) {
+      dy[iy] = dy[iy] + da * dx[ix];
+      ix = ix + incx;
+      iy = iy + incy;
     }
+    return;
+  }
 
   /* code for both increments equal to 1 */
 
@@ -631,8 +515,7 @@ daxpy_r (int n, REAL da, REAL *dx, int incx, REAL *dy, int incy)
 ** Jack Dongarra, linpack, 3/11/78.
 ** ROLLED version
 */
-static REAL
-ddot_r (int n, REAL *dx, int incx, REAL *dy, int incy)
+static REAL ddot_r(int n, REAL *dx, int incx, REAL *dy, int incy)
 
 {
   REAL dtemp;
@@ -643,25 +526,23 @@ ddot_r (int n, REAL *dx, int incx, REAL *dy, int incy)
   if (n <= 0)
     return (ZERO);
 
-  if (incx != 1 || incy != 1)
-    {
+  if (incx != 1 || incy != 1) {
 
-      /* code for unequal increments or equal increments != 1 */
+    /* code for unequal increments or equal increments != 1 */
 
-      ix = 0;
-      iy = 0;
-      if (incx < 0)
-        ix = (-n + 1) * incx;
-      if (incy < 0)
-        iy = (-n + 1) * incy;
-      for (i = 0; i < n; i++)
-        {
-          dtemp = dtemp + dx[ix] * dy[iy];
-          ix = ix + incx;
-          iy = iy + incy;
-        }
-      return (dtemp);
+    ix = 0;
+    iy = 0;
+    if (incx < 0)
+      ix = (-n + 1) * incx;
+    if (incy < 0)
+      iy = (-n + 1) * incy;
+    for (i = 0; i < n; i++) {
+      dtemp = dtemp + dx[ix] * dy[iy];
+      ix = ix + incx;
+      iy = iy + incy;
     }
+    return (dtemp);
+  }
 
   /* code for both increments equal to 1 */
 
@@ -675,24 +556,22 @@ ddot_r (int n, REAL *dx, int incx, REAL *dy, int incy)
 ** Jack Dongarra, linpack, 3/11/78.
 ** ROLLED version
 */
-static void
-dscal_r (int n, REAL da, REAL *dx, int incx)
+static void dscal_r(int n, REAL da, REAL *dx, int incx)
 
 {
   int i, nincx;
 
   if (n <= 0)
     return;
-  if (incx != 1)
-    {
+  if (incx != 1) {
 
-      /* code for increment not equal to 1 */
+    /* code for increment not equal to 1 */
 
-      nincx = n * incx;
-      for (i = 0; i < nincx; i = i + incx)
-        dx[i] = da * dx[i];
-      return;
-    }
+    nincx = n * incx;
+    for (i = 0; i < nincx; i = i + incx)
+      dx[i] = da * dx[i];
+    return;
+  }
 
   /* code for increment equal to 1 */
 
@@ -705,8 +584,7 @@ dscal_r (int n, REAL da, REAL *dx, int incx)
 ** Jack Dongarra, linpack, 3/11/78.
 ** UNROLLED version
 */
-static void
-daxpy_ur (int n, REAL da, REAL *dx, int incx, REAL *dy, int incy)
+static void daxpy_ur(int n, REAL da, REAL *dx, int incx, REAL *dy, int incy)
 
 {
   int i, ix, iy, m;
@@ -716,43 +594,39 @@ daxpy_ur (int n, REAL da, REAL *dx, int incx, REAL *dy, int incy)
   if (da == ZERO)
     return;
 
-  if (incx != 1 || incy != 1)
-    {
+  if (incx != 1 || incy != 1) {
 
-      /* code for unequal increments or equal increments != 1 */
+    /* code for unequal increments or equal increments != 1 */
 
-      ix = 1;
-      iy = 1;
-      if (incx < 0)
-        ix = (-n + 1) * incx + 1;
-      if (incy < 0)
-        iy = (-n + 1) * incy + 1;
-      for (i = 0; i < n; i++)
-        {
-          dy[iy] = dy[iy] + da * dx[ix];
-          ix = ix + incx;
-          iy = iy + incy;
-        }
-      return;
+    ix = 1;
+    iy = 1;
+    if (incx < 0)
+      ix = (-n + 1) * incx + 1;
+    if (incy < 0)
+      iy = (-n + 1) * incy + 1;
+    for (i = 0; i < n; i++) {
+      dy[iy] = dy[iy] + da * dx[ix];
+      ix = ix + incx;
+      iy = iy + incy;
     }
+    return;
+  }
 
   /* code for both increments equal to 1 */
 
   m = n % 4;
-  if (m != 0)
-    {
-      for (i = 0; i < m; i++)
-        dy[i] = dy[i] + da * dx[i];
-      if (n < 4)
-        return;
-    }
-  for (i = m; i < n; i = i + 4)
-    {
+  if (m != 0) {
+    for (i = 0; i < m; i++)
       dy[i] = dy[i] + da * dx[i];
-      dy[i + 1] = dy[i + 1] + da * dx[i + 1];
-      dy[i + 2] = dy[i + 2] + da * dx[i + 2];
-      dy[i + 3] = dy[i + 3] + da * dx[i + 3];
-    }
+    if (n < 4)
+      return;
+  }
+  for (i = m; i < n; i = i + 4) {
+    dy[i] = dy[i] + da * dx[i];
+    dy[i + 1] = dy[i + 1] + da * dx[i + 1];
+    dy[i + 2] = dy[i + 2] + da * dx[i + 2];
+    dy[i + 3] = dy[i + 3] + da * dx[i + 3];
+  }
 }
 
 /*
@@ -760,8 +634,7 @@ daxpy_ur (int n, REAL da, REAL *dx, int incx, REAL *dy, int incy)
 ** Jack Dongarra, linpack, 3/11/78.
 ** UNROLLED version
 */
-static REAL
-ddot_ur (int n, REAL *dx, int incx, REAL *dy, int incy)
+static REAL ddot_ur(int n, REAL *dx, int incx, REAL *dy, int incy)
 
 {
   REAL dtemp;
@@ -772,42 +645,38 @@ ddot_ur (int n, REAL *dx, int incx, REAL *dy, int incy)
   if (n <= 0)
     return (ZERO);
 
-  if (incx != 1 || incy != 1)
-    {
+  if (incx != 1 || incy != 1) {
 
-      /* code for unequal increments or equal increments != 1 */
+    /* code for unequal increments or equal increments != 1 */
 
-      ix = 0;
-      iy = 0;
-      if (incx < 0)
-        ix = (-n + 1) * incx;
-      if (incy < 0)
-        iy = (-n + 1) * incy;
-      for (i = 0; i < n; i++)
-        {
-          dtemp = dtemp + dx[ix] * dy[iy];
-          ix = ix + incx;
-          iy = iy + incy;
-        }
-      return (dtemp);
+    ix = 0;
+    iy = 0;
+    if (incx < 0)
+      ix = (-n + 1) * incx;
+    if (incy < 0)
+      iy = (-n + 1) * incy;
+    for (i = 0; i < n; i++) {
+      dtemp = dtemp + dx[ix] * dy[iy];
+      ix = ix + incx;
+      iy = iy + incy;
     }
+    return (dtemp);
+  }
 
   /* code for both increments equal to 1 */
 
   m = n % 5;
-  if (m != 0)
-    {
-      for (i = 0; i < m; i++)
-        dtemp = dtemp + dx[i] * dy[i];
-      if (n < 5)
-        return (dtemp);
-    }
-  for (i = m; i < n; i = i + 5)
-    {
-      dtemp = dtemp + dx[i] * dy[i] + dx[i + 1] * dy[i + 1]
-              + dx[i + 2] * dy[i + 2] + dx[i + 3] * dy[i + 3]
-              + dx[i + 4] * dy[i + 4];
-    }
+  if (m != 0) {
+    for (i = 0; i < m; i++)
+      dtemp = dtemp + dx[i] * dy[i];
+    if (n < 5)
+      return (dtemp);
+  }
+  for (i = m; i < n; i = i + 5) {
+    dtemp = dtemp + dx[i] * dy[i] + dx[i + 1] * dy[i + 1] +
+            dx[i + 2] * dy[i + 2] + dx[i + 3] * dy[i + 3] +
+            dx[i + 4] * dy[i + 4];
+  }
   return (dtemp);
 }
 
@@ -816,51 +685,46 @@ ddot_ur (int n, REAL *dx, int incx, REAL *dy, int incy)
 ** Jack Dongarra, linpack, 3/11/78.
 ** UNROLLED version
 */
-static void
-dscal_ur (int n, REAL da, REAL *dx, int incx)
+static void dscal_ur(int n, REAL da, REAL *dx, int incx)
 
 {
   int i, m, nincx;
 
   if (n <= 0)
     return;
-  if (incx != 1)
-    {
+  if (incx != 1) {
 
-      /* code for increment not equal to 1 */
+    /* code for increment not equal to 1 */
 
-      nincx = n * incx;
-      for (i = 0; i < nincx; i = i + incx)
-        dx[i] = da * dx[i];
-      return;
-    }
+    nincx = n * incx;
+    for (i = 0; i < nincx; i = i + incx)
+      dx[i] = da * dx[i];
+    return;
+  }
 
   /* code for increment equal to 1 */
 
   m = n % 5;
-  if (m != 0)
-    {
-      for (i = 0; i < m; i++)
-        dx[i] = da * dx[i];
-      if (n < 5)
-        return;
-    }
-  for (i = m; i < n; i = i + 5)
-    {
+  if (m != 0) {
+    for (i = 0; i < m; i++)
       dx[i] = da * dx[i];
-      dx[i + 1] = da * dx[i + 1];
-      dx[i + 2] = da * dx[i + 2];
-      dx[i + 3] = da * dx[i + 3];
-      dx[i + 4] = da * dx[i + 4];
-    }
+    if (n < 5)
+      return;
+  }
+  for (i = m; i < n; i = i + 5) {
+    dx[i] = da * dx[i];
+    dx[i + 1] = da * dx[i + 1];
+    dx[i + 2] = da * dx[i + 2];
+    dx[i + 3] = da * dx[i + 3];
+    dx[i + 4] = da * dx[i + 4];
+  }
 }
 
 /*
 ** Finds the index of element having max. absolute value.
 ** Jack Dongarra, linpack, 3/11/78.
 */
-static int
-idamax (int n, REAL *dx, int incx)
+static int idamax(int n, REAL *dx, int incx)
 
 {
   REAL dmax;
@@ -870,44 +734,37 @@ idamax (int n, REAL *dx, int incx)
     return (-1);
   if (n == 1)
     return (0);
-  if (incx != 1)
-    {
+  if (incx != 1) {
 
-      /* code for increment not equal to 1 */
+    /* code for increment not equal to 1 */
 
-      ix = 1;
-      dmax = fabs ((double)dx[0]);
+    ix = 1;
+    dmax = fabs((double)dx[0]);
+    ix = ix + incx;
+    for (i = 1; i < n; i++) {
+      if (fabs((double)dx[ix]) > dmax) {
+        itemp = i;
+        dmax = fabs((double)dx[ix]);
+      }
       ix = ix + incx;
-      for (i = 1; i < n; i++)
-        {
-          if (fabs ((double)dx[ix]) > dmax)
-            {
-              itemp = i;
-              dmax = fabs ((double)dx[ix]);
-            }
-          ix = ix + incx;
-        }
     }
-  else
-    {
+  } else {
 
-      /* code for increment equal to 1 */
+    /* code for increment equal to 1 */
 
-      itemp = 0;
-      dmax = fabs ((double)dx[0]);
-      for (i = 1; i < n; i++)
-        if (fabs ((double)dx[i]) > dmax)
-          {
-            itemp = i;
-            dmax = fabs ((double)dx[i]);
-          }
-    }
+    itemp = 0;
+    dmax = fabs((double)dx[0]);
+    for (i = 1; i < n; i++)
+      if (fabs((double)dx[i]) > dmax) {
+        itemp = i;
+        dmax = fabs((double)dx[i]);
+      }
+  }
   return (itemp);
 }
 
-static REAL
-second (void)
+static REAL second(void)
 
 {
-  return ((REAL)(uptime () / 1000));
+  return ((REAL)(uptime() / 1000));
 }

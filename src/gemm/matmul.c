@@ -1,4 +1,4 @@
-#include "gemm.h"
+#include <gemm.h>
 
 
 #define A(i,j) a[(j)*lda+(i)]

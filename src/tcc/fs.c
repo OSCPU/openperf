@@ -18,8 +18,6 @@ int fs_init(Finfo *list, size_t count) {
   return 0;
 }
 
-
-
 size_t ramdisk_read(void *buf, size_t offset, size_t len)
 {
   assert(offset + len <= RAMDISK_SIZE);
@@ -40,7 +38,7 @@ int fs_open(const char *pathname, int flags, int mode)
   //printf("ex1 addr is %x\n",  (uint32_t)ramdisk_start + 336);
   for(int fs_num = 0; fs_num < file_count; fs_num ++)
   {
-    if(strcmp(pathname, file_table[fs_num].name) == 0) // 匹配成功
+    if(strcmp(pathname, file_table[fs_num].name) == 0)
     {
       file_table[fs_num].open_offset = 0;
       return fs_num;

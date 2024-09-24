@@ -295,7 +295,6 @@ int bench_vsprintf(char *buf, const char *fmt, va_list args)
                 case '0': flags |= ZEROPAD; goto repeat;
             }
  
-       
         field_width = -1;
         if ('0' <= *fmt && *fmt <= '9')
             field_width = skip_atoi(&fmt);

@@ -1,6 +1,6 @@
 #include <am.h>
 #include <klib-macros.h>
-#include <bench_printf.h>
+#include <bench_debug.h>
 #include <mcf.h>
 #include <input.h>
 
@@ -18,7 +18,7 @@ int main(char *args)
     uint64_t start_time, end_time;
     start_time = uptime();
 
-    bench_printf("\nRandomized rounded paths: size: %d\n", sizeof(size_t));
+    BENCH_LOG(DEBUG, "\nRandomized rounded paths: size: %d", sizeof(size_t));
     for(demands_select = 0; demands_select < demands_num; demands_select++)
     {
         // (1) run MCF solver;
@@ -51,8 +51,8 @@ int main(char *args)
         // (3) clean up
         free_topology(&mcf);
     }
-    end_time = uptime();     
-    bench_printf("time: %s ms \n", format_time(end_time - start_time));
+    end_time = uptime();
+    BENCH_LOG(INFO, "time: %s", format_time(end_time - start_time));
 
     return 0;
 }

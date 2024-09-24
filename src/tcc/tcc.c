@@ -26,49 +26,6 @@
 #include "tcctools.c"
 
 
-#if defined (__BENCH_TEST__)
-static Finfo file_table[] = {
-  {"/share/test.c", 336, 0, NULL, NULL},
-  {"/share/test", 752, 336, NULL, NULL},
-  {"/share/trm.c", 273, 1088, NULL, NULL},
-};
-int tcc_argc1 = 10;
-char *tcc_argv1[]={
-    "./tcc",
-    "/share/trm.c",
-    "/share/test.c",
-    "-ffreestanding",
-    "-nostdlib",
-    "-o",
-    "/share/test",
-    "-Wl,-Ttext=0x80000000",
-    "-O2",
-    "-static"
-};
-#elif defined (__BENCH_TRAIN__)
-static Finfo file_table[] = {
-  {"/share/trm.c", 273, 0, NULL, NULL},
-  {"/share/trap.h", 106, 273, NULL, NULL},
-  {"/share/train.c", 1521, 379, NULL, NULL},
-  {"/share/train", 106, 1900, NULL, NULL},
-};
-int tcc_argc1 = 10;
-char *tcc_argv1[]={
-    "./tcc",
-    "/share/trm.c",
-    "/share/train.c",
-    "-ffreestanding",
-    "-nostdlib",
-    "-o",
-    "/share/train",
-    "-Wl,-Ttext=0x80000000",
-    "-O2",
-    "-static"
-};
-#elif defined (__BENCH_HUGE__)
-#else //default to ref
-#endif
-
 static void set_environment(TCCState *s)
 {
     char * path;
@@ -115,11 +72,13 @@ static char *default_outputfile(TCCState *s, const char *first_file)
     return tcc_strdup(buf);
 }
 
+extern bench_tcc_config config;
 
 int main(int argc0, char **argv0)
 {
 
-  fs_init(file_table, 4);
+  extern Finfo file_table[];
+  fs_init(file_table, config.file_count);
   bench_malloc_init();
     TCCState *s, *s1;
     int ret, opt, n = 0, t = 0, done;
@@ -128,10 +87,10 @@ int main(int argc0, char **argv0)
     int argc; char **argv;
     int ppfp = FD_STDOUT;
 
-
+    extern int tcc_argc1;
+    extern char *tcc_argv1[];
     start_time = uptime();
 redo:
-    // argc = argc0, argv = argv0;
     argc = tcc_argc1, argv = tcc_argv1;
     s = s1 = tcc_new();
 #ifdef CONFIG_TCC_SWITCHES /* predefined options */

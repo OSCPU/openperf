@@ -15,3 +15,7 @@
 #define ONE_SOURCE 1
 // #define SDE_RISCV32_DEV 1
 // #define __SIZEOF_POINTER__ 4
+//
+typedef  struct {
+  int file_count;
+} bench_tcc_config;

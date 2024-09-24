@@ -50,8 +50,8 @@ static void *malloc_base() {
     return b;
 }
 
-//We need this function because we use variable `heap`
-//and it is initialized in run time.
+//We need this function because the variable `heap` is used
+//and initialized at runtime.
 void bench_malloc_init() {
   program_break = (intptr_t)heap.start;
 }

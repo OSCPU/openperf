@@ -1885,4 +1885,5 @@ PUB_FUNC void tcc_exit_state(TCCState *s1);
 #else
 # define TCC_STATE_VAR(sym) s1->sym
 # define TCC_SET_STATE(fn) (tcc_enter_state(s1),fn)
+
 #endif

@@ -1,5 +1,5 @@
 #include <klib.h>
-#include <bench_printf.h>
+#include <bench_debug.h>
 #include <stdio.h>
 #include <pqueue.h>
 #include <mcf.h>
@@ -90,13 +90,13 @@ bool parse_options(MCF *mcf, char *arg, float epsilon)
     else if (strcmp(arg, "MCMCF") == 0) {
         mcf->_problem_type = MCMCF_TYPE;
     } else {
-        bench_printf("Error:  -problem_type must be MCF or MCMCF.\n");
+        BENCH_LOG(ERROR, "Error:  -problem_type must be MCF or MCMCF.\n");
         assert(0);
     }
 
     mcf->_epsilon1 = epsilon;
     if (mcf->_epsilon1 <= 0 || mcf->_epsilon1 >= 1) {
-        bench_printf("Error:  -epsilon option requires a float in (0,1).\n");
+        BENCH_LOG(ERROR, "Error:  -epsilon option requires a float in (0,1).\n");
         assert(0);
     }
 
@@ -1035,7 +1035,7 @@ void print_routing_paths(MCF *mcf_v)
     for ( int i = 0; i < mcf_v->no_commodity; i++) {
         // printf("Commodity %d: %d -> %d: ", i, 
         //        mcf_v->_commodities[i].src, mcf_v->_commodities[i].dest);
-        bench_printf("Commodity %d: %d -> %d: ", demands_select, 
+        BENCH_LOG(DEBUG, "Commodity %d: %d -> %d: ", demands_select, 
                mcf_v->_commodities[i].src, mcf_v->_commodities[i].dest);
         
 

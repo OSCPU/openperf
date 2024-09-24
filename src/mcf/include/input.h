@@ -1,5 +1,5 @@
-#ifndef __test_h__
-#define __test_h__
+#ifndef __TEST_H__
+#define __TEST_H__
 
 extern const int nodes_num;
 extern const int edges_num;

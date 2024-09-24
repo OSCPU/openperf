@@ -1,5 +1,6 @@
 #include <am.h>
 #include <klib.h>
+#include <bench_debug.h>
 #include <klib-macros.h>
 
 uint64_t uptime()
@@ -8,6 +9,41 @@ uint64_t uptime()
 }
 
 char *format_time(uint64_t us) {
+
+  static char buf[128];
+  uint64_t ms = us / 1000;
+  uint64_t s  = ms / 1000;
+  uint64_t min = s / 60;
+  uint64_t h  = min / 60;
+
+  us %= 1000;
+  ms %= 1000;
+  s  %= 60;
+  min %= 60;
+
+  int len = 0;
+  if(h > 0) {
+      len = bench_sprintf(buf, "%ld h %ld min %ld s %ld.000 ms", h, min, s, ms);
+  }
+  else if (min > 0) {
+      len = bench_sprintf(buf, "%ld min %ld s, %ld.000 ms",min, s, ms);
+  }
+  else if ( s > 0) {
+      len = bench_sprintf(buf, "%ld s, %ld.000 ms", s, ms);
+  }
+  else {
+      len = bench_sprintf(buf, "%ld.000 ms", ms);
+
+  }
+  char *p = &buf[len - 4];
+  while (us > 0) {
+    *(p --) = '0' + us % 10;
+    us /= 10;
+  }
+
+  return buf;
+}
+/* char *format_time(uint64_t us) {
   static char buf[32];
   uint64_t ms = us / 1000;
   us -= ms * 1000;
@@ -19,7 +55,7 @@ char *format_time(uint64_t us) {
     us /= 10;
   }
   return buf;
-}
+} */
 
 // FNV hash
 uint32_t checksum(void *start, void *end) {

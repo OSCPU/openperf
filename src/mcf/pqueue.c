@@ -3,7 +3,7 @@
 // #include <float.h>
 #include <klib.h>
 #include <pqueue.h>
-#include <bench_printf.h>
+#include <bench_debug.h>
 
 ////////////////////////////////////////////////////////////////////////////////
 //
