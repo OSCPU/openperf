@@ -40,7 +40,8 @@ void nutshell() {
   printf("start testing.....\n");
 
   bool dut_end = false;
-  // uint64_t cycles = 0;
+  uint64_t cycle_max = 1000;
+  uint64_t cycles = 0;
   while (!dut_end) {
     cpu.eval(true, true, true);
 
@@ -48,6 +49,11 @@ void nutshell() {
       break;
       printf("%c", cpu.io_uart_out_ch);
       // fflush(stdout);
+    }
+
+    cycles++;
+    if (cycles > cycle_max) {
+      break;
     }
 
   }
