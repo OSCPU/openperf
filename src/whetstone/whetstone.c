@@ -54,6 +54,7 @@ C**********************************************************************
 /* standard C library headers required */
 #include <am.h>
 #include <bench.h>
+#include <bench_debug.h>
 #include <float.h>
 #include <klib-macros.h>
 #include <klib.h>
@@ -354,7 +355,7 @@ IILOOP:
   if (continuous)
     goto LCONT;
 
-  printf("time: %s ms\n", format_time(finisec - startsec));
+  BENCH_LOG(INFO, "OpenPerf time: %s", format_time(finisec - startsec));
   return 0;
 }
 

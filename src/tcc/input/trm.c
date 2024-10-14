@@ -11,7 +11,5 @@ static const char mainargs[] = "";
 
 void _start() {
   int ret = main(mainargs);
-    // halt(ret);
+  // halt(ret);
 }
-
-

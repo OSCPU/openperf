@@ -30,289 +30,272 @@
 
 #include "tcc.h"
 
-//#define ARMAG  "!<arch>\n"
+// #define ARMAG  "!<arch>\n"
 #define ARFMAG "`\n"
 
 typedef struct {
-    char ar_name[16];
-    char ar_date[12];
-    char ar_uid[6];
-    char ar_gid[6];
-    char ar_mode[8];
-    char ar_size[10];
-    char ar_fmag[2];
+  char ar_name[16];
+  char ar_date[12];
+  char ar_uid[6];
+  char ar_gid[6];
+  char ar_mode[8];
+  char ar_size[10];
+  char ar_fmag[2];
 } ArHdr;
 
 static unsigned long le2belong(unsigned long ul) {
-    return ((ul & 0xFF0000)>>8)+((ul & 0xFF000000)>>24) +
-        ((ul & 0xFF)<<24)+((ul & 0xFF00)<<8);
+  return ((ul & 0xFF0000) >> 8) + ((ul & 0xFF000000) >> 24) +
+         ((ul & 0xFF) << 24) + ((ul & 0xFF00) << 8);
 }
 
 /* Returns 1 if s contains any of the chars of list, else 0 */
 static int contains_any(const char *s, const char *list) {
   const char *l;
   for (; *s; s++) {
-      for (l = list; *l; l++) {
-          if (*s == *l)
-              return 1;
-      }
+    for (l = list; *l; l++) {
+      if (*s == *l)
+        return 1;
+    }
   }
   return 0;
 }
 
 static int ar_usage(int ret) {
-    // fprintf(stderr, "usage: tcc -ar [rcsv] lib [file...]\n");
-    // fprintf(stderr, "create library ([abdioptxN] not supported).\n");
-    printf("usage: tcc -ar [rcsv] lib [file...]\n");
-    printf("create library ([abdioptxN] not supported).\n");
-    return ret;
+  // fprintf(stderr, "usage: tcc -ar [rcsv] lib [file...]\n");
+  // fprintf(stderr, "create library ([abdioptxN] not supported).\n");
+  printf("usage: tcc -ar [rcsv] lib [file...]\n");
+  printf("create library ([abdioptxN] not supported).\n");
+  return ret;
 }
 
-ST_FUNC int tcc_tool_ar(TCCState *s1, int argc, char **argv)
-{
-    static const ArHdr arhdr_init = {
-        "/               ",
-        "            ",
-        "0     ",
-        "0     ",
-        "0       ",
-        "          ",
-        ARFMAG
-        };
+ST_FUNC int tcc_tool_ar(TCCState *s1, int argc, char **argv) {
+  static const ArHdr arhdr_init = {
+      "/               ", "            ", "0     ", "0     ",
+      "0       ",         "          ",   ARFMAG};
 
-    ArHdr arhdr = arhdr_init;
-    ArHdr arhdro = arhdr_init;
+  ArHdr arhdr = arhdr_init;
+  ArHdr arhdro = arhdr_init;
 
-    // FILE *fi, *fh = NULL, *fo = NULL;
-    int fi = 0, fh = 0, fo = 0;
-    ElfW(Ehdr) *ehdr;
-    ElfW(Shdr) *shdr;
-    ElfW(Sym) *sym;
-    int i, fsize, i_lib, i_obj;
-    char *buf, *shstr, *symtab = NULL, *strtab = NULL;
-    int symtabsize = 0;//, strtabsize = 0;
-    char *anames = NULL;
-    int *afpos = NULL;
-    int istrlen, strpos = 0, fpos = 0, funccnt = 0, funcmax, hofs;
-    char tfile[260], stmp[20];
-    char *file, *name;
-    int ret = 2;
-    const char *ops_conflict = "habdioptxN";  // unsupported but destructive if ignored.
-    int verbose = 0;
+  // FILE *fi, *fh = NULL, *fo = NULL;
+  int fi = 0, fh = 0, fo = 0;
+  ElfW(Ehdr) * ehdr;
+  ElfW(Shdr) * shdr;
+  ElfW(Sym) * sym;
+  int i, fsize, i_lib, i_obj;
+  char *buf, *shstr, *symtab = NULL, *strtab = NULL;
+  int symtabsize = 0; //, strtabsize = 0;
+  char *anames = NULL;
+  int *afpos = NULL;
+  int istrlen, strpos = 0, fpos = 0, funccnt = 0, funcmax, hofs;
+  char tfile[260], stmp[20];
+  char *file, *name;
+  int ret = 2;
+  const char *ops_conflict =
+      "habdioptxN"; // unsupported but destructive if ignored.
+  int verbose = 0;
 
-    i_lib = 0; i_obj = 0;  // will hold the index of the lib and first obj
-    for (i = 1; i < argc; i++) {
-        const char *a = argv[i];
-        if (*a == '-' && strstr(a, "."))
-            ret = 1; // -x.y is always invalid (same as gnu ar)
-        if ((*a == '-') || (i == 1 && !strstr(a, "."))) {  // options argument
-            if (contains_any(a, ops_conflict))
-                ret = 1;
-            if (strstr(a, "v"))
-                verbose = 1;
-        } else {  // lib or obj files: don't abort - keep validating all args.
-            if (!i_lib)  // first file is the lib
-                i_lib = i;
-            else if (!i_obj)  // second file is the first obj
-                i_obj = i;
-        }
-    }
-
-    if (!i_lib)  // i_obj implies also i_lib.
+  i_lib = 0;
+  i_obj = 0; // will hold the index of the lib and first obj
+  for (i = 1; i < argc; i++) {
+    const char *a = argv[i];
+    if (*a == '-' && strstr(a, "."))
+      ret = 1; // -x.y is always invalid (same as gnu ar)
+    if ((*a == '-') || (i == 1 && !strstr(a, "."))) { // options argument
+      if (contains_any(a, ops_conflict))
         ret = 1;
-    i_obj = i_obj ? i_obj : argc;  // An empty archive will be generated if no input file is given
-
-    if (ret == 1)
-        return ar_usage(ret);
-
-    // if ((fh = fopen(argv[i_lib], "wb")) == NULL)
-    if ((fh = fs_open(argv[i_lib], 0, 0)) == 0)
-    {
-        // fprintf(stderr, "tcc: ar: can't open file %s \n", argv[i_lib]);
-        printf("tcc: ar: can't open file %s \n", argv[i_lib]);
-        goto the_end;
+      if (strstr(a, "v"))
+        verbose = 1;
+    } else {      // lib or obj files: don't abort - keep validating all args.
+      if (!i_lib) // first file is the lib
+        i_lib = i;
+      else if (!i_obj) // second file is the first obj
+        i_obj = i;
     }
+  }
 
-    sprintf(tfile, "%s.tmp", argv[i_lib]);
-    // if ((fo = fopen(tfile, "wb+")) == NULL)
-    if ((fo = fs_open(tfile, 0, 0)) == 0)
-    {
-        // fprintf(stderr, "tcc: ar: can't create temporary file %s\n", tfile);
-        printf("tcc: ar: can't create temporary file %s\n", tfile);
-        goto the_end;
+  if (!i_lib) // i_obj implies also i_lib.
+    ret = 1;
+  i_obj = i_obj ? i_obj : argc; // An empty archive will be generated if no
+                                // input file is given
+
+  if (ret == 1)
+    return ar_usage(ret);
+
+  // if ((fh = fopen(argv[i_lib], "wb")) == NULL)
+  if ((fh = fs_open(argv[i_lib], 0, 0)) == 0) {
+    // fprintf(stderr, "tcc: ar: can't open file %s \n", argv[i_lib]);
+    printf("tcc: ar: can't open file %s \n", argv[i_lib]);
+    goto the_end;
+  }
+
+  sprintf(tfile, "%s.tmp", argv[i_lib]);
+  // if ((fo = fopen(tfile, "wb+")) == NULL)
+  if ((fo = fs_open(tfile, 0, 0)) == 0) {
+    // fprintf(stderr, "tcc: ar: can't create temporary file %s\n", tfile);
+    printf("tcc: ar: can't create temporary file %s\n", tfile);
+    goto the_end;
+  }
+
+  funcmax = 250;
+  afpos = tcc_realloc(NULL, funcmax * sizeof *afpos); // 250 func
+  memcpy(&arhdro.ar_mode, "100666", 6);
+
+  // i_obj = first input object file
+  while (i_obj < argc) {
+    if (*argv[i_obj] == '-') { // by now, all options start with '-'
+      i_obj++;
+      continue;
     }
-
-    funcmax = 250;
-    afpos = tcc_realloc(NULL, funcmax * sizeof *afpos); // 250 func
-    memcpy(&arhdro.ar_mode, "100666", 6);
-
-    // i_obj = first input object file
-    while (i_obj < argc)
-    {
-        if (*argv[i_obj] == '-') {  // by now, all options start with '-'
-            i_obj++;
-            continue;
-        }
-        // if ((fi = fopen(argv[i_obj], "rb")) == NULL) 
-        if ((fi = fs_open(argv[i_obj], 0, 0)) == 0)
-        {
-            // fprintf(stderr, "tcc: ar: can't open file %s \n", argv[i_obj]);
-            printf("tcc: ar: can't open file %s \n", argv[i_obj]);
-            goto the_end;
-        }
-        if (verbose)
-            printf("a - %s\n", argv[i_obj]);
-
-        // fseek(fi, 0, SEEK_END);
-        // fsize = ftell(fi);
-        // fseek(fi, 0, SEEK_SET);
-        // buf = tcc_malloc(fsize + 1);
-        // fread(buf, fsize, 1, fi);
-        // fclose(fi);
-
-        fs_lseek(fi, 0, SEEK_END);
-        fsize = fs_tell(fi);
-        fs_lseek(fi, 0, SEEK_SET);
-        buf = tcc_malloc(fsize + 1);
-        // fread(buf, fsize, 1, fi);
-        fs_read(fi, buf, fsize);
-        fs_close(fi);
-
-        // elf header
-        ehdr = (ElfW(Ehdr) *)buf;
-        if (ehdr->e_ident[4] != ELFCLASSW)
-        {
-            // fprintf(stderr, "tcc: ar: Unsupported Elf Class: %s\n", argv[i_obj]);
-            printf("tcc: ar: Unsupported Elf Class: %s\n", argv[i_obj]);
-            goto the_end;
-        }
-
-        shdr = (ElfW(Shdr) *) (buf + ehdr->e_shoff + ehdr->e_shstrndx * ehdr->e_shentsize);
-        shstr = (char *)(buf + shdr->sh_offset);
-        for (i = 0; i < ehdr->e_shnum; i++)
-        {
-            shdr = (ElfW(Shdr) *) (buf + ehdr->e_shoff + i * ehdr->e_shentsize);
-            if (!shdr->sh_offset)
-                continue;
-            if (shdr->sh_type == SHT_SYMTAB)
-            {
-                symtab = (char *)(buf + shdr->sh_offset);
-                symtabsize = shdr->sh_size;
-            }
-            if (shdr->sh_type == SHT_STRTAB)
-            {
-                if (!strcmp(shstr + shdr->sh_name, ".strtab"))
-                {
-                    strtab = (char *)(buf + shdr->sh_offset);
-                    //strtabsize = shdr->sh_size;
-                }
-            }
-        }
-
-        if (symtab && symtabsize)
-        {
-            int nsym = symtabsize / sizeof(ElfW(Sym));
-            //printf("symtab: info size shndx name\n");
-            for (i = 1; i < nsym; i++)
-            {
-                sym = (ElfW(Sym) *) (symtab + i * sizeof(ElfW(Sym)));
-                if (sym->st_shndx &&
-                    (sym->st_info == 0x10
-                    || sym->st_info == 0x11
-                    || sym->st_info == 0x12
-                    || sym->st_info == 0x20
-                    || sym->st_info == 0x21
-                    || sym->st_info == 0x22
-                    )) {
-                    //printf("symtab: %2Xh %4Xh %2Xh %s\n", sym->st_info, sym->st_size, sym->st_shndx, strtab + sym->st_name);
-                    istrlen = strlen(strtab + sym->st_name)+1;
-                    anames = tcc_realloc(anames, strpos+istrlen);
-                    strcpy(anames + strpos, strtab + sym->st_name);
-                    strpos += istrlen;
-                    if (++funccnt >= funcmax) {
-                        funcmax += 250;
-                        afpos = tcc_realloc(afpos, funcmax * sizeof *afpos); // 250 func more
-                    }
-                    afpos[funccnt] = fpos;
-                }
-            }
-        }
-
-        file = argv[i_obj];
-        for (name = strchr(file, 0);
-             name > file && name[-1] != '/' && name[-1] != '\\';
-             --name);
-        istrlen = strlen(name);
-        if (istrlen >= sizeof(arhdro.ar_name))
-            istrlen = sizeof(arhdro.ar_name) - 1;
-        memset(arhdro.ar_name, ' ', sizeof(arhdro.ar_name));
-        memcpy(arhdro.ar_name, name, istrlen);
-        arhdro.ar_name[istrlen] = '/';
-        sprintf(stmp, "%-10d", fsize);
-        memcpy(&arhdro.ar_size, stmp, 10);
-        // fwrite(&arhdro, sizeof(arhdro), 1, fo);
-        // fwrite(buf, fsize, 1, fo);
-        fs_write(fo, &arhdro, sizeof(arhdro));
-        fs_write(fo, buf, fsize);
-
-        tcc_free(buf);
-        i_obj++;
-        fpos += (fsize + sizeof(arhdro));
+    // if ((fi = fopen(argv[i_obj], "rb")) == NULL)
+    if ((fi = fs_open(argv[i_obj], 0, 0)) == 0) {
+      // fprintf(stderr, "tcc: ar: can't open file %s \n", argv[i_obj]);
+      printf("tcc: ar: can't open file %s \n", argv[i_obj]);
+      goto the_end;
     }
-    hofs = 8 + sizeof(arhdr) + strpos + (funccnt+1) * sizeof(int);
-    fpos = 0;
-    if ((hofs & 1)) // align
-        hofs++, fpos = 1;
-    // write header
-    // fwrite("!<arch>\n", 8, 1, fh);
-    fs_write(fh, "!<arch>\n", 8);
-    // create an empty archive
-    if (!funccnt) {
-        ret = 0;
-        goto the_end;
-    }
-    sprintf(stmp, "%-10d", (int)(strpos + (funccnt+1) * sizeof(int)));
-    memcpy(&arhdr.ar_size, stmp, 10);
-    // fwrite(&arhdr, sizeof(arhdr), 1, fh);
-    fs_write(fh, &arhdr, sizeof(arhdr));
-    afpos[0] = le2belong(funccnt);
-    for (i=1; i<=funccnt; i++)
-        afpos[i] = le2belong(afpos[i] + hofs);
-    // fwrite(afpos, (funccnt+1) * sizeof(int), 1, fh);
-    // fwrite(anames, strpos, 1, fh);
-    fs_write(fh, afpos, (funccnt+1) * sizeof(int));
-    fs_write(fh, anames, strpos);
+    if (verbose)
+      printf("a - %s\n", argv[i_obj]);
 
-    if (fpos)
-        // fwrite("", 1, 1, fh);
-        fs_write(fh, "", 1);
-    // write objects
-    // fseek(fo, 0, SEEK_END);
-    // fsize = ftell(fo);
-    // fseek(fo, 0, SEEK_SET);
-    fs_lseek(fo, 0, SEEK_END);
-    fsize = fs_tell(fo);
-    fs_lseek(fo, 0, SEEK_SET);
+    // fseek(fi, 0, SEEK_END);
+    // fsize = ftell(fi);
+    // fseek(fi, 0, SEEK_SET);
+    // buf = tcc_malloc(fsize + 1);
+    // fread(buf, fsize, 1, fi);
+    // fclose(fi);
 
+    fs_lseek(fi, 0, SEEK_END);
+    fsize = fs_tell(fi);
+    fs_lseek(fi, 0, SEEK_SET);
     buf = tcc_malloc(fsize + 1);
-    // fread(buf, fsize, 1, fo);
-    // fwrite(buf, fsize, 1, fh);
-    fs_read(fo, buf, fsize);
-    fs_write(fh, buf, fsize);
+    // fread(buf, fsize, 1, fi);
+    fs_read(fi, buf, fsize);
+    fs_close(fi);
+
+    // elf header
+    ehdr = (ElfW(Ehdr) *)buf;
+    if (ehdr->e_ident[4] != ELFCLASSW) {
+      // fprintf(stderr, "tcc: ar: Unsupported Elf Class: %s\n", argv[i_obj]);
+      printf("tcc: ar: Unsupported Elf Class: %s\n", argv[i_obj]);
+      goto the_end;
+    }
+
+    shdr = (ElfW(Shdr) *)(buf + ehdr->e_shoff +
+                          ehdr->e_shstrndx * ehdr->e_shentsize);
+    shstr = (char *)(buf + shdr->sh_offset);
+    for (i = 0; i < ehdr->e_shnum; i++) {
+      shdr = (ElfW(Shdr) *)(buf + ehdr->e_shoff + i * ehdr->e_shentsize);
+      if (!shdr->sh_offset)
+        continue;
+      if (shdr->sh_type == SHT_SYMTAB) {
+        symtab = (char *)(buf + shdr->sh_offset);
+        symtabsize = shdr->sh_size;
+      }
+      if (shdr->sh_type == SHT_STRTAB) {
+        if (!strcmp(shstr + shdr->sh_name, ".strtab")) {
+          strtab = (char *)(buf + shdr->sh_offset);
+          // strtabsize = shdr->sh_size;
+        }
+      }
+    }
+
+    if (symtab && symtabsize) {
+      int nsym = symtabsize / sizeof(ElfW(Sym));
+      // printf("symtab: info size shndx name\n");
+      for (i = 1; i < nsym; i++) {
+        sym = (ElfW(Sym) *)(symtab + i * sizeof(ElfW(Sym)));
+        if (sym->st_shndx && (sym->st_info == 0x10 || sym->st_info == 0x11 ||
+                              sym->st_info == 0x12 || sym->st_info == 0x20 ||
+                              sym->st_info == 0x21 || sym->st_info == 0x22)) {
+          // printf("symtab: %2Xh %4Xh %2Xh %s\n", sym->st_info, sym->st_size,
+          // sym->st_shndx, strtab + sym->st_name);
+          istrlen = strlen(strtab + sym->st_name) + 1;
+          anames = tcc_realloc(anames, strpos + istrlen);
+          strcpy(anames + strpos, strtab + sym->st_name);
+          strpos += istrlen;
+          if (++funccnt >= funcmax) {
+            funcmax += 250;
+            afpos =
+                tcc_realloc(afpos, funcmax * sizeof *afpos); // 250 func more
+          }
+          afpos[funccnt] = fpos;
+        }
+      }
+    }
+
+    file = argv[i_obj];
+    for (name = strchr(file, 0);
+         name > file && name[-1] != '/' && name[-1] != '\\'; --name)
+      ;
+    istrlen = strlen(name);
+    if (istrlen >= sizeof(arhdro.ar_name))
+      istrlen = sizeof(arhdro.ar_name) - 1;
+    memset(arhdro.ar_name, ' ', sizeof(arhdro.ar_name));
+    memcpy(arhdro.ar_name, name, istrlen);
+    arhdro.ar_name[istrlen] = '/';
+    sprintf(stmp, "%-10d", fsize);
+    memcpy(&arhdro.ar_size, stmp, 10);
+    // fwrite(&arhdro, sizeof(arhdro), 1, fo);
+    // fwrite(buf, fsize, 1, fo);
+    fs_write(fo, &arhdro, sizeof(arhdro));
+    fs_write(fo, buf, fsize);
+
     tcc_free(buf);
+    i_obj++;
+    fpos += (fsize + sizeof(arhdro));
+  }
+  hofs = 8 + sizeof(arhdr) + strpos + (funccnt + 1) * sizeof(int);
+  fpos = 0;
+  if ((hofs & 1)) // align
+    hofs++, fpos = 1;
+  // write header
+  // fwrite("!<arch>\n", 8, 1, fh);
+  fs_write(fh, "!<arch>\n", 8);
+  // create an empty archive
+  if (!funccnt) {
     ret = 0;
+    goto the_end;
+  }
+  sprintf(stmp, "%-10d", (int)(strpos + (funccnt + 1) * sizeof(int)));
+  memcpy(&arhdr.ar_size, stmp, 10);
+  // fwrite(&arhdr, sizeof(arhdr), 1, fh);
+  fs_write(fh, &arhdr, sizeof(arhdr));
+  afpos[0] = le2belong(funccnt);
+  for (i = 1; i <= funccnt; i++)
+    afpos[i] = le2belong(afpos[i] + hofs);
+  // fwrite(afpos, (funccnt+1) * sizeof(int), 1, fh);
+  // fwrite(anames, strpos, 1, fh);
+  fs_write(fh, afpos, (funccnt + 1) * sizeof(int));
+  fs_write(fh, anames, strpos);
+
+  if (fpos)
+    // fwrite("", 1, 1, fh);
+    fs_write(fh, "", 1);
+  // write objects
+  // fseek(fo, 0, SEEK_END);
+  // fsize = ftell(fo);
+  // fseek(fo, 0, SEEK_SET);
+  fs_lseek(fo, 0, SEEK_END);
+  fsize = fs_tell(fo);
+  fs_lseek(fo, 0, SEEK_SET);
+
+  buf = tcc_malloc(fsize + 1);
+  // fread(buf, fsize, 1, fo);
+  // fwrite(buf, fsize, 1, fh);
+  fs_read(fo, buf, fsize);
+  fs_write(fh, buf, fsize);
+  tcc_free(buf);
+  ret = 0;
 the_end:
-    if (anames)
-        tcc_free(anames);
-    if (afpos)
-        tcc_free(afpos);
-    if (fh)
-        // fclose(fh);
-        fs_close(fh);
-    if (fo)
-        // fclose(fo)/*, remove(tfile)*/;
-        fs_close(fo);
-    return ret;
+  if (anames)
+    tcc_free(anames);
+  if (afpos)
+    tcc_free(afpos);
+  if (fh)
+    // fclose(fh);
+    fs_close(fh);
+  if (fo)
+    // fclose(fo)/*, remove(tfile)*/;
+    fs_close(fo);
+  return ret;
 }
 
 /* -------------------------------------------------------------- */
@@ -414,8 +397,8 @@ the_end:
 
 //     op = fopen(outfile, "wb");
 //     if (NULL == op) {
-//         fprintf(stderr, "tcc: impdef: could not create output file: %s\n", outfile);
-//         goto the_end;
+//         fprintf(stderr, "tcc: impdef: could not create output file: %s\n",
+//         outfile); goto the_end;
 //     }
 
 //     fprintf(op, "LIBRARY %s\n\nEXPORTS\n", tcc_basename(file));
@@ -464,10 +447,8 @@ the_end:
 
 /* re-execute the i386/x86_64 cross-compilers with tcc -m32/-m64: */
 
-
-ST_FUNC void tcc_tool_cross(TCCState *s1, char **argv, int option)
-{
-    tcc_error("-m%d not implemented.", option);
+ST_FUNC void tcc_tool_cross(TCCState *s1, char **argv, int option) {
+  tcc_error("-m%d not implemented.", option);
 }
 
 /* -------------------------------------------------------------- */
@@ -496,7 +477,8 @@ ST_FUNC void tcc_tool_cross(TCCState *s1, char **argv, int option)
 //     return res;
 // }
 
-// ST_FUNC void gen_makedeps(TCCState *s1, const char *target, const char *filename)
+// ST_FUNC void gen_makedeps(TCCState *s1, const char *target, const char
+// *filename)
 // {
 //     FILE *depout;
 //     char buf[1024], *escaped_target;

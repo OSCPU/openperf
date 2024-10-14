@@ -1,4 +1,3 @@
 #include <linpack.h>
 
-
-bench_linpack_config config = { 80 };
+bench_linpack_config config = {80};

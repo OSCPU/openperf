@@ -1,8 +1,8 @@
 #include <stdint.h>
 // #include <assert.h>
 // #include <stdio.h>
-#include <stdarg.h>
 #include <klib.h>
+#include <stdarg.h>
 
 uint64_t __make_mantissa_base8(const char *__tagp) {
   uint64_t __r = 0;
@@ -82,12 +82,9 @@ double nan(const char *__tagp) {
   assert(sizeof(__tmp.val) == sizeof(__tmp.bits));
 
   __tmp.bits.sign = 0u;
-  __tmp.bits.exponent = 2047u;//~0u;
+  __tmp.bits.exponent = 2047u; //~0u;
   __tmp.bits.quiet = 1u;
   __tmp.bits.mantissa = __make_mantissa(__tagp);
 
   return __tmp.val;
-
 }
-
-

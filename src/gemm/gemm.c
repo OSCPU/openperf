@@ -1,3 +1,4 @@
+#include "bench.h"
 #include <bench_debug.h>
 #include <gemm.h>
 
@@ -53,6 +54,6 @@ int main() {
   bench_free(B);
   bench_free(C);
 
-  bench_printf("time: %s \n", format_time(end_time - start_time));
+  BENCH_LOG(INFO, "OpenPerf time: %s", format_time(end_time - start_time));
   return 0;
 }

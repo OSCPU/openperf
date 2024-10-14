@@ -35,9 +35,8 @@ typedef double REAL;
  */
 #define MEM_T long
 
-
 typedef struct {
   int arsize;
-} bench_linpack_config ;
+} bench_linpack_config;
 
 #endif

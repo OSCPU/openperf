@@ -7,7 +7,8 @@
  *    Header for Leaky Buffer parameters
  *
  * \author
- *    Main contributors (see contributors.h for copyright, address and affiliation details)
+ *    Main contributors (see contributors.h for copyright, address and
+ *affiliation details)
  *    - Shankar Regunathan                   <shanre@microsoft.com>
  *************************************************************************************
  */
@@ -23,4 +24,3 @@ void calc_buffer(InputParameters *p_Inp);
 #endif
 
 #endif
-

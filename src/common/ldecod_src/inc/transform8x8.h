@@ -10,13 +10,14 @@
  *    9. October 2003
  *
  * \author
- *    Main contributors (see contributors.h for copyright, address and affiliation details)
+ *    Main contributors (see contributors.h for copyright, address and
+ *affiliation details)
  *    - Yuri Vatis
  **************************************************************************/
 
 #ifndef _TRANSFORM8X8_H_
 #define _TRANSFORM8X8_H_
 
-extern void itrans8x8   (Macroblock *currMB, ColorPlane pl, int ioff, int joff);
+extern void itrans8x8(Macroblock *currMB, ColorPlane pl, int ioff, int joff);
 
 #endif

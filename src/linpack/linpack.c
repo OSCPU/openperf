@@ -30,27 +30,27 @@
 
 #include <am.h>
 #include <bench.h>
-#include <bench_malloc.h>
 #include <bench_debug.h>
+#include <bench_malloc.h>
 #include <klib-macros.h>
 #include <klib.h>
 #include <linpack.h>
 
 extern bench_linpack_config config;
 
-static REAL linpack (long nreps, int arsize);
-static void matgen (REAL *a, int lda, int n, REAL *b, REAL *norma);
-static void dgefa (REAL *a, int lda, int n, int *ipvt, int *info, int roll);
-static void dgesl (REAL *a, int lda, int n, int *ipvt, REAL *b, int job,
-             int roll);
-static void daxpy_r (int n, REAL da, REAL *dx, int incx, REAL *dy, int incy);
-static REAL ddot_r (int n, REAL *dx, int incx, REAL *dy, int incy);
-static void dscal_r (int n, REAL da, REAL *dx, int incx);
-static void daxpy_ur (int n, REAL da, REAL *dx, int incx, REAL *dy, int incy);
-static REAL ddot_ur (int n, REAL *dx, int incx, REAL *dy, int incy);
-static void dscal_ur (int n, REAL da, REAL *dx, int incx);
-static int idamax (int n, REAL *dx, int incx);
-static REAL second (void);
+static REAL linpack(long nreps, int arsize);
+static void matgen(REAL *a, int lda, int n, REAL *b, REAL *norma);
+static void dgefa(REAL *a, int lda, int n, int *ipvt, int *info, int roll);
+static void dgesl(REAL *a, int lda, int n, int *ipvt, REAL *b, int job,
+                  int roll);
+static void daxpy_r(int n, REAL da, REAL *dx, int incx, REAL *dy, int incy);
+static REAL ddot_r(int n, REAL *dx, int incx, REAL *dy, int incy);
+static void dscal_r(int n, REAL da, REAL *dx, int incx);
+static void daxpy_ur(int n, REAL da, REAL *dx, int incx, REAL *dy, int incy);
+static REAL ddot_ur(int n, REAL *dx, int incx, REAL *dy, int incy);
+static void dscal_ur(int n, REAL da, REAL *dx, int incx);
+static int idamax(int n, REAL *dx, int incx);
+static REAL second(void);
 static inline double fabs(double x) { return x < 0 ? -x : x; }
 
 static void *mempool = NULL;
@@ -73,7 +73,7 @@ int main(int argc, char **argv)
 
   if ((MEM_T)malloc_arg != memreq ||
       (mempool = bench_malloc(malloc_arg)) == NULL) {
-      BENCH_LOG(ERROR, "Not enough memory available for given array size.\n");
+    BENCH_LOG(ERROR, "Not enough memory available for given array size.\n");
     return 1;
   }
 
@@ -84,7 +84,7 @@ int main(int argc, char **argv)
   }
   end_time = uptime();
   bench_free(mempool);
-  BENCH_LOG(INFO, "time: %s", format_time(end_time - start_time));
+  BENCH_LOG(INFO, "OpenPerf time: %s", format_time(end_time - start_time));
   return 0;
 }
 

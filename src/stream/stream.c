@@ -42,11 +42,12 @@
 /*----------------------------------------------------------------------------*/
 #include <am.h>
 #include <bench.h>
+#include <bench_debug.h>
 #include <bench_malloc.h>
-#include <stream.h>
 #include <float.h>
 #include <klib-macros.h>
 #include <klib.h>
+#include <stream.h>
 /*-----------------------------------------------------------------------
  * INSTRUCTIONS:
  *
@@ -179,7 +180,8 @@
 #define STREAM_TYPE double
 #endif
 
-// static STREAM_TYPE a[STREAM_ARRAY_SIZE + OFFSET], b[STREAM_ARRAY_SIZE + OFFSET],
+// static STREAM_TYPE a[STREAM_ARRAY_SIZE + OFFSET], b[STREAM_ARRAY_SIZE +
+// OFFSET],
 //  c[STREAM_ARRAY_SIZE + OFFSET];
 
 static double avgtime[4] = {0}, maxtime[4] = {0},
@@ -210,10 +212,9 @@ int main() {
   STREAM_TYPE *b = bench_malloc(sizeof(STREAM_TYPE) * (asize + OFFSET));
   STREAM_TYPE *c = bench_malloc(sizeof(STREAM_TYPE) * (asize + OFFSET));
 
-  double bytes[4] = {2 * sizeof(STREAM_TYPE) * asize,
-                          2 * sizeof(STREAM_TYPE) * asize,
-                          3 * sizeof(STREAM_TYPE) * asize,
-                          3 * sizeof(STREAM_TYPE) * asize};
+  double bytes[4] = {
+      2 * sizeof(STREAM_TYPE) * asize, 2 * sizeof(STREAM_TYPE) * asize,
+      3 * sizeof(STREAM_TYPE) * asize, 3 * sizeof(STREAM_TYPE) * asize};
 
   STREAM_TYPE *vptr[] = {a, b, c};
   int quantum, checktick();
@@ -387,7 +388,8 @@ int main() {
 
   double total_time = avgtime[0] + avgtime[1] + avgtime[2] + avgtime[3];
 
-  printf("time: %s ms\n", format_time((uint64_t)(total_time * 1000)));
+  BENCH_LOG(INFO, "OpenPerf time: %s",
+            format_time((uint64_t)(total_time * 1000)));
 
   return 0;
 }
@@ -554,7 +556,8 @@ void checkSTREAMresults(int asize, STREAM_TYPE **vptr) {
 #ifdef VERBOSE
   printf("Results Validation Verbose Results: \n");
   printf("    Expected a(1), b(1), c(1): %f %f %f \n", aj, bj, cj);
-  printf("    Observed a(1), b(1), c(1): %f %f %f \n", vptr[0][1], vptr[1][1], vptr[2][1]);
+  printf("    Observed a(1), b(1), c(1): %f %f %f \n", vptr[0][1], vptr[1][1],
+         vptr[2][1]);
   printf("    Rel Errors on a, b, c:     %e %e %e \n", abs(aAvgErr / aj),
          abs(bAvgErr / bj), abs(cAvgErr / cj));
 #endif

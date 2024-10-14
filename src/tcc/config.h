@@ -1,8 +1,8 @@
 #ifndef CONFIG_TCCDIR
-# define CONFIG_TCCDIR "/usr/local/lib/tcc"
+#define CONFIG_TCCDIR "/usr/local/lib/tcc"
 #endif
 #ifndef CONFIG_TCC_PREDEFS
-# define CONFIG_TCC_PREDEFS 1
+#define CONFIG_TCC_PREDEFS 1
 #endif
 #define TCC_VERSION "0.9.27"
 #define GCC_MAJOR 13
@@ -16,6 +16,6 @@
 // #define SDE_RISCV32_DEV 1
 // #define __SIZEOF_POINTER__ 4
 //
-typedef  struct {
+typedef struct {
   int file_count;
 } bench_tcc_config;

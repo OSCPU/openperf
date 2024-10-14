@@ -40,7 +40,7 @@
 #include <inttypes.h>
 #include <x264.h>
 #include <bench_malloc.h>
-#include <bench_printf.h>
+#include <bench_debug.h>
 #include <bench_strings.h>
 
 
