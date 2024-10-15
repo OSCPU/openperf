@@ -14,8 +14,7 @@
 #define _VUI_PARAMS_H_
 
 // VUI Parameters
-typedef struct vui_parameters
-{
+typedef struct vui_parameters {
   int aspect_ratio_info_present_flag;
   int aspect_ratio_idc;
   int sar_width;
@@ -27,7 +26,7 @@ typedef struct vui_parameters
   int video_full_range_flag;
   int colour_description_present_flag;
   int colour_primaries;
-  int transfer_characteristics; 
+  int transfer_characteristics;
   int matrix_coefficients;
   int chroma_location_info_present_flag;
   int chroma_sample_loc_type_top_field;
@@ -71,4 +70,3 @@ typedef struct vui_parameters
 } VUIParameters;
 
 #endif
-

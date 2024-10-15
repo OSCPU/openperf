@@ -1,8 +1,8 @@
 #ifndef __BENCH_COMMON
 #define __BENCH_COMMON
 
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 
 uint64_t uptime();
 char *format_time(uint64_t us);
@@ -14,6 +14,6 @@ typedef struct {
   uint64_t ref_time;
   uint32_t checksum;
   size_t repeat_time;
-}  Setting;
+} Setting;
 
 #endif

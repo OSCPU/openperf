@@ -1,7 +1,9 @@
 NAME = stream
 
+mainargs ?= ref
+
 BENCH_LIBS = bench openlibm soft-fp
-SRCS = stream.c
+SRCS = stream.c ./configs/$(mainargs)-config.c
 
 INC_PATH += 	../common/openlibm/include \
 			../common/openlibm/src \

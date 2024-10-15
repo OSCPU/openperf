@@ -1,5 +1,6 @@
 NAME = linpack
 
+mainargs ?= ref
 
 BENCH_LIBS = bench openlibm soft-fp
 

@@ -15,10 +15,10 @@
       Nokia Inc., USA
       Nokia Corporation, Finland
       Siemens AG, Germany
-      Fraunhofer-Institute for Telecommunications Heinrich-Hertz-Institut (HHI), Germany
-      University of Hannover, Institut of Communication Theory and Signal Processing, Germany
-      TICSP, Tampere University of Technology, Finland
-      Munich University of Technology, Institute for Communications Engineering, Germany
+      Fraunhofer-Institute for Telecommunications Heinrich-Hertz-Institut (HHI),
+ Germany University of Hannover, Institut of Communication Theory and Signal
+ Processing, Germany TICSP, Tampere University of Technology, Finland Munich
+ University of Technology, Institute for Communications Engineering, Germany
       Videolocus, Canada
       Motorola Inc., USA
       Microsoft Corp., USA
@@ -30,12 +30,9 @@
   \par Full Contact Information
   \verbatim
 
-      Lowell Winger                   <lwinger@videolocus.com><lwinger@uwaterloo.ca>
-      Guy Côté                        <gcote@videolocus.com>
-      Michael Gallant                 <mgallant@videolocus.com>
-      VideoLocus Inc.
-      97 Randall Dr.
-      Waterloo, ON, Canada  N2V1C5
+      Lowell Winger <lwinger@videolocus.com><lwinger@uwaterloo.ca> Guy Côté
+ <gcote@videolocus.com> Michael Gallant <mgallant@videolocus.com> VideoLocus
+ Inc. 97 Randall Dr. Waterloo, ON, Canada  N2V1C5
 
       Inge Lille-Langøy               <inge.lille-langoy@telenor.com>
       Telenor Satellite Services
@@ -152,10 +149,8 @@
       San Diego, CA 92121 USA
 
       Feng Wu                         <fengwu@microsoft.com>
-      Xiaoyan Sun                     <sunxiaoyan@msrchina.research.microsoft.com>
-      Microsoft Research Asia
-      3/F, Beijing Sigma Center
-      No.49, Zhichun Road, Hai Dian District,
+      Xiaoyan Sun <sunxiaoyan@msrchina.research.microsoft.com> Microsoft
+ Research Asia 3/F, Beijing Sigma Center No.49, Zhichun Road, Hai Dian District,
       Beijing China 100080
 
       Yoshihiro Kikuchi               <yoshihiro.kikuchi@toshiba.co.jp>
@@ -211,22 +206,20 @@
       2 Independence Way
       Princeton, NJ 08540
 
-      Shun-ichi Sekiguchi             <Sekiguchi.Shunichi@eb.MitsubishiElectric.co.jp>
-      Information Technology R&D Center, 
+      Shun-ichi Sekiguchi <Sekiguchi.Shunichi@eb.MitsubishiElectric.co.jp>
+      Information Technology R&D Center,
       Mitsubishi Electric Corporation
       5-1-1, Ofuna, Kamakura, Japan
 
       Yung-Lyul Lee                   <yllee@sejong.ac.kr>
       Ki-Hun Han                      <khhan@dms.sejong.ac.kr>
-      Department of Computer Engineering, 
+      Department of Computer Engineering,
       Sejong University
       98 Kunja-Dong, Kwangjin-Gu, Seoul 143-747, Korea
 
-			Jianhua Wu                      <jianhua.wu@sg.panasonic.com>
-			Panasonic Singapore Laboratories Pte Ltd
-			Blk 1022 Tai Seng Ave #06-3530 Tai Seng Ind Est
-			Singapore 534415
+                        Jianhua Wu <jianhua.wu@sg.panasonic.com> Panasonic
+ Singapore Laboratories Pte Ltd Blk 1022 Tai Seng Ave #06-3530 Tai Seng Ind Est
+                        Singapore 534415
 
   \endverbatim
 */
-

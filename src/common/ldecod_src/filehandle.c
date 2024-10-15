@@ -6,7 +6,8 @@
  * \brief
  *     Trace file handling and standard error handling function.
  * \author
- *    Main contributors (see contributors.h for copyright, address and affiliation details)
+ *    Main contributors (see contributors.h for copyright, address and
+ *affiliation details)
  *      - Karsten Suehring            <suehring@hhi.de>
  ***************************************************************************************
  */
@@ -14,7 +15,6 @@
 #include "contributors.h"
 #include "global.h"
 #include "mbuffer.h"
-
 
 #if TRACE
 
@@ -24,10 +24,7 @@
 *    decrement trace p_Dec->bitcounter (used for special case in mb aff)
 ************************************************************************
 */
-void dectracebitcnt(int count)
-{
-  p_Dec->bitcounter -= count;
-}
+void dectracebitcnt(int count) { p_Dec->bitcounter -= count; }
 
 /*!
  ************************************************************************
@@ -37,57 +34,54 @@ void dectracebitcnt(int count)
  ************************************************************************
  */
 void tracebits(
-    const signed char *trace_str,  //!< tracing information, signed char array describing the symbol
-    int len,                //!< length of syntax element in bits
-    int info,               //!< infoword of syntax element
-    int value1)
-{
+    const signed char *trace_str, //!< tracing information, signed char array
+                                  //!< describing the symbol
+    int len,                      //!< length of syntax element in bits
+    int info,                     //!< infoword of syntax element
+    int value1) {
   int i, chars;
   // int outint = 1;
 
-  if(len>=64)
-  {
-    snprintf(errortext, ET_SIZE, "Length argument to put too long for trace to work");
-    error (errortext, 600);
+  if (len >= 64) {
+    snprintf(errortext, ET_SIZE,
+             "Length argument to put too long for trace to work");
+    error(errortext, 600);
   }
 
   putc('@', p_Dec->p_trace);
   chars = fprintf(p_Dec->p_trace, "%i", p_Dec->bitcounter);
-  while(chars++ < 5)
-    putc(' ',p_Dec->p_trace);
+  while (chars++ < 5)
+    putc(' ', p_Dec->p_trace);
 
   chars += fprintf(p_Dec->p_trace, " %s", trace_str);
-  while(chars++ < 55)
-    putc(' ',p_Dec->p_trace);
+  while (chars++ < 55)
+    putc(' ', p_Dec->p_trace);
 
   // Align bitpattern
-  if(len<15)
-  {
-    for(i=0 ; i<15-len ; i++)
+  if (len < 15) {
+    for (i = 0; i < 15 - len; i++)
       fputc(' ', p_Dec->p_trace);
   }
 
   // Print bitpattern
-  for(i=0 ; i<len/2 ; i++)
-  {
+  for (i = 0; i < len / 2; i++) {
     fputc('0', p_Dec->p_trace);
   }
   // put 1
   fprintf(p_Dec->p_trace, "1");
 
   // Print bitpattern
-  for(i=0 ; i<len/2 ; i++)
-  {
-      if (0x01 & ( info >> ((len/2-i)-1)))
-        fputc('1', p_Dec->p_trace);
-      else
-        fputc('0', p_Dec->p_trace);
+  for (i = 0; i < len / 2; i++) {
+    if (0x01 & (info >> ((len / 2 - i) - 1)))
+      fputc('1', p_Dec->p_trace);
+    else
+      fputc('0', p_Dec->p_trace);
   }
 
   fprintf(p_Dec->p_trace, " (%3d) \n", value1);
   p_Dec->bitcounter += len;
 
-  fflush (p_Dec->p_trace);
+  fflush(p_Dec->p_trace);
 }
 
 /*!
@@ -97,52 +91,48 @@ void tracebits(
  ************************************************************************
  */
 void tracebits2(
-    const signed char *trace_str,  //!< tracing information, signed char array describing the symbol
-    int len,                //!< length of syntax element in bits
-    int info)
-{
+    const signed char *trace_str, //!< tracing information, signed char array
+                                  //!< describing the symbol
+    int len,                      //!< length of syntax element in bits
+    int info) {
 
   int i, chars;
   // int outint = 1;
 
-  if(len>=64)
-  {
-    snprintf(errortext, ET_SIZE, "Length argument to put too long for trace to work");
-    error (errortext, 600);
+  if (len >= 64) {
+    snprintf(errortext, ET_SIZE,
+             "Length argument to put too long for trace to work");
+    error(errortext, 600);
   }
 
   putc('@', p_Dec->p_trace);
   chars = fprintf(p_Dec->p_trace, "%i", p_Dec->bitcounter);
 
-  while(chars++ < 5)
-    putc(' ',p_Dec->p_trace);
+  while (chars++ < 5)
+    putc(' ', p_Dec->p_trace);
 
   chars += fprintf(p_Dec->p_trace, " %s", trace_str);
 
-  while(chars++ < 55)
-    putc(' ',p_Dec->p_trace);
+  while (chars++ < 55)
+    putc(' ', p_Dec->p_trace);
 
   // Align bitpattern
-  if(len < 15)
-  {
-    for(i = 0; i < 15 - len; i++)
+  if (len < 15) {
+    for (i = 0; i < 15 - len; i++)
       fputc(' ', p_Dec->p_trace);
   }
 
   p_Dec->bitcounter += len;
-  while (len >= 32)
-  {
-    for(i = 0; i < 8; i++)
-    {
+  while (len >= 32) {
+    for (i = 0; i < 8; i++) {
       fputc('0', p_Dec->p_trace);
     }
     len -= 8;
   }
 
   // Print bitpattern
-  for(i=0 ; i<len ; i++)
-  {
-    if (0x01 & ( info >> (len-i-1)))
+  for (i = 0; i < len; i++) {
+    if (0x01 & (info >> (len - i - 1)))
       fputc('1', p_Dec->p_trace);
     else
       fputc('0', p_Dec->p_trace);
@@ -150,7 +140,6 @@ void tracebits2(
 
   fprintf(p_Dec->p_trace, " (%3d) \n", info);
 
-  fflush (p_Dec->p_trace);
+  fflush(p_Dec->p_trace);
 }
 #endif
-

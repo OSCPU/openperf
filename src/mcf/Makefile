@@ -1,9 +1,10 @@
 NAME = mcf
 
+mainargs ?= ref
 
 BENCH_LIBS = bench openlibm soft-fp
 
-SRCS = 	main.c mcf.c pqueue.c $(shell realpath ./test-gen/test.c)
+SRCS = 	main.c mcf.c pqueue.c ./configs/$(mainargs)-config.c
 
 INC_PATH += 	../common/openlibm/include \
 			../common/openlibm/src \
@@ -11,7 +12,6 @@ INC_PATH += 	../common/openlibm/include \
 			../common/bench/include
 
 include $(AM_HOME)/Makefile
-
 
 BENCH_LINKAGE = $(addsuffix -$(ARCH).a, $(join \
 					 $(addsuffix /build/, $(addprefix $(WORK_DIR)/../common/, $(BENCH_LIBS))), \

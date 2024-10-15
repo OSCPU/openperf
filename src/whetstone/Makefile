@@ -1,6 +1,8 @@
 NAME = whetstone
 
-SRCS = whetstone.c
+mainargs ?= ref
+
+SRCS = whetstone.c ./configs/$(mainargs)-config.c
 
 BENCH_LIBS = bench openlibm soft-fp
 
