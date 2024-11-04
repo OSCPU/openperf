@@ -11,6 +11,10 @@ COLOR_NONE  = \033[0m
 RESULT = .result
 $(shell > $(RESULT))
 
+KEEP_LOG_FAILED ?= true
+KEEP_LOG_SUCCEED ?= false
+TIME := $(shell date --iso=seconds)
+
 ALL = mcf x264 tcc stream linpack gemm whetstone
 
 all: $(BENCH_LIBS) $(ALL)
@@ -25,14 +29,24 @@ all: $(BENCH_LIBS) $(ALL)
 $(ALL): %: $(BENCH_LIBS)
 	@{\
 		  TMP=$*.tmp;\
-	    make -C ./src/$* ARCH=$(ARCH) run 2>&1 | tee -a $$TMP;\
-      if [ $${PIPESTATUS[0]} -eq 0 ]; then \
+	    $(MAKE) -C ./src/$* ARCH=$(ARCH) run 2>&1 | tee -a $$TMP;\
+     if [ $${PIPESTATUS[0]} -eq 0 ]; then \
 		    printf "[%14s] $(COLOR_GREEN)PASS$(COLOR_NONE) " $* >> $(RESULT); \
 		    cat $$TMP | grep -E -i -e "OpenPerf time: ([0-9]*\.)?[0-9]*" >> $(RESULT); \
-		    rm $$TMP;\
+				if $(KEEP_LOG_SUCCEED); then \
+					mkdir -p "logs/$(TIME)/"; \
+					mv $$TMP "logs/$(TIME)/"; \
+				else \
+					rm $$TMP; \
+				fi \
 	    else \
 			  printf "[%14s] $(COLOR_RED)***FAIL***$(COLOR_NONE)\n" $* >> $(RESULT); \
-				rm $$TMP; \
+				if $(KEEP_LOG_FAILED); then \
+					mkdir -p "logs/$(TIME)/"; \
+					mv $$TMP "logs/$(TIME)/"; \
+				else \
+					rm $$TMP; \
+				fi \
 	    fi \
 	}
 
