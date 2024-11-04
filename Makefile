@@ -1,7 +1,7 @@
 
 BENCH_LIBS := bench openlibm soft-fp
 
-$(BENCH_LIBS): %: latest
+$(BENCH_LIBS): %:
 	$(MAKE) -s -C ./src/common/$* archive
 
 COLOR_RED   = \033[1;31m
@@ -22,7 +22,7 @@ all: $(BENCH_LIBS) $(ALL)
 		echo "====== Running OpenPerf [input *$${mainargs}*] ======"; \
 	fi
 
-$(ALL): %: $(BENCH_LIBS) latest
+$(ALL): %: $(BENCH_LIBS)
 	@{\
 		  TMP=$*.tmp;\
 	    make -C ./src/$* ARCH=$(ARCH) run 2>&1 | tee -a $$TMP;\
@@ -64,15 +64,11 @@ run: $(BENCH_LIBS) all
 	' $(RESULT)
 	@rm $(RESULT)
 
-libs: $(BENCH_LIBS)
-
 CLEAN_ALL = $(dir $(shell find . -mindepth 2 -name Makefile))
 clean-all: $(CLEAN_ALL)
 	 
 $(CLEAN_ALL):
 	-@$(MAKE) -s -C $@ clean
 
-.PHONY: $(BENCH_LIBS) $(CLEAN_ALL) $(ALL) all run clean-all latest libs
-
-latest:
+.PHONY: $(BENCH_LIBS) $(CLEAN_ALL) $(ALL) all run clean-all
 
