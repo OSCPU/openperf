@@ -8,6 +8,8 @@
 !*.sh
 !*.py
 !*.mk
+!*.cpp
+!*.bin
 !Makefile
 !README
 !LICENSE
