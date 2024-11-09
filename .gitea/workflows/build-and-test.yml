@@ -12,10 +12,12 @@ jobs:
 
     strategy:
       matrix:
-        arch: ["native", "riscv32-nemu"]
-        test_name: ["stream", "x264"]
+        test_name: ["mcf", "x264", "tcc", "stream", "linpack", "gemm", "whetstone"]
         test_size: ["test", "ref"]
-
+        arch: ["native", "riscv32-nemu"]
+        exclude:
+          - test_size: "ref"
+            text_name: "tcc"
     steps:
       - uses: https://github.com/cachix/cachix-action@v14
         with:
