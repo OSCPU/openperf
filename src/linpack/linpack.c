@@ -30,105 +30,61 @@
 
 #include <am.h>
 #include <bench.h>
+#include <bench_debug.h>
 #include <bench_malloc.h>
 #include <klib-macros.h>
 #include <klib.h>
+#include <linpack.h>
 
-#define FLT_DIG 6
-#define DBL_DIG 15
+extern bench_linpack_config config;
 
-#define SP
-
-#ifndef SP
-#ifndef DP
-#define DP
-#endif
-#endif
-
-#ifdef SP
-#define ZERO 0.0
-#define ONE 1.0
-#define PREC "Single"
-#define BASE10DIG FLT_DIG
-
-typedef float REAL;
-#endif
-
-#ifdef DP
-#define ZERO 0.0e0
-#define ONE 1.0e0
-#define PREC "Double"
-#define BASE10DIG DBL_DIG
-
-typedef double REAL;
-#endif
-
-/* 2022-07-26: Macro defined for memreq variable to resolve warnings
- *             during malloc check
- */
-#define MEM_T long
-
-static REAL linpack (long nreps, int arsize);
-static void matgen (REAL *a, int lda, int n, REAL *b, REAL *norma);
-static void dgefa (REAL *a, int lda, int n, int *ipvt, int *info, int roll);
-static void dgesl (REAL *a, int lda, int n, int *ipvt, REAL *b, int job,
-                   int roll);
-static void daxpy_r (int n, REAL da, REAL *dx, int incx, REAL *dy, int incy);
-static REAL ddot_r (int n, REAL *dx, int incx, REAL *dy, int incy);
-static void dscal_r (int n, REAL da, REAL *dx, int incx);
-static void daxpy_ur (int n, REAL da, REAL *dx, int incx, REAL *dy, int incy);
-static REAL ddot_ur (int n, REAL *dx, int incx, REAL *dy, int incy);
-static void dscal_ur (int n, REAL da, REAL *dx, int incx);
-static int idamax (int n, REAL *dx, int incx);
-static REAL second (void);
-static double
-fabs (double x)
-{
-  return x < 0 ? -x : x;
-}
+static REAL linpack(long nreps, int arsize);
+static void matgen(REAL *a, int lda, int n, REAL *b, REAL *norma);
+static void dgefa(REAL *a, int lda, int n, int *ipvt, int *info, int roll);
+static void dgesl(REAL *a, int lda, int n, int *ipvt, REAL *b, int job,
+                  int roll);
+static void daxpy_r(int n, REAL da, REAL *dx, int incx, REAL *dy, int incy);
+static REAL ddot_r(int n, REAL *dx, int incx, REAL *dy, int incy);
+static void dscal_r(int n, REAL da, REAL *dx, int incx);
+static void daxpy_ur(int n, REAL da, REAL *dx, int incx, REAL *dy, int incy);
+static REAL ddot_ur(int n, REAL *dx, int incx, REAL *dy, int incy);
+static void dscal_ur(int n, REAL da, REAL *dx, int incx);
+static int idamax(int n, REAL *dx, int incx);
+static REAL second(void);
+static inline double fabs(double x) { return x < 0 ? -x : x; }
 
 static void *mempool = NULL;
-int
-main (int argc, char **argv)
+int main(int argc, char **argv)
 
 {
-  ioe_init ();
-  bench_malloc_init ();
+  ioe_init();
+  bench_malloc_init();
   int arsize;
   long arsize2d, nreps;
   volatile size_t malloc_arg;
   volatile MEM_T memreq;
 
-  arsize = 270;
+  arsize = config.arsize;
   arsize2d = (long)arsize * (long)arsize;
   memreq = arsize2d * sizeof (REAL) + (long)arsize * sizeof (REAL)
            + (long)arsize * sizeof (int);
   malloc_arg = (size_t)memreq;
   uint64_t start_time, end_time;
 
-  if ((MEM_T)malloc_arg != memreq
-      || (mempool = bench_malloc (malloc_arg)) == NULL)
-    {
-      // printf("Not enough memory available for given array size.\n");
-      return 1;
-    }
+  if ((MEM_T)malloc_arg != memreq ||
+      (mempool = bench_malloc(malloc_arg)) == NULL) {
+    BENCH_LOG(ERROR, "Not enough memory available for given array size.\n");
+    return 1;
+  }
 
-  // printf("LINPACK benchmark, %s precision.\n", PREC);
-  // printf("Machine precision:  %d digits.\n", BASE10DIG);
-  // printf("Array size %d X %d.\n", arsize, arsize);
-  // printf("Memory required:  %ldK.\n", (memreq + 512L) >> 10);
-  // printf("Average rolled and unrolled performance:\n\n");
-  // printf("    Reps Time(s) DGEFA   DGESL  OVERHEAD    KFLOPS\n");
-  // printf("----------------------------------------------------\n");
   nreps = 1;
-  start_time = uptime ();
-  while (linpack (nreps, arsize) < 10.)
-    {
-      nreps *= 2;
-    }
-  end_time = uptime ();
-  bench_free (mempool);
-  printf ("time: %s ms\n", format_time (end_time - start_time));
+  start_time = uptime();
+  while (linpack(nreps, arsize) < 10.) {
+    nreps *= 2;
+  }
+  end_time = uptime();
+  bench_free(mempool);
+  BENCH_LOG(INFO, "OpenPerf time: %s", format_time(end_time - start_time));
   return 0;
 }
 
@@ -137,54 +93,28 @@ linpack (long nreps, int arsize)
 
 {
   REAL *a, *b;
-  REAL norma, t1, kflops, tdgesl, tdgefa, totalt, toverhead, ops;
+  REAL norma, totalt;
   int *ipvt, n, info, lda;
   long i, arsize2d;
 
   lda = arsize;
   n = arsize / 2;
   arsize2d = (long)arsize * (long)arsize;
-  ops = ((2.0 * n * n * n) / 3.0 + 2.0 * n * n);
   a = (REAL *)mempool;
   b = a + arsize2d;
   ipvt = (int *)&b[arsize];
-  tdgesl = 0;
-  tdgefa = 0;
-  totalt = second ();
-  for (i = 0; i < nreps; i++)
-    {
-      matgen (a, lda, n, b, &norma);
-      t1 = second ();
-      dgefa (a, lda, n, ipvt, &info, 1);
-      tdgefa += second () - t1;
-      t1 = second ();
-      dgesl (a, lda, n, ipvt, b, 0, 1);
-      tdgesl += second () - t1;
-    }
-  for (i = 0; i < nreps; i++)
-    {
-      matgen (a, lda, n, b, &norma);
-      t1 = second ();
-      dgefa (a, lda, n, ipvt, &info, 0);
-      tdgefa += second () - t1;
-      t1 = second ();
-      dgesl (a, lda, n, ipvt, b, 0, 0);
-      tdgesl += second () - t1;
-    }
-  totalt = second () - totalt;
-  if (totalt < 0.5 || tdgefa + tdgesl < 0.2)
-    return (0.);
-  kflops = 2. * nreps * ops / (1000. * (tdgefa + tdgesl));
-  toverhead = totalt - tdgefa - tdgesl;
-  if (tdgefa < 0.)
-    tdgefa = 0.;
-  if (tdgesl < 0.)
-    tdgesl = 0.;
-  if (toverhead < 0.)
-    toverhead = 0.;
-  // printf("%8ld %6.2f %6.2f%% %6.2f%% %6.2f%%  %9.3f\n", nreps, totalt,
-  // 100. * tdgefa / totalt, 100. * tdgesl / totalt,
-  // 100. * toverhead / totalt, kflops);
+  totalt = second();
+  for (i = 0; i < nreps; i++) {
+    matgen(a, lda, n, b, &norma);
+    dgefa(a, lda, n, ipvt, &info, 1);
+    dgesl(a, lda, n, ipvt, b, 0, 1);
+  }
+  for (i = 0; i < nreps; i++) {
+    matgen(a, lda, n, b, &norma);
+    dgefa(a, lda, n, ipvt, &info, 0);
+    dgesl(a, lda, n, ipvt, b, 0, 0);
+  }
+  totalt = second() - totalt;
   return (totalt);
 }
 
@@ -909,5 +839,5 @@ static REAL
 second (void)
 
 {
-  return ((REAL)(uptime () / 1000));
+  return ((REAL)(uptime() / 1000));
 }

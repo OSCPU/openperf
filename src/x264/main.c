@@ -1,10 +1,10 @@
 #include <am.h>
+#include <bench.h>
+#include <bench_debug.h>
+#include <bench_malloc.h>
+#include <fs.h>
 #include <klib-macros.h>
 #include <klib.h>
-#include <bench.h>
-#include <bench_malloc.h>
-#include <bench_printf.h>
-#include <fs.h>
 #include <limits.h>
 #include <x264.h>
 
@@ -70,11 +70,12 @@ int main(const char *args) {
 
   extern char output_start;
   bench_printf("total: %d\n", total);
-  bench_printf("Checksum is %#x\n", checksum(&output_start, (uint8_t *)&output_start + total));
-  bench_printf("time: %s ms \n", format_time(end_time - start_time));
+  bench_printf("Checksum is %#x\n",
+               checksum(&output_start, (uint8_t *)&output_start + total));
+  BENCH_LOG(INFO, "OpenPerf time: %s", format_time(end_time - start_time));
 
   fs_close(input);
   fs_close(output);
- 
+
   return 0;
 }
