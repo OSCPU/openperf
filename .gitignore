@@ -17,3 +17,4 @@ _*
 build/
 !.gitignore
 .vscode
+abstract-machine/

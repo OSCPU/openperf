@@ -1,0 +1,108 @@
+name: Test openperf
+
+on: [push, pull_request, workflow_dispatch]
+
+env:
+  AM_HOME: "${{ github.workspace }}/abstract-machine"
+  NEMU_HOME: "${{ github.workspace }}/nemu"
+
+jobs:
+  setup_repo:
+    runs-on: nix
+
+    strategy:
+      matrix:
+        arch: ["native", "riscv32-nemu"]
+        test_name: ["stream", "x264"]
+        test_size: ["test", "ref"]
+
+    steps:
+      - uses: https://github.com/cachix/cachix-action@v14
+        with:
+          name: ysyx
+          authToken: '${{ secrets.CACHIX_SIGNING_KEY }}'
+
+      - name: Checkout Main Repo (openperf)
+        id: checkout-openperf
+        uses: actions/checkout@v4
+        with:
+          path: openperf
+
+      - name: Eval devshell
+        id: eval-devshell
+        run: |
+          echo "devshell-output=$(nix eval ./openperf#devShells.x86_64-linux.${{ matrix.arch }} --json)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache environment
+        uses: actions/cache@v4
+        with:
+          key: ${{ matrix.arch }}-${{ steps.eval-devshell.outputs.devshell-output }}
+          path: |
+            /tmp/env
+            openperf/src/common
+
+      - name: Prepare devshell
+        run: |
+          mkdir -p /tmp/env
+          mkdir -p /tmp/env/store
+          nix copy --all --from file:///tmp/env/store || true
+          nix develop --profile /tmp/env/openperf-env-${{ matrix.arch }} ./openperf#${{ matrix.arch }}
+          nix copy --to file:///tmp/env/store /tmp/env/openperf-env-${{ matrix.arch }}
+
+      - name: Checkout Abstract Machine Repo
+        id: checkout-am
+        uses: actions/checkout@v4
+        with:
+          ssh-key: '${{ secrets.DEPLOY_KEY }}'
+          ssh-user: 'forgejo'
+          ssh-known-hosts: 'git.xinyang.life ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICctRGZWr5+pxPh+8ABY4kjC57khQzOpXNz3CPaEDZuO'
+          repository: openperf/abstract-machine
+          path: abstract-machine
+
+      - name: Cache abstract-machine
+        uses: actions/cache@v4
+        with:
+          key: ${{ matrix.arch }}-${{ steps.eval-devshell.outputs.devshell-output }}-${{ steps.checkout-am.outputs.commit }}
+          path: |
+            abstract-machine
+
+      - name: Checkout Nemu Repo
+        id: checkout-nemu
+        if: ${{ contains(matrix.arch, 'nemu') }}
+        uses: actions/checkout@v4
+        with:
+          ssh-key: '${{ secrets.DEPLOY_KEY }}'
+          ssh-user: 'forgejo'
+          ssh-known-hosts: 'git.xinyang.life ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICctRGZWr5+pxPh+8ABY4kjC57khQzOpXNz3CPaEDZuO'
+          repository: openperf/nemu
+          path: nemu
+
+      - name: Cache nemu
+        if: ${{ contains(matrix.arch, 'nemu') }}
+        uses: actions/cache@v4
+        with:
+          key: ${{ matrix.arch }}-${{ steps.eval-devshell.outputs.devshell-output }}-${{ steps.checkout-nemu.outputs.commit }}
+          path: |
+            nemu
+
+      - name: Cache common libraries
+        uses: actions/cache@v4
+        with:
+          key: openperf-common-${{ matrix.arch }}-${{ steps.eval-devshell.outputs.devshell-output }}-${{ steps.checkout-openperf.outputs.commit }}-${{ steps.checkout-am.outputs.commit }}
+          path: |
+            openperf/src/common
+
+      - name: Generate config if target platform is nemu
+        if: ${{ contains(matrix.arch, 'nemu') }}
+        run: |
+          nix develop /tmp/env/openperf-env-${{ matrix.arch }} --impure --command make -C $NEMU_HOME ARCH=riscv32-nemu openperf_${{ matrix.arch }}_defconfig
+
+      - name: Build common libraries
+        run: |
+          nix develop /tmp/env/openperf-env-${{ matrix.arch }} --impure --command make -C openperf ARCH=${{ matrix.arch }} ALL=dummy run
+
+      - name: Run openperf benchmark
+        working-directory: openperf
+        run: |
+          nix develop /tmp/env/openperf-env-${{ matrix.arch }} --impure --command make ARCH=${{ matrix.arch }} ALL=${{ matrix.test_name }} mainargs=${{ matrix.test_size }} run
+

@@ -53,11 +53,6 @@ $(ALL): %: $(BENCH_LIBS)
 run: $(BENCH_LIBS) all
 	@cat $(RESULT)
 	@echo "============================================="
-	@if grep -q -i -e "fail" "$(RESULT)"; then \
-		echo "OpenPerf FAIL"; \
-	else \
-		echo "OpenPerf PASS"; \
-	fi
 	@awk '\
 		{ \
 			h = min = s = ms = us = 0;\
@@ -76,7 +71,15 @@ run: $(BENCH_LIBS) all
 				us; \
 	} \
 	' $(RESULT)
-	@rm $(RESULT)
+	@if grep -q -i -e "fail" "$(RESULT)"; then \
+		echo "OpenPerf FAIL"; \
+		rm $(RESULT); \
+		exit 1; \
+	else \
+		echo "OpenPerf PASS"; \
+		rm $(RESULT); \
+		exit 0; \
+	fi
 
 CLEAN_ALL = $(dir $(shell find . -mindepth 2 -name Makefile))
 clean-all: $(CLEAN_ALL)
