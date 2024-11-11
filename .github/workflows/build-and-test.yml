@@ -9,7 +9,7 @@ env:
   NEMU_HOME: "${{ github.workspace }}/nemu"
 
 jobs:
-  setup_repo:
+  openperf_build_test:
     runs-on: ubuntu-latest
 
     strategy:
@@ -29,6 +29,11 @@ jobs:
         with:
           name: ysyx
           authToken: '${{ secrets.CACHIX_SIGNING_KEY }}'
+
+      - name: Eval devshell
+        id: eval-devshell
+        run: |
+          echo "devshell-output=$(nix eval ./openperf#devShells.x86_64-linux.${{ matrix.arch }} --json)" >> "$GITHUB_OUTPUT"
 
       - name: Checkout Main Repo (openperf)
         id: checkout-openperf
@@ -53,41 +58,29 @@ jobs:
           repository: xinyangli/openperf-abstract-machine
           path: abstract-machine
 
-      - name: Eval devshell
-        id: eval-devshell
-        run: |
-          echo "devshell-output=$(nix eval ./openperf#devShells.x86_64-linux.${{ matrix.arch }} --json)" >> "$GITHUB_OUTPUT"
-
-      - name: Cache environment
-        uses: actions/cache@v4
+      - name: Restore and cache Nix store
+        uses: nix-community/cache-nix-action@v5
         with:
-          key: ${{ matrix.arch }}-${{ steps.eval-devshell.outputs.devshell-output }}
-          path: |
-            /tmp/env
-            openperf/src/common
+          # restore and save a cache using this key
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix') }}
+          # if there's no cache hit, restore a cache by this prefix
+          restore-prefixes-first-match: nix-${{ runner.os }}-
+          # collect garbage until Nix store size (in bytes) is at most this number
+          # before trying to save a new cache
+          gc-max-store-size-linux: 1073741824
+          # do purge caches
+          purge: true
+          # purge all versions of the cache
+          purge-prefixes: cache-${{ runner.os }}-
+          # created more than this number of seconds ago relative to the start of the `Post Restore` phase
+          purge-created: 0
+          # except the version with the `primary-key`, if it exists
+          purge-primary-key: never
 
       - name: Prepare devshell
         run: |
           mkdir -p /tmp/env
-          mkdir -p /tmp/env/store
-          nix copy --all --from file:///tmp/env/store || true
           nix develop --no-use-registries --profile /tmp/env/openperf-env-${{ matrix.arch }} ./openperf#${{ matrix.arch }}
-          nix copy --to file:///tmp/env/store /tmp/env/openperf-env-${{ matrix.arch }}
-
-      - name: Cache abstract-machine
-        uses: actions/cache@v4
-        with:
-          key: ${{ matrix.arch }}-${{ steps.eval-devshell.outputs.devshell-output }}-${{ steps.checkout-am.outputs.commit }}
-          path: |
-            abstract-machine
-
-      - name: Cache nemu
-        if: ${{ contains(matrix.arch, 'nemu') }}
-        uses: actions/cache@v4
-        with:
-          key: ${{ matrix.arch }}-${{ steps.eval-devshell.outputs.devshell-output }}-${{ steps.checkout-nemu.outputs.commit }}
-          path: |
-            nemu
 
       - name: Cache common libraries
         uses: actions/cache@v4
