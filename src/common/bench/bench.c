@@ -67,3 +67,14 @@ uint32_t checksum(void *start, void *end) {
   hash += hash << 5;
   return hash;
 }
+
+static uint32_t seed = 1;
+
+void bench_srand(uint32_t _seed) {
+  seed = _seed & 0x7fff;
+}
+
+uint32_t bench_rand() {
+  seed = (seed * (uint32_t)214013L + (uint32_t)2531011L);
+  return (seed >> 16) & 0x7fff;
+}
