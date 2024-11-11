@@ -15,7 +15,11 @@ KEEP_LOG_FAILED ?= true
 KEEP_LOG_SUCCEED ?= false
 TIME := $(shell date --iso=seconds)
 
-ALL = mcf x264 tcc stream linpack gemm whetstone
+ifeq ($(mainargs),ref)
+ALL = mcf x264 stream linpack gemm whetstone
+else
+ALL = cpuemu mcf x264 tcc stream linpack gemm whetstone
+endif
 
 all: $(BENCH_LIBS) $(ALL)
 	@echo "OpenPerf [$(words $(ALL)) item(s)]:" $(ALL)
