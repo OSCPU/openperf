@@ -15,7 +15,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        test_name: ["mcf", "x264", "tcc", "stream", "linpack", "gemm", "whetstone"]
+        test_name: ["mcf", "x264", "tcc", "stream", "linpack", "gemm", "whetstone", "cpuemu"]
         test_size: ["test", "ref"]
         arch: ["native", "riscv32-nemu"]
         exclude:
@@ -62,8 +62,6 @@ jobs:
         uses: actions/cache@v4
         with:
           key: openperf-common-${{ matrix.arch }}-${{ hashFiles('**/*.nix') }}-${{ steps.checkout-openperf.outputs.commit }}-${{ steps.checkout-am.outputs.commit }}
-          path: |
-            openperf/src/common
 
       - name: Generate config if target platform is nemu
         if: ${{ contains(matrix.arch, 'nemu') }}
