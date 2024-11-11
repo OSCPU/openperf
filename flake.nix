@@ -44,7 +44,7 @@
           ];
         in
         rec {
-          nemu = rv32CrossPkgs.stdenv.mkDerivation {
+          nemu = rv32CrossPkgs.mkShell {
             name = "openperf";
             depsBuildBuild = nemuDepsBuildBuild;
 
@@ -56,7 +56,7 @@
             depsBuildBuild = nemuDepsBuildBuild;
           };
 
-          native = pkgs.stdenv.mkDerivation {
+          native = pkgs.mkShell {
             name = "openperf";
             buildInputs = with pkgs; [
               gnumake

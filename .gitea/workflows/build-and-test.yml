@@ -1,6 +1,8 @@
 name: Test openperf
 
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+  workflow_dispatch:
 
 env:
   AM_HOME: "${{ github.workspace }}/abstract-machine"
@@ -17,7 +19,7 @@ jobs:
         arch: ["native", "riscv32-nemu"]
         exclude:
           - test_size: "ref"
-            text_name: "tcc"
+            test_name: "tcc"
     steps:
       - uses: https://github.com/cachix/cachix-action@v14
         with:
@@ -48,7 +50,7 @@ jobs:
           mkdir -p /tmp/env
           mkdir -p /tmp/env/store
           nix copy --all --from file:///tmp/env/store || true
-          nix develop --profile /tmp/env/openperf-env-${{ matrix.arch }} ./openperf#${{ matrix.arch }}
+          nix develop --no-registries --profile /tmp/env/openperf-env-${{ matrix.arch }} ./openperf#${{ matrix.arch }}
           nix copy --to file:///tmp/env/store /tmp/env/openperf-env-${{ matrix.arch }}
 
       - name: Checkout Abstract Machine Repo
@@ -97,14 +99,14 @@ jobs:
       - name: Generate config if target platform is nemu
         if: ${{ contains(matrix.arch, 'nemu') }}
         run: |
-          nix develop /tmp/env/openperf-env-${{ matrix.arch }} --impure --command make -C $NEMU_HOME ARCH=riscv32-nemu openperf_${{ matrix.arch }}_defconfig
+          nix develop --no-registries /tmp/env/openperf-env-${{ matrix.arch }} --impure --command make -C $NEMU_HOME ARCH=riscv32-nemu openperf_${{ matrix.arch }}_defconfig
 
       - name: Build common libraries
         run: |
-          nix develop /tmp/env/openperf-env-${{ matrix.arch }} --impure --command make -C openperf ARCH=${{ matrix.arch }} ALL=dummy run
+          nix develop --no-registries /tmp/env/openperf-env-${{ matrix.arch }} --impure --command make -C openperf ARCH=${{ matrix.arch }} ALL=dummy run
 
       - name: Run openperf benchmark
         working-directory: openperf
         run: |
-          nix develop /tmp/env/openperf-env-${{ matrix.arch }} --impure --command make ARCH=${{ matrix.arch }} ALL=${{ matrix.test_name }} mainargs=${{ matrix.test_size }} run
+          nix develop --no-registries /tmp/env/openperf-env-${{ matrix.arch }} --impure --command make ARCH=${{ matrix.arch }} ALL=${{ matrix.test_name }} mainargs=${{ matrix.test_size }} run
 
