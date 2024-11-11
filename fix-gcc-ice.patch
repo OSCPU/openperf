@@ -1,0 +1,44 @@
+--- gcc-13.3.0/gcc/gimple-ssa-store-merging.cc	2024-05-21 15:47:38.000000000 +0800
++++ gimple-ssa-store-merging.cc	2024-11-11 11:54:49.366712830 +0800
+@@ -3157,6 +3157,10 @@
+ 		      unsigned int min_order = first_order;
+ 		      unsigned first_nonmergeable_int_order = ~0U;
+ 		      unsigned HOST_WIDE_INT this_end = end;
++		      unsigned HOST_WIDE_INT this_bitregion_start
++                        = new_bitregion_start;
++                      unsigned HOST_WIDE_INT this_bitregion_end
++                        = new_bitregion_end;
+ 		      k = i;
+ 		      first_nonmergeable_order = ~0U;
+ 		      for (unsigned int j = i + 1; j < len; ++j)
+@@ -3180,6 +3184,19 @@
+ 				  k = 0;
+ 				  break;
+ 				}
++                              if (info2->bitregion_start
++                                  < this_bitregion_start)
++                                this_bitregion_start = info2->bitregion_start;
++                              if (info2->bitregion_end
++                                  > this_bitregion_end)
++                                this_bitregion_end = info2->bitregion_end;
++                              if (((this_bitregion_end - this_bitregion_start
++                                    + 1) / BITS_PER_UNIT)
++                                  > (unsigned) param_store_merging_max_size)
++                                {
++                                  k = 0;
++                                  break;
++                                }
+ 			      k = j;
+ 			      min_order = MIN (min_order, info2->order);
+ 			      this_end = MAX (this_end,
+@@ -5247,7 +5264,9 @@
+       || !bitsize.is_constant (&const_bitsize)
+       || !bitpos.is_constant (&const_bitpos)
+       || !bitregion_start.is_constant (&const_bitregion_start)
+-      || !bitregion_end.is_constant (&const_bitregion_end))
++      || !bitregion_end.is_constant (&const_bitregion_end)
++      || ((const_bitregion_end - const_bitregion_start + 1) / BITS_PER_UNIT
++         > (unsigned) param_store_merging_max_size))
+     return terminate_all_aliasing_chains (NULL, stmt);
+ 
+   if (!ins_stmt)

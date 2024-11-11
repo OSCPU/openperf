@@ -9,6 +9,13 @@
       devShells.x86_64-linux =
         let
           pkgs = import nixpkgs { system = "x86_64-linux"; };
+          patchGccStdenv =
+            pkgs: stdenv:
+            pkgs.overrideCC stdenv (
+              pkgs.wrapCC (
+                stdenv.cc.cc.overrideAttrs (final: prev: { patches = prev.patches ++ [ ./fix-gcc-ice.patch ]; })
+              )
+            );
           crossSystem = {
             config = "riscv32-none-none-elf";
             gcc = {
@@ -56,13 +63,18 @@
             depsBuildBuild = nemuDepsBuildBuild;
           };
 
-          native = pkgs.mkShell {
-            name = "openperf";
-            buildInputs = with pkgs; [
-              gnumake
-              SDL2
-            ];
-          };
+          native =
+            pkgs.mkShell.override
+              {
+                stdenv = patchGccStdenv pkgs pkgs.stdenv;
+              }
+              {
+                name = "openperf";
+                buildInputs = with pkgs; [
+                  gnumake
+                  SDL2
+                ];
+              };
 
           riscv32-nemu = nemu;
         };
