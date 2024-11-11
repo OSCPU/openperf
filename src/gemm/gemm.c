@@ -15,7 +15,7 @@ void serial_init(int m, int n, double *a, int lda) {
 void random_init(int m, int n, double *a, int lda) {
   for (int j = 0; j < n; j++) {
     for (int i = 0; i < m; i++)
-      A(i, j) = 2.0 * rand() - 1.0;
+      A(i, j) = 2.0 * bench_rand() - 1.0;
   }
 }
 
@@ -41,8 +41,9 @@ int main() {
   memset(C, 0, m * n * sizeof(double));
 
   uint64_t start_time, end_time;
-  srand(1556);
+  bench_srand(1556);
 
+  //Because we init A and B randomly, the checksum of C will be different.
   random_init(m, k, A, m);
   random_init(k, n, B, k);
 
@@ -50,9 +51,11 @@ int main() {
   matmul(m, n, k, A, m, B, k, C, m);
   end_time = uptime();
 
+
   bench_free(A);
   bench_free(B);
   bench_free(C);
+
 
   BENCH_LOG(INFO, "OpenPerf time: %s", format_time(end_time - start_time));
   return 0;

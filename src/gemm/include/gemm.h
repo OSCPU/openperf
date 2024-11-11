@@ -10,6 +10,7 @@ typedef struct {
   uint32_t m;
   uint32_t n;
   uint32_t k;
+  uint64_t checksum;
 } bench_gemm_config;
 
 void AddDot4x4(int, double *, int, double *, int, double *, int);

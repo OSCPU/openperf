@@ -11,7 +11,7 @@ COLOR_NONE  = \033[0m
 RESULT = .result
 $(shell > $(RESULT))
 
-ALL =  mcf x264 tcc stream linpack gemm whetstone
+ALL =  cpuemu mcf x264 tcc stream linpack gemm whetstone
 
 all: $(BENCH_LIBS) $(ALL)
 	@echo "OpenPerf [$(words $(ALL)) item(s)]:" $(ALL)
