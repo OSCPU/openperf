@@ -8,6 +8,10 @@
 #include <etl/platform.h>
 #include <am.h>
 
+typedef struct {
+  uint32_t setting_id;
+} bench_cpuemu_config;
+
 uint64_t rng64();
 
 void rvmini();

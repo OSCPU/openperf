@@ -1,4 +1,4 @@
-NAME = whetstone
+NAME = whetstone-$(mainargs)
 
 mainargs ?= ref
 

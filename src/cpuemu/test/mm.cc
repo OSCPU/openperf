@@ -4,6 +4,7 @@
 #include "mm.h"
 #undef assert
 #include <am.h>
+#include <bench_malloc.h>
 #include <klib.h>
 
 extern uint8_t ramdisk_start;
@@ -23,7 +24,7 @@ mm_magic_t::~mm_magic_t()
 }
 
 void mm_magic_t::init(size_t sz, etl::vector<char, 256> *dummy_data_address, etl::queue<uint64_t, 256> *bresp_address, etl::queue<mm_rresp_t, 256> *rresp_address) {
-  this->data = (char *)malloc(sz);
+  this->data = (char *)bench_malloc(sz);
 
   // this->dummy_data = etl::vector<char, 256>();
   // this->bresp = etl::queue<uint64_t, 256>();

@@ -1,4 +1,4 @@
-NAME = linpack
+NAME = linpack-$(mainargs)
 
 mainargs ?= ref
 

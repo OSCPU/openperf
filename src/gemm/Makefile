@@ -1,4 +1,4 @@
-NAME = gemm
+NAME = gemm-$(mainargs)
 
 mainargs ?= ref
 

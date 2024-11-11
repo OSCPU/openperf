@@ -2,10 +2,10 @@
 #include <fs.h>
 
 Finfo file_table[] = {
-    {"/share/trm.c", 273, 0, NULL, NULL},
-    {"/share/trap.h", 106, 273, NULL, NULL},
-    {"/share/train.c", 1521, 379, NULL, NULL},
-    {"/share/train", 106, 1900, NULL, NULL},
+    {"/share/trm.c", 269, 0, NULL, NULL},
+    {"/share/trap.h", 110, 269, NULL, NULL},
+    {"/share/train.c", 1731, 379, NULL, NULL},
+    {"/share/train", 21332, 2110, NULL, NULL},
 };
 int tcc_argc1 = 10;
 char *tcc_argv1[] = {
