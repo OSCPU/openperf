@@ -10,7 +10,7 @@ env:
 
 jobs:
   setup_repo:
-    runs-on: nix
+    runs-on: ubuntu-latest
 
     strategy:
       matrix:
@@ -21,7 +21,11 @@ jobs:
           - test_size: "ref"
             test_name: "tcc"
     steps:
-      - uses: https://github.com/cachix/cachix-action@v14
+      - uses: cachix/install-nix-action@v27
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - uses: cachix/cachix-action@v14
         with:
           name: ysyx
           authToken: '${{ secrets.CACHIX_SIGNING_KEY }}'
@@ -31,6 +35,23 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: openperf
+
+      - name: Checkout Nemu Repo
+        id: checkout-nemu
+        if: ${{ contains(matrix.arch, 'nemu') }}
+        uses: actions/checkout@v4
+        with:
+          token: '${{ secrets.DEPLOY_KEY }}'
+          repository: xinyangli/openperf-nemu
+          path: nemu
+
+      - name: Checkout Abstract Machine Repo
+        id: checkout-am
+        uses: actions/checkout@v4
+        with:
+          token: '${{ secrets.DEPLOY_KEY }}'
+          repository: xinyangli/openperf-abstract-machine
+          path: abstract-machine
 
       - name: Eval devshell
         id: eval-devshell
@@ -50,18 +71,8 @@ jobs:
           mkdir -p /tmp/env
           mkdir -p /tmp/env/store
           nix copy --all --from file:///tmp/env/store || true
-          nix develop --no-registries --profile /tmp/env/openperf-env-${{ matrix.arch }} ./openperf#${{ matrix.arch }}
+          nix develop --no-use-registries --profile /tmp/env/openperf-env-${{ matrix.arch }} ./openperf#${{ matrix.arch }}
           nix copy --to file:///tmp/env/store /tmp/env/openperf-env-${{ matrix.arch }}
-
-      - name: Checkout Abstract Machine Repo
-        id: checkout-am
-        uses: actions/checkout@v4
-        with:
-          ssh-key: '${{ secrets.DEPLOY_KEY }}'
-          ssh-user: 'forgejo'
-          ssh-known-hosts: 'git.xinyang.life ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICctRGZWr5+pxPh+8ABY4kjC57khQzOpXNz3CPaEDZuO'
-          repository: openperf/abstract-machine
-          path: abstract-machine
 
       - name: Cache abstract-machine
         uses: actions/cache@v4
@@ -69,17 +80,6 @@ jobs:
           key: ${{ matrix.arch }}-${{ steps.eval-devshell.outputs.devshell-output }}-${{ steps.checkout-am.outputs.commit }}
           path: |
             abstract-machine
-
-      - name: Checkout Nemu Repo
-        id: checkout-nemu
-        if: ${{ contains(matrix.arch, 'nemu') }}
-        uses: actions/checkout@v4
-        with:
-          ssh-key: '${{ secrets.DEPLOY_KEY }}'
-          ssh-user: 'forgejo'
-          ssh-known-hosts: 'git.xinyang.life ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICctRGZWr5+pxPh+8ABY4kjC57khQzOpXNz3CPaEDZuO'
-          repository: openperf/nemu
-          path: nemu
 
       - name: Cache nemu
         if: ${{ contains(matrix.arch, 'nemu') }}
@@ -99,14 +99,14 @@ jobs:
       - name: Generate config if target platform is nemu
         if: ${{ contains(matrix.arch, 'nemu') }}
         run: |
-          nix develop --no-registries /tmp/env/openperf-env-${{ matrix.arch }} --impure --command make -C $NEMU_HOME ARCH=riscv32-nemu openperf_${{ matrix.arch }}_defconfig
+          nix develop --no-use-registries /tmp/env/openperf-env-${{ matrix.arch }} --impure --command make -C $NEMU_HOME ARCH=riscv32-nemu openperf_${{ matrix.arch }}_defconfig
 
       - name: Build common libraries
         run: |
-          nix develop --no-registries /tmp/env/openperf-env-${{ matrix.arch }} --impure --command make -C openperf ARCH=${{ matrix.arch }} ALL=dummy run
+          nix develop --no-use-registries /tmp/env/openperf-env-${{ matrix.arch }} --impure --command make -C openperf ARCH=${{ matrix.arch }} ALL=dummy run
 
       - name: Run openperf benchmark
         working-directory: openperf
         run: |
-          nix develop --no-registries /tmp/env/openperf-env-${{ matrix.arch }} --impure --command make ARCH=${{ matrix.arch }} ALL=${{ matrix.test_name }} mainargs=${{ matrix.test_size }} run
+          nix develop --no-use-registries /tmp/env/openperf-env-${{ matrix.arch }} --impure --command make ARCH=${{ matrix.arch }} ALL=${{ matrix.test_name }} mainargs=${{ matrix.test_size }} run
 
