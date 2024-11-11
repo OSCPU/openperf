@@ -5,11 +5,10 @@
 #include <stdint.h>
 
 void bench_malloc_init();
-void  *bench_malloc    (size_t size);
-void  *bench_calloc    (size_t number, size_t size);
-void  *bench_realloc   (void *p, size_t size);
-void   bench_free      (void *ptr);
-void   bench_all_free  (void);
+void *bench_malloc(size_t size);
+void *bench_calloc(size_t number, size_t size);
+void *bench_realloc(void *p, size_t size);
+void bench_free(void *ptr);
+void bench_all_free(void);
 
 #endif
-

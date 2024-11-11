@@ -17,4 +17,6 @@ _*
 build/
 !.gitignore
 .vscode
-!mersenne-riscv32e.bin
+abstract-machine/
+!.gitea
+!.github

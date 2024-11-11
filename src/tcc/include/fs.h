@@ -5,12 +5,12 @@
 #include <stddef.h>
 
 #ifndef SEEK_SET
-enum {SEEK_SET, SEEK_CUR, SEEK_END};
+enum { SEEK_SET, SEEK_CUR, SEEK_END };
 #endif
-enum {FD_STDIN, FD_STDOUT, FD_STDERR};
+enum { FD_STDIN, FD_STDOUT, FD_STDERR };
 
-typedef size_t (*ReadFn) (void *buf, size_t offset, size_t len);
-typedef size_t (*WriteFn) (const void *buf, size_t offset, size_t len);
+typedef size_t (*ReadFn)(void *buf, size_t offset, size_t len);
+typedef size_t (*WriteFn)(const void *buf, size_t offset, size_t len);
 
 typedef struct {
   char *name;
