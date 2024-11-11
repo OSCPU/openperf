@@ -18,3 +18,5 @@ build/
 !.gitignore
 .vscode
 abstract-machine/
+!.gitea
+!.github
