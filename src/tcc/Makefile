@@ -1,4 +1,4 @@
-NAME = riscv-tcc
+NAME = riscv-tcc-$(mainargs)
 
 mainargs ?= ref
 

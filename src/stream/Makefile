@@ -1,4 +1,4 @@
-NAME = stream
+NAME = stream-$(mainargs)
 
 mainargs ?= ref
 

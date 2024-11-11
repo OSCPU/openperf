@@ -11,7 +11,7 @@ COLOR_NONE  = \033[0m
 RESULT = .result
 $(shell > $(RESULT))
 
-ALL = cpuemu mcf x264 tcc stream linpack gemm whetstone
+ALL =  mcf x264 tcc stream linpack gemm whetstone
 
 all: $(BENCH_LIBS) $(ALL)
 	@echo "OpenPerf [$(words $(ALL)) item(s)]:" $(ALL)
@@ -45,21 +45,22 @@ run: $(BENCH_LIBS) all
 		echo "OpenPerf PASS"; \
 	fi
 	@awk '\
+		BEGIN {total_us = 0 } \
 		{ \
 			h = min = s = ms = us = 0;\
 			if (match($$0, /([0-9]+) h/, arr)) h = arr[1]; \
     	if (match($$0, /([0-9]+) min/, arr)) min = arr[1]; \
     	if (match($$0, /([0-9]+) s/, arr)) s = arr[1]; \
-    	if (match($$0, /([0-9]+)\.([0-9]*) ms/, arr)) {ms = arr[1]; us = arr[2]} \
-    	total_ms += h * 3600000 + min * 60000 + s * 1000 + ms; \
+			if (match($$0, /([0-9]+)\.([0-9]*) ms/, arr)) {ms = arr[1]; us = arr[2];} \
+    	total_us += h * 3600 * 1000 * 1000 + min * 60 * 1000 * 1000 + s * 1000 * 1000 + ms * 1000 + us; \
 		} \
 		END { \
 			printf "Total time: %d h %d min %d s %d.%d ms\n", \
-        int(total_ms / 3600000), \
-        int((total_ms % 3600000) / 60000), \
-        int((total_ms % 60000) / 1000), \
-        total_ms % 1000, \
-				us; \
+        int(total_us / (3600 * 1000 * 1000)), \
+        int((total_us % (3600 * 1000 * 1000)) / (60 * 1000 * 1000)), \
+        int((total_us % (60 * 1000 * 1000)) / (1000 * 1000)), \
+        int((total_us % (1000 * 1000) / 1000)), \
+				total_us % 1000; \
 	} \
 	' $(RESULT)
 	@rm $(RESULT)

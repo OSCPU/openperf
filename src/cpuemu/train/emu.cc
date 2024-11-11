@@ -1,8 +1,10 @@
 #include <cpuemu.h>
+#include <bench_malloc.h>
 #include <SimTop.h>
 #undef assert
 #include <am.h>
 #include <klib.h>
+
 
 extern uint8_t ramdisk_start;
 extern uint8_t ramdisk_end;
@@ -14,7 +16,7 @@ SimTop cpu;
 
 void load_program() {
 
-  program = malloc(MAX_PROGRAM_SIZE);
+  program = bench_malloc(MAX_PROGRAM_SIZE);
 
   memset(&program, 0, sizeof(program));
   // move the program to the memory

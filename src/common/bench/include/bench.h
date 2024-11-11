@@ -1,6 +1,10 @@
 #ifndef __BENCH_COMMON
 #define __BENCH_COMMON
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stddef.h>
 #include <stdint.h>
 
@@ -15,5 +19,9 @@ typedef struct {
   uint32_t checksum;
   size_t repeat_time;
 } Setting;
+
+#ifdef  __cplusplus
+}
+#endif
 
 #endif

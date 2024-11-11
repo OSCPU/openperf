@@ -20,13 +20,13 @@ char *format_time(uint64_t us) {
 
   int len = 0;
   if (h > 0) {
-    len = bench_sprintf(buf, "%ld h %ld min %ld s %ld.000 ms", h, min, s, ms);
+    len = bench_sprintf(buf, "%lld h %lld min %lld s %lld.000 ms", h, min, s, ms);
   } else if (min > 0) {
-    len = bench_sprintf(buf, "%ld min %ld s, %ld.000 ms", min, s, ms);
+    len = bench_sprintf(buf, "%lld min %lld s, %lld.000 ms", min, s, ms);
   } else if (s > 0) {
-    len = bench_sprintf(buf, "%ld s, %ld.000 ms", s, ms);
+    len = bench_sprintf(buf, "%lld s, %lld.000 ms", s, ms);
   } else {
-    len = bench_sprintf(buf, "%ld.000 ms", ms);
+    len = bench_sprintf(buf, "%lld.000 ms", ms);
   }
   char *p = &buf[len - 4];
   while (us > 0) {
