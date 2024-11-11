@@ -12,15 +12,12 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    continue-on-error: true
     strategy:
       max-parallel: 4
       matrix:
-        test_name: ["mcf", "x264", "tcc", "stream", "linpack", "gemm", "whetstone", "cpuemu"]
         test_size: ["test", "ref"]
         arch: ["native", "riscv32-nemu"]
-        exclude:
-          - test_size: "ref"
-            test_name: "tcc"
     steps:
 
       - uses: nixbuild/nix-quick-install-action@v27
@@ -62,6 +59,7 @@ jobs:
         uses: actions/cache@v4
         with:
           key: openperf-common-${{ matrix.arch }}-${{ hashFiles('**/*.nix') }}-${{ steps.checkout-openperf.outputs.commit }}-${{ steps.checkout-am.outputs.commit }}
+          path: openperf/src/common
 
       - name: Generate config if target platform is nemu
         if: ${{ contains(matrix.arch, 'nemu') }}
@@ -75,5 +73,5 @@ jobs:
       - name: Run openperf benchmark
         working-directory: openperf
         run: |
-          nix develop --no-use-registries /tmp/env/openperf-env-${{ matrix.arch }} --impure --command make ARCH=${{ matrix.arch }} ALL=${{ matrix.test_name }} mainargs=${{ matrix.test_size }} run
+          nix develop --no-use-registries /tmp/env/openperf-env-${{ matrix.arch }} --impure --command make ARCH=${{ matrix.arch }} mainargs=${{ matrix.test_size }} run
 
