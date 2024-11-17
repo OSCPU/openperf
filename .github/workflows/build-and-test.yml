@@ -75,3 +75,10 @@ jobs:
         run: |
           nix develop --no-use-registries /tmp/env/openperf-env-${{ matrix.arch }} --impure --command make ARCH=${{ matrix.arch }} mainargs=${{ matrix.test_size }} run
 
+      - name: Upload built binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: openperf-binary-${{ matrix.arch }}-${{ matrix.test_size }}
+          path: |
+            openperf/src/**/build/*-${{ matrix.arch }}*
+
