@@ -68,3 +68,15 @@ The One Student One Chip Project is planning to build a ranking system for stude
 - [ ] Test the sensitivity of various programs
 - [ ] Collect performance data from various open source processor cores
 - [ ] Get early access
+
+## Acknowledgement
+
+Thanks to the Open Source Community for developing related programs & tools included in OpenPerf. To know more copyright info you can check the Licence headers in programs' code. The moderate and additional features & code written by us is under Mulan PSL v2 Licence.
+
+```
+Copyright (c) 2024 One Student One Chip Project OpenPerf is licensed under Mulan PSL v2. You can use this software according to the terms and conditions of the Mulan PSL v2.
+
+You may obtain a copy of Mulan PSL v2 at: http://license.coscl.org.cn/MulanPSL2
+
+THIS SOFTWARE IS PROVIDED ON AN “AS IS” BASIS, WITHOUT warranties of any kind, either express or implied, including but not limited to non-infringement, merchantability or fit for a particular purpose. See the Mulan PSL v2 for more details.
+```
