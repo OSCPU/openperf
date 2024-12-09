@@ -1,6 +1,6 @@
 # OpenPerf Project
 
-OpenPerf is an open source benchmark for evaluating test the performance of the microarchitecture in processor core, developed and be maintained by [One Student One Chip Project](https://ysyx.org).
+OpenPerf is an open source benchmark for evaluating test the performance of the microarchitecture in processor core, developed and be maintained by [One Student One Chip Project](https://ysyx.oscc.cc/).
 
 # How to use
 
@@ -56,11 +56,19 @@ The make recipe, like other benchmark programs in `am-kernel`, allows you to cho
 * Floating-point Arithmetic: Linpack, Whetstone
 * Utils: soft-fp(cyl), abstract-machine, openlibm
 
-## Ranking (Coming Soon)
+## Community
+
+### One Student One Chip Project
+
+"One Student One Chip" is a public welfare learning program to supply talents & trained students to chip industry, which means registering and studying "One Student One Chip" is free. In the mainline, even if he or she has zero experience or skills, every student could learn deeply about how computer system works and create their own processor cores from scratch.
+
+Visit [the main page](https://ysyx.oscc.cc/) to know more information.
+
+### Ranking (Coming Soon)
 
 The One Student One Chip Project is planning to build a ranking system for students! You can run OpenPerf with your NEMU or NPC to find out your performance and compare with others.
 
-## Contribute Guide
+## Contributing
 
 ### Roadmap
 
