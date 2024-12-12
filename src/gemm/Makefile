@@ -1,23 +1,12 @@
-NAME = gemm-$(mainargs)
+_GEMM_SRCS := gemm.c matmul.c ./configs/$(mainargs)-config.c
+GEMM_SRCS := $(addprefix src/gemm/, $(_GEMM_SRCS))
+GEMM_INCPATH += src/common/openlibm/include \
+                src/common/openlibm/src \
+                src/gemm/include \
+                src/common/bench/include
 
-mainargs ?= ref
+GEMM_CFLAGS := $(CFLAGS) $(AM_CFLAGS) $(addprefix -I, $(GEMM_INCPATH))
+GEMM_LDFLAGS := $(LDFLAGS) $(AM_LDFLAGS)
 
-BENCH_LIBS = bench openlibm soft-fp
+$(eval $(call ADD_IMAGE,$(BUILDDIR)/images/gemm,GEMM_))
 
-SRCS = gemm.c matmul.c ./configs/$(mainargs)-config.c
-
-INC_PATH += 	../common/openlibm/include \
-			../common/openlibm/src \
-			./include \
-			../common/bench/include
-
-include $(AM_HOME)/Makefile
-
-BENCH_LINKAGE += $(addsuffix -$(ARCH).a, $(join \
-					 $(addsuffix /build/, $(addprefix $(WORK_DIR)/../common/, $(BENCH_LIBS))), \
-					 $(BENCH_LIBS) ))
-#override variable LINKAGE, we should link soft-fp first.
-LINKAGE   = $(OBJS)  $(BENCH_LINKAGE)\
-  $(addsuffix -$(ARCH).a, $(join \
-    $(addsuffix /build/, $(addprefix $(AM_HOME)/, $(LIBS))), \
-    $(LIBS) ))

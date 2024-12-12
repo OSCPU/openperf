@@ -1,23 +1,12 @@
-NAME = stream-$(mainargs)
+_STREAM_SRCS := stream.c configs/$(mainargs)-config.c
+STREAM_SRCS := $(addprefix src/stream/, $(_STREAM_SRCS))
+STREAM_INCPATH += src/common/openlibm/include \
+                  src/common/openlibm/src \
+                  src/stream/include \
+                  src/common/bench/include
 
-mainargs ?= ref
+STREAM_CFLAGS := $(CFLAGS) $(AM_CFLAGS) $(addprefix -I, $(STREAM_INCPATH))
+STREAM_LDFLAGS := $(LDFLAGS) $(AM_LDFLAGS)
 
-BENCH_LIBS = bench openlibm soft-fp
-SRCS = stream.c ./configs/$(mainargs)-config.c
+$(eval $(call ADD_IMAGE,$(BUILDDIR)/images/stream,STREAM_))
 
-INC_PATH += 	../common/openlibm/include \
-			../common/openlibm/src \
-			./include \
-			../common/bench/include
-
-include $(AM_HOME)/Makefile
-
-BENCH_LINKAGE = $(addsuffix -$(ARCH).a, $(join \
-					 $(addsuffix /build/, $(addprefix $(WORK_DIR)/../common/, $(BENCH_LIBS))), \
-					 $(BENCH_LIBS) ))
-
-#override variable LINKAGE, we should link soft-fp first.
-LINKAGE   = $(OBJS)  $(BENCH_LINKAGE)\
-  $(addsuffix -$(ARCH).a, $(join \
-    $(addsuffix /build/, $(addprefix $(AM_HOME)/, $(LIBS))), \
-    $(LIBS) ))

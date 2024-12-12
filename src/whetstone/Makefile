@@ -1,24 +1,12 @@
-NAME = whetstone-$(mainargs)
+_WHETSTONE_SRCS = whetstone.c ./configs/$(mainargs)-config.c
+WHETSTONE_SRCS := $(addprefix src/whetstone/, $(_WHETSTONE_SRCS))
+WHETSTONE_INCPATH += src/common/openlibm/include \
+                   src/common/openlibm/src \
+                   src/whetstone/include \
+                   src/common/bench/include
 
-mainargs ?= ref
+WHETSTONE_CFLAGS := $(CFLAGS) $(AM_CFLAGS) $(addprefix -I, $(WHETSTONE_INCPATH))
+WHETSTONE_LDFLAGS := $(LDFLAGS) $(AM_LDFLAGS)
 
-SRCS = whetstone.c ./configs/$(mainargs)-config.c
+$(eval $(call ADD_IMAGE,$(BUILDDIR)/images/whetstone,WHETSTONE_))
 
-BENCH_LIBS = bench openlibm soft-fp
-
-INC_PATH += 	../common/openlibm/include \
-			../common/openlibm/src \
-			./include \
-			../common/bench/include
-
-include $(AM_HOME)/Makefile
-
-BENCH_LINKAGE = $(addsuffix -$(ARCH).a, $(join \
-					 $(addsuffix /build/, $(addprefix $(WORK_DIR)/../common/, $(BENCH_LIBS))), \
-					 $(BENCH_LIBS) ))
-
-#override variable LINKAGE, we should link soft-fp first.
-LINKAGE   = $(OBJS)  $(BENCH_LINKAGE)\
-  $(addsuffix -$(ARCH).a, $(join \
-    $(addsuffix /build/, $(addprefix $(AM_HOME)/, $(LIBS))), \
-    $(LIBS) ))

@@ -1,24 +1,14 @@
-NAME = riscv-tcc-$(mainargs)
+_TCC_SRCS := tcc.c my_qsort.c fs.c ./configs/$(mainargs)-config.c ./resources/resources-$(mainargs).S
+TCC_SRCS := $(addprefix src/tcc/, $(_TCC_SRCS))
 
-mainargs ?= ref
+TCC_INCPATH += src/common/openlibm/include \
+               src/common/openlibm/src \
+               src/tcc/include \
+               src/common/bench/include
 
-BENCH_LIBS = bench openlibm soft-fp
+TCC_CFLAGS := $(CFLAGS) $(AM_CFLAGS) $(addprefix -I, $(TCC_INCPATH))
+TCC_LDFLAGS := $(LDFLAGS) $(AM_LDFLAGS)
+TCC_ASFLAGS := $(AM_ASFLAGS) -Isrc/tcc
 
-SRCS := tcc.c my_qsort.c fs.c ./configs/$(mainargs)-config.c ./resources/resources-$(mainargs).S
+$(eval $(call ADD_IMAGE,$(BUILDDIR)/images/tcc,TCC_))
 
-INC_PATH += 	../common/openlibm/include \
-			../common/openlibm/src \
-			./include \
-			../common/bench/include
-
-
-include $(AM_HOME)/Makefile
-
-BENCH_LINKAGE += $(addsuffix -$(ARCH).a, $(join \
-					 $(addsuffix /build/, $(addprefix $(WORK_DIR)/../common/, $(BENCH_LIBS))), \
-					 $(BENCH_LIBS) ))
-#override variable LINKAGE, we should link soft-fp first.
-LINKAGE   = $(OBJS)  $(BENCH_LINKAGE)\
-  $(addsuffix -$(ARCH).a, $(join \
-    $(addsuffix /build/, $(addprefix $(AM_HOME)/, $(LIBS))), \
-    $(LIBS) ))
