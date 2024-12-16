@@ -8,5 +8,5 @@ WHETSTONE_INCPATH += src/common/openlibm/include \
 WHETSTONE_CFLAGS := $(CFLAGS) $(AM_CFLAGS) $(addprefix -I, $(WHETSTONE_INCPATH))
 WHETSTONE_LDFLAGS := $(LDFLAGS) $(AM_LDFLAGS)
 
-$(eval $(call ADD_IMAGE,$(BUILDDIR)/images/whetstone,WHETSTONE_))
+$(eval $(call ADD_IMAGE,$(BUILDDIR)/images/whetstone-$(mainargs),WHETSTONE_))
 

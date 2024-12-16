@@ -8,5 +8,5 @@ MCF_INCPATH += src/common/openlibm/include \
 MCF_CFLAGS := $(CFLAGS) $(AM_CFLAGS) $(addprefix -I, $(MCF_INCPATH))
 MCF_LDFLAGS := $(LDFLAGS) $(AM_LDFLAGS)
 
-$(eval $(call ADD_IMAGE,$(BUILDDIR)/images/mcf,MCF_))
+$(eval $(call ADD_IMAGE,$(BUILDDIR)/images/mcf-$(mainargs),MCF_))
 

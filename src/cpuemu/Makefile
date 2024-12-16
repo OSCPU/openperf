@@ -11,4 +11,4 @@ CPUEMU_CXXFLAGS := $(CXXFLAGS) $(AM_CXXFLAGS) $(addprefix -I, $(CPUEMU_INCPATH))
 CPUEMU_LDFLAGS := $(LDFLAGS) $(AM_LDFLAGS)
 CPUEMU_ASFLAGS := $(AM_ASFLAGS) -Isrc/cpuemu
 
-$(eval $(call ADD_IMAGE,$(BUILDDIR)/images/cpuemu,CPUEMU_))
+$(eval $(call ADD_IMAGE,$(BUILDDIR)/images/cpuemu-$(mainargs),CPUEMU_))

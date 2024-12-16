@@ -8,5 +8,5 @@ GEMM_INCPATH += src/common/openlibm/include \
 GEMM_CFLAGS := $(CFLAGS) $(AM_CFLAGS) $(addprefix -I, $(GEMM_INCPATH))
 GEMM_LDFLAGS := $(LDFLAGS) $(AM_LDFLAGS)
 
-$(eval $(call ADD_IMAGE,$(BUILDDIR)/images/gemm,GEMM_))
+$(eval $(call ADD_IMAGE,$(BUILDDIR)/images/gemm-$(mainargs),GEMM_))
 

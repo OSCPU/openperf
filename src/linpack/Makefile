@@ -7,5 +7,5 @@ LINPACK_INCPATH += src/common/openlibm/include \
 LINPACK_CFLAGS := $(CFLAGS) $(AM_CFLAGS) $(addprefix -I, $(LINPACK_INCPATH))
 LINPACK_LDFLAGS := $(LDFLAGS) $(AM_LDFLAGS)
 
-$(eval $(call ADD_IMAGE,$(BUILDDIR)/images/linpack,LINPACK_))
+$(eval $(call ADD_IMAGE,$(BUILDDIR)/images/linpack-$(mainargs),LINPACK_))
 

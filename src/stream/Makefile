@@ -8,5 +8,5 @@ STREAM_INCPATH += src/common/openlibm/include \
 STREAM_CFLAGS := $(CFLAGS) $(AM_CFLAGS) $(addprefix -I, $(STREAM_INCPATH))
 STREAM_LDFLAGS := $(LDFLAGS) $(AM_LDFLAGS)
 
-$(eval $(call ADD_IMAGE,$(BUILDDIR)/images/stream,STREAM_))
+$(eval $(call ADD_IMAGE,$(BUILDDIR)/images/stream-$(mainargs),STREAM_))
 

@@ -57,8 +57,13 @@ LDFLAGS += -L$(LIB_BUILDDIR) -lbench -lopenlibm -lsoftfp
 include $(addsuffix /Makefile, $(addprefix src/, $(IMAGES)))
 
 # Add libs to dependency of every image
-$(addsuffix .elf, $(addprefix $(BUILDDIR)/images/, $(IMAGES))): %: $(addprefix $(LIB_BUILDDIR)/, $(LIBS))
-all: $(addsuffix .bin, $(addprefix $(BUILDDIR)/images/, $(IMAGES)))
+$(addsuffix -$(mainargs).elf, $(addprefix $(BUILDDIR)/images/, $(IMAGES))): %: $(addprefix $(LIB_BUILDDIR)/, $(LIBS))
+all: $(addsuffix -$(mainargs).bin, $(addprefix $(BUILDDIR)/images/, $(IMAGES)))
+
+test_config.yaml:
+	cp test_config.example.yaml test_config.yaml
+
+run: all test_config.yaml
 	@echo "OpenPerf [$(words $(ALL)) item(s)]:" $(ALL)
 	@if [ -z "$(mainargs)" ]; then \
 		echo "Empty mainargs, use \"ref\" by default"; \
@@ -66,62 +71,7 @@ all: $(addsuffix .bin, $(addprefix $(BUILDDIR)/images/, $(IMAGES)))
 	else \
 		echo "====== Running OpenPerf [input *$${mainargs}*] ======"; \
 	fi
-
-$(ALL): %: $(BENCH_LIBS)
-	@{\
-		  TMP=$*.tmp;\
-	    $(MAKE) -C ./src/$* ARCH=$(ARCH) run 2>&1 | tee -a $$TMP;\
-     if [ $${PIPESTATUS[0]} -eq 0 ]; then \
-		    printf "[%14s] $(COLOR_GREEN)PASS$(COLOR_NONE) " $* >> $(RESULT); \
-		    cat $$TMP | grep -E -i -e "OpenPerf time: ([0-9]*\.)?[0-9]*" >> $(RESULT); \
-				if $(KEEP_LOG_SUCCEED); then \
-					mkdir -p "logs/$(TIME)/"; \
-					mv $$TMP "logs/$(TIME)/"; \
-				else \
-					rm $$TMP; \
-				fi \
-	    else \
-			  printf "[%14s] $(COLOR_RED)***FAIL***$(COLOR_NONE)\n" $* >> $(RESULT); \
-				if $(KEEP_LOG_FAILED); then \
-					mkdir -p "logs/$(TIME)/"; \
-					mv $$TMP "logs/$(TIME)/"; \
-				else \
-					rm $$TMP; \
-				fi \
-	    fi \
-	}
-
-run: $(BENCH_LIBS) all
-	@cat $(RESULT)
-	@echo "============================================="
-	@awk '\
-		BEGIN {total_us = 0 } \
-		{ \
-			h = min = s = ms = us = 0;\
-			if (match($$0, /([0-9]+) h/, arr)) h = arr[1]; \
-    	if (match($$0, /([0-9]+) min/, arr)) min = arr[1]; \
-    	if (match($$0, /([0-9]+) s/, arr)) s = arr[1]; \
-			if (match($$0, /([0-9]+)\.([0-9]*) ms/, arr)) {ms = arr[1]; us = arr[2];} \
-    	total_us += h * 3600 * 1000 * 1000 + min * 60 * 1000 * 1000 + s * 1000 * 1000 + ms * 1000 + us; \
-		} \
-		END { \
-			printf "Total time: %d h %d min %d s %d.%d ms\n", \
-        int(total_us / (3600 * 1000 * 1000)), \
-        int((total_us % (3600 * 1000 * 1000)) / (60 * 1000 * 1000)), \
-        int((total_us % (60 * 1000 * 1000)) / (1000 * 1000)), \
-        int((total_us % (1000 * 1000) / 1000)), \
-				total_us % 1000; \
-	} \
-	' $(RESULT)
-	@if grep -q -i -e "fail" "$(RESULT)"; then \
-		echo "OpenPerf FAIL"; \
-		rm $(RESULT); \
-		exit 1; \
-	else \
-		echo "OpenPerf PASS"; \
-		rm $(RESULT); \
-		exit 0; \
-	fi
+	python3 scripts/run.py test_config.yaml
 
 .PHONY: $(BENCH_LIBS) $(CLEAN_ALL) $(ALL) all run clean
 
