@@ -1,0 +1,3 @@
+[submodule "abstract-machine"]
+	path = abstract-machine
+	url = https://github.com/xinyangli/openperf-abstract-machine.git
