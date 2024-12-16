@@ -6,7 +6,7 @@ on:
 
 env:
   AM_HOME: "${{ github.workspace }}/abstract-machine"
-  NEMU_HOME: "${{ github.workspace }}/nemu"
+  NEMU_HOME: "${{ github.workspace }}/openperf-nemu"
 
 jobs:
   test:
@@ -16,7 +16,6 @@ jobs:
       fail-fast: false
       max-parallel: 4
       matrix:
-        test_size: ["test", "ref"]
         arch: ["native", "riscv32-nemu"]
     steps:
 
@@ -31,7 +30,8 @@ jobs:
         id: checkout-openperf
         uses: actions/checkout@v4
         with:
-          path: openperf
+          submodules: 'true'
+          token: '${{ secrets.DEPLOY_KEY }}'
 
       - name: Checkout Nemu Repo
         id: checkout-nemu
@@ -40,45 +40,36 @@ jobs:
         with:
           token: '${{ secrets.DEPLOY_KEY }}'
           repository: xinyangli/openperf-nemu
-          path: nemu
-
-      - name: Checkout Abstract Machine Repo
-        id: checkout-am
-        uses: actions/checkout@v4
-        with:
-          token: '${{ secrets.DEPLOY_KEY }}'
-          repository: xinyangli/openperf-abstract-machine
-          path: abstract-machine
+          path: openperf-nemu
 
       - name: Prepare devshell
         run: |
           mkdir -p /tmp/env
-          nix develop --no-use-registries --profile /tmp/env/openperf-env-${{ matrix.arch }} ./openperf#${{ matrix.arch }}
+          nix develop --no-use-registries --profile /tmp/env/openperf-env-${{ matrix.arch }} .#${{ matrix.arch }}
 
-      - name: Cache common libraries
-        uses: actions/cache@v4
-        with:
-          key: openperf-common-${{ matrix.arch }}-${{ hashFiles('**/*.nix') }}-${{ steps.checkout-openperf.outputs.commit }}-${{ steps.checkout-am.outputs.commit }}
-          path: openperf/src/common
-
-      - name: Generate config if target platform is nemu
+      - name: Build nemu 
         if: ${{ contains(matrix.arch, 'nemu') }}
         run: |
-          nix develop --no-use-registries /tmp/env/openperf-env-${{ matrix.arch }} --impure --command make -C $NEMU_HOME ARCH=riscv32-nemu openperf_${{ matrix.arch }}_defconfig
+          nix develop --no-use-registries /tmp/env/openperf-env-${{ matrix.arch }} --impure --command make -C openperf-nemu ARCH=${{ matrix.arch }} openperf_${{ matrix.arch }}_defconfig
+          nix develop --no-use-registries /tmp/env/openperf-env-${{ matrix.arch }} --impure --command make -C openperf-nemu ARCH=${{ matrix.arch }}
 
-      - name: Build common libraries
+      - name: Build abstract-machine
         run: |
-          nix develop --no-use-registries /tmp/env/openperf-env-${{ matrix.arch }} --impure --command make -C openperf ARCH=${{ matrix.arch }} ALL=dummy run
+          nix develop --no-use-registries /tmp/env/openperf-env-${{ matrix.arch }} --impure --command make -C abstract-machine ARCH=${{ matrix.arch }} install
+
+      - name: Build
+        run: |
+          nix develop --no-use-registries /tmp/env/openperf-env-${{ matrix.arch }} --impure --command make ARCH=${{ matrix.arch }} mainargs=ref all
+          nix develop --no-use-registries /tmp/env/openperf-env-${{ matrix.arch }} --impure --command make ARCH=${{ matrix.arch }} mainargs=test all
 
       - name: Run openperf benchmark
-        working-directory: openperf
         run: |
-          nix develop --no-use-registries /tmp/env/openperf-env-${{ matrix.arch }} --impure --command make ARCH=${{ matrix.arch }} mainargs=${{ matrix.test_size }} run
+          nix develop --no-use-registries /tmp/env/openperf-env-${{ matrix.arch }} --impure --command make ARCH=${{ matrix.arch }} mainargs=test run
 
       - name: Upload built binary
         uses: actions/upload-artifact@v4
         with:
-          name: openperf-binary-${{ matrix.arch }}-${{ matrix.test_size }}
+          name: openperf-binary-${{ matrix.arch }}
           path: |
             openperf/src/**/build/*-${{ matrix.arch }}*
 

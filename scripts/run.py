@@ -257,7 +257,7 @@ def format_openperf_time(timing: Optional[OpenPerfTiming]) -> str:
         return "N/A"
 
 
-def run_from_config(config_path: str, output_file: Optional[str] = None):
+def run_from_config(config_path: str, output_file: Optional[str] = None) -> int:
     """Run all tests specified in a config file."""
     config = TestConfig(config_path)
     runner = TestRunner(config.config["binary"])
@@ -277,6 +277,7 @@ def run_from_config(config_path: str, output_file: Optional[str] = None):
         )
     )
     print("-" * 80)
+    failed = 0
     for result in results:
         print(
             "{:<30} {:<15} {:<25} {:.2f}s".format(
@@ -288,12 +289,15 @@ def run_from_config(config_path: str, output_file: Optional[str] = None):
         )
 
         if result.returncode != 0:
+            failed += 1
             print("Error:")
             print(result.stderr)
 
     if output_file:
         runner.export_results(output_file)
         print(f"\nResults exported to {output_file}")
+
+    return failed
 
 
 def main():
@@ -304,7 +308,11 @@ def main():
     args = parser.parse_args()
 
     try:
-        run_from_config(args.config, args.output)
+        failed = run_from_config(args.config, args.output)
+        if failed == 0:
+            sys.exit(0)
+        else:
+            sys.exit(1)
     except Exception as e:
         print(f"Error: {str(e)}", file=sys.stderr)
         sys.exit(1)

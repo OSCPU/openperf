@@ -59,16 +59,11 @@
         nemu = rv32CrossPkgs.gccStdenvNoLibs.mkDerivation {
           name = "openperf";
           depsBuildBuild = nemuDepsBuildBuild;
-
-          AM_HOME = "/home/xin/repo/openperf/abstract-machine";
-          NEMU_HOME = "/home/xin/repo/openperf/openperf-nemu";
         };
 
         nemu-clang = bareClangStdenv.mkDerivation {
           name = "openperf";
           depsBuildBuild = nemuDepsBuildBuild;
-          AM_HOME = "/home/xin/repo/openperf/abstract-machine";
-          NEMU_HOME = "/home/xin/repo/openperf/openperf-nemu";
         };
 
         native =
@@ -85,19 +80,6 @@
             };
 
         riscv32-nemu = nemu;
-      };
-      packages.x86_64-linux = {
-        makefile2graph = pkgs.makefile2graph.overrideAttrs (
-          final: prev: {
-            version = "2023-08-31";
-            src = pkgs.fetchFromGitHub {
-              owner = "lindenb";
-              repo = "makefile2graph";
-              rev = "f388f3558a586f98cdac64db3db25ca4cb8eb710";
-              hash = "sha256-8RGV7k+DMET0LaZeiAy4Xz/SEPHmMX1KMrY86zWAJ5I=";
-            };
-          }
-        );
       };
     };
 }

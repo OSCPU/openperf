@@ -1,8 +1,13 @@
 binary: openperf-nemu/build/riscv32-nemu-interpreter
-max_workers: 16
+max_workers: 1
 tests:
   nemu-ref:
-    timeout: 50
+    timeout: 180
     format: "-b build/images/{0}-ref.bin"
     parameters:
         0: [ "mcf", "x264", "tcc", "stream", "linpack", "gemm", "whetstone" ]
+  nemu-test:
+    timeout: 50
+    format: "-b build/images/{0}-test.bin"
+    parameters:
+        0: [ "cpuemu", "mcf", "x264", "tcc", "stream", "linpack", "gemm", "whetstone" ]
