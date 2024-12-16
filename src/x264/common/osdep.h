@@ -37,7 +37,6 @@
 #include <klib.h>
 #include <klib-macros.h>
 #include <openlibm.h>
-#include <inttypes.h>
 #include <x264.h>
 #include <bench_malloc.h>
 #include <bench_debug.h>
