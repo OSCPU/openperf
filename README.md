@@ -79,7 +79,7 @@ The One Student One Chip Project is planning to build a ranking system for stude
 
 ## Acknowledgement
 
-Thanks to the Open Source Community for developing related programs & tools included in OpenPerf. To know more copyright info you can check the Licence headers in programs' code. The moderate and additional features & code written by us is under Mulan PSL v2 Licence.
+Thanks to the Open Source Community for developing related programs & tools included in OpenPerf. To know more copyright info you can check the Licence headers in programs' code. The modification and additional features & code written by us is under Mulan PSL v2 Licence.
 
 ```
 Copyright (c) 2024 One Student One Chip Project OpenPerf is licensed under Mulan PSL v2. You can use this software according to the terms and conditions of the Mulan PSL v2.
