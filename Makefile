@@ -16,7 +16,18 @@ IMAGES := cpuemu mcf x264 tcc stream linpack gemm whetstone
 endif
 
 # Toolchain settings
+### (Cross) compilers, e.g., mips-linux-gnu-g++
+CC ?= $(CROSS_COMPILE)gcc
+CXX ?= $(CROSS_COMPILE)g++
+AR ?= $(CROSS_COMPILE)ar
+OBJCOPY ?= $(CROSS_COMPILE)objcopy
+# $(AS) does not do preprocessing. Since we are using includes
+# in assembly source code, we need to use $(CC) as frontend
+# to invoke assembler.
 AS := $(CC)
+# We use $(CC) as a frontend to invoke $(LD)
+LD := 
+
 
 ARCH ?= # Note that ARCH must be provided
 # dependency
