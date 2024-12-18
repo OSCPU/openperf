@@ -57,10 +57,19 @@
 // #define TI_BITS (__CHAR_BIT__ * (int) sizeof (TItype))
 // #endif
 
+#if defined __x86_64__ && defined __ILP32__
+typedef long long int __gcc_CMPtype;
+#else
+typedef long int __gcc_CMPtype;
+#endif
+#if !defined(__clang__) && defined(__GNUC__)
 /* The type of the result of a floating point comparison.  This must
    match __libgcc_cmp_return__ in GCC for the target.  */
-typedef int __gcc_CMPtype __attribute__ ((mode (__libgcc_cmp_return__)));
-#define CMPtype __gcc_CMPtype
+typedef int __gcc_CMPtype_GCC __attribute__ ((mode (__libgcc_cmp_return__)));
+# define CMPtype __gcc_CMPtype
+_Static_assert(sizeof(__gcc_CMPtype) == sizeof(__gcc_CMPtype_GCC),
+               "sizeof(__gcc_CMPtype) != sizeof(__gcc_CMPtype_GCC)");
+#endif
 
 #define _FP_NANSIGN_H		0
 #define _FP_NANSIGN_S		0

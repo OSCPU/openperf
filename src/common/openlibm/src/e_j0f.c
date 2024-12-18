@@ -13,7 +13,6 @@
  * ====================================================
  */
 
-#include <assert.h>
 #include "cdefs-compat.h"
 
 #include <openlibm_math.h>

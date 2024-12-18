@@ -41,7 +41,7 @@ SOFTWARE.
 #include "function.h"
 #include "nullptr.h"
 
-#include <assert.h>
+#include <klib.h>
 
 #if defined(ETL_LOG_ERRORS) || defined(ETL_IN_UNIT_TEST)
 namespace etl

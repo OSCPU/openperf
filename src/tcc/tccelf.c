@@ -2971,11 +2971,11 @@ LIBTCCAPI int tcc_output_file(TCCState *s, const char *filename) {
 #endif
 }
 
-ST_FUNC ssize_t full_read(int fd, void *buf, size_t count) {
+ST_FUNC size_t full_read(int fd, void *buf, size_t count) {
   char *cbuf = buf;
   size_t rnum = 0;
   while (1) {
-    ssize_t num = fs_read(fd, cbuf, count - rnum);
+    size_t num = fs_read(fd, cbuf, count - rnum);
     if (num < 0)
       return num;
     if (num == 0)

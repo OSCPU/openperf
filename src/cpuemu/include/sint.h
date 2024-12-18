@@ -1,7 +1,7 @@
 #ifndef SINT_H_
 #define SINT_H_
 
-#include <cinttypes>
+#include <stdint.h>
 
 #include "uint.h"
 

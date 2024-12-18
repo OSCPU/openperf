@@ -3,7 +3,6 @@
 #include <klib.h>
 #include <mcf.h>
 #include <pqueue.h>
-#include <stdio.h>
 
 void MCF_init(MCF *mcf) {
   mcf->no_node = 0;

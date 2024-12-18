@@ -6,7 +6,6 @@
 #undef assert
 #include <am.h>
 #include <klib.h>
-#include <cstdlib>
 #include <etl/array.h>
 #define UNLIKELY(condition) __builtin_expect(static_cast<bool>(condition), 0)
 

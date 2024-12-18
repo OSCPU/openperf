@@ -29,7 +29,6 @@
 #include <klib.h>
 #include <openlibm.h>
 #include <stdarg.h>
-#include <sys/types.h>
 
 #include <bench.h>
 #include <bench_debug.h>
@@ -1535,7 +1534,7 @@ ST_FUNC void resolve_common_syms(TCCState *s1);
 ST_FUNC void relocate_syms(TCCState *s1, Section *symtab, int do_resolve);
 ST_FUNC void relocate_sections(TCCState *s1);
 
-ST_FUNC ssize_t full_read(int fd, void *buf, size_t count);
+ST_FUNC size_t full_read(int fd, void *buf, size_t count);
 ST_FUNC void *load_data(int fd, unsigned long file_offset, unsigned long size);
 ST_FUNC int tcc_object_type(int fd, ElfW(Ehdr) * h);
 ST_FUNC int tcc_load_object_file(TCCState *s1, int fd,
