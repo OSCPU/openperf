@@ -1,13 +1,38 @@
-binary: openperf-nemu/build/riscv32-nemu-interpreter
-max_workers: 1
+max_workers: 4
 tests:
+  native-ref:
+    timeout: 50
+    tags:
+      - native
+      - ref
+      - native-ref
+    format: "build/images/{0}-ref.elf"
+    parameters:
+        0: [ "mcf", "x264", "tcc", "stream", "linpack", "gemm", "whetstone" ]
+  native-test:
+    timeout: 50
+    tags:
+      - native
+      - test
+      - native-test
+    format: "build/images/{0}-test.elf"
+    parameters:
+        0: [ "cpuemu", "mcf", "x264", "tcc", "stream", "linpack", "gemm", "whetstone" ]
   nemu-ref:
-    timeout: 180
-    format: "-b build/images/{0}-ref.bin"
+    timeout: 50
+    tags:
+      - riscv32-nemu
+      - ref
+      - riscv32-nemu-ref
+    format: "openperf-nemu/build/riscv32-nemu-interpreter -b build/images/{0}-ref.bin"
     parameters:
         0: [ "mcf", "x264", "tcc", "stream", "linpack", "gemm", "whetstone" ]
   nemu-test:
     timeout: 50
-    format: "-b build/images/{0}-test.bin"
+    tags:
+      - riscv32-nemu
+      - test
+      - riscv32-nemu-test
+    format: "openperf-nemu/build/riscv32-nemu-interpreter -b build/images/{0}-test.bin"
     parameters:
         0: [ "cpuemu", "mcf", "x264", "tcc", "stream", "linpack", "gemm", "whetstone" ]
