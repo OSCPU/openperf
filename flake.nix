@@ -34,6 +34,14 @@
       bareClangStdenv =
         with rv32LLVMCrossPkgs;
         overrideCC clangStdenv buildPackages.llvmPackages.clangNoLibcNoRt;
+      python3WithPkgs =
+        pkgs:
+        pkgs.python3.withPackages (
+          ps: with ps; [
+            tqdm
+            pyyaml
+          ]
+        );
 
       nemuDepsBuildBuild = with pkgs; [
         gnumake
@@ -46,12 +54,7 @@
         libllvm
         gcc
         clang
-        (python3.withPackages (
-          ps: with ps; [
-            tqdm
-            pyyaml
-          ]
-        ))
+        (python3WithPkgs pkgs)
       ];
     in
     {
@@ -76,6 +79,7 @@
               buildInputs = with pkgs; [
                 gnumake
                 SDL2
+                (python3WithPkgs pkgs)
               ];
             };
 

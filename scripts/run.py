@@ -1,27 +1,45 @@
 import sys
-import os
 import argparse
-from typing import List, Dict, Optional, Any
-from dataclasses import dataclass
 from datetime import datetime
 import json
 import yaml
 import itertools
 import re
 import asyncio
-import json
-import os
-import re
-from datetime import datetime
-from typing import List, Optional, Tuple
-from dataclasses import dataclass
 from tqdm.asyncio import tqdm_asyncio
+from dataclasses import dataclass, field
+from typing import List, Tuple, Set, Dict, Optional, Any
 
 
 @dataclass
 class OpenPerfTiming:
     seconds: int
     milliseconds: float
+
+
+@dataclass
+class TestParameters:
+    """Represents the parameters configuration for a test"""
+
+    parameters: Dict[str, List[str]]
+
+
+@dataclass
+class TestDefinition:
+    """Represents a single test configuration"""
+
+    timeout: Optional[int]
+    format: str
+    parameters: TestParameters
+    tags: List[str] = field(default_factory=list)  # List of tags for filtering
+
+
+@dataclass
+class TestConfiguration:
+    """Root configuration class"""
+
+    max_workers: Optional[int]
+    tests: Dict[str, TestDefinition]
 
 
 @dataclass
@@ -33,52 +51,82 @@ class TestResult:
     duration: float
     timestamp: str
     openperf_timing: Optional[OpenPerfTiming] = None
+    tags: List[str] = field(default_factory=list)
 
 
 class TestConfig:
     def __init__(self, config_path: str):
         """Load and parse test configuration file."""
         with open(config_path, "r") as f:
-            self.config = yaml.safe_load(f)
+            raw_config = yaml.safe_load(f)
+
+        # Convert raw dictionary to dataclass
+        tests_dict = {}
+        for test_name, test_data in raw_config.get("tests", {}).items():
+            test_params = TestParameters(parameters=test_data.get("parameters", {}))
+            tests_dict[test_name] = TestDefinition(
+                timeout=test_data.get("timeout"),
+                format=test_data.get("format", ""),
+                parameters=test_params,
+                tags=test_data.get("tags", []),  # Test tags
+            )
+
+        self.config = TestConfiguration(
+            max_workers=raw_config.get("max_workers"),
+            tests=tests_dict,
+        )
+
         self.validate_config()
 
     def validate_config(self):
         """Validate the configuration file structure."""
-        required_fields = ["binary", "tests"]
-        for field in required_fields:
-            if field not in self.config:
-                raise ValueError(f"Missing required field '{field}' in config")
+        if not self.config.tests:
+            raise ValueError("Missing required field 'tests' in config")
 
-        if not isinstance(self.config["tests"], dict):
-            raise ValueError("'tests' must be a dictionary")
+        for test_name, test_config in self.config.tests.items():
+            if not test_config.parameters.parameters:
+                raise ValueError(f"Test '{test_name}' must have 'parameters' field")
 
-    def generate_test_cases(self) -> List[Dict[str, Any]]:
-        """Generate all test cases from config."""
+    def filter_tests_by_tags(
+        self, include_tags: Optional[Set[str]]
+    ) -> Dict[str, TestDefinition]:
+        """Filter tests based on tags."""
+        if not include_tags:
+            return self.config.tests
+
+        filtered_tests = {}
+        for test_name, test_def in self.config.tests.items():
+            test_tags = set(test_def.tags)
+            # Include test if it has any of the included tags (or if no include_tags specified)
+            if test_tags & include_tags:
+                filtered_tests[test_name] = test_def
+
+        return filtered_tests
+
+    def generate_test_cases(
+        self,
+        include_tags: Optional[Set[str]] = None,
+    ) -> List[Dict[str, Any]]:
+        """Generate all test cases from config, filtered by tags."""
         test_cases = []
 
-        for test_name, test_config in self.config["tests"].items():
-            if not {"format", "parameters"}.issubset(test_config.keys()):
-                raise ValueError(
-                    f"Test '{test_name}' must have 'format' and 'parameters' fields"
-                )
+        # Filter tests by tags
+        filtered_tests = self.filter_tests_by_tags(include_tags)
 
+        for test_name, test_config in filtered_tests.items():
             # Separate positional and named parameters
             positional_params = []
             named_params = {}
 
-            for param_name, param_values in test_config["parameters"].items():
+            for param_name, param_values in test_config.parameters.parameters.items():
                 try:
-                    # If parameter name can be converted to int, it's positional
                     pos = int(param_name)
-                    # Ensure list has enough slots for this position
                     while len(positional_params) <= pos:
                         positional_params.append(None)
                     positional_params[pos] = param_values
                 except ValueError:
-                    # If parameter name is not an integer, it's named
                     named_params[param_name] = param_values
 
-            # Generate all combinations of parameter values
             positional_combinations = list(
                 itertools.product(*[p for p in positional_params if p is not None])
             )
@@ -87,17 +135,13 @@ class TestConfig:
                 for values in itertools.product(*named_params.values())
             ]
 
-            # If no named parameters, ensure we have at least an empty dict
             if not named_combinations:
                 named_combinations = [{}]
 
-            # Generate each test case from the combinations
             for pos_values in positional_combinations:
                 for named_values in named_combinations:
-                    # Format string with both positional and named parameters
-                    command = test_config["format"].format(*pos_values, **named_values)
+                    command = test_config.format.format(*pos_values, **named_values)
 
-                    # Generate descriptive name for this test case
                     param_strs = []
                     for i, value in enumerate(pos_values):
                         param_strs.append(f"p{i}-{value}")
@@ -109,7 +153,8 @@ class TestConfig:
                     case = {
                         "name": case_name,
                         "args": command.split(),
-                        "timeout": test_config.get("timeout"),
+                        "timeout": test_config.timeout,
+                        "tags": test_config.tags,
                     }
                     test_cases.append(case)
 
@@ -117,13 +162,7 @@ class TestConfig:
 
 
 class TestRunner:
-    def __init__(self, binary_path: str):
-        """Initialize the test runner with path to binary."""
-        if not os.path.exists(binary_path):
-            raise FileNotFoundError(f"Binary not found at {binary_path}")
-        if not os.access(binary_path, os.X_OK):
-            raise PermissionError(f"Binary at {binary_path} is not executable")
-        self.binary_path = binary_path
+    def __init__(self):
         self.results: List[TestResult] = []
 
     def _parse_openperf_timing(self, output: str) -> Optional[OpenPerfTiming]:
@@ -137,11 +176,12 @@ class TestRunner:
         return None
 
     async def _run_single_test(
-        self, test_config: Tuple[str, List[str], Optional[int]]
+        self, test_config: Tuple[str, List[str], Optional[int], List[str]]
     ) -> TestResult:
         """Run a single test in a separate process asynchronously."""
-        name, args, timeout = test_config
-        command = [self.binary_path] + args
+        name, args, timeout, tags = test_config
+
+        command = args
         start_time = asyncio.get_event_loop().time()
 
         try:
@@ -164,13 +204,14 @@ class TestRunner:
                     duration=asyncio.get_event_loop().time() - start_time,
                     timestamp=datetime.now().isoformat(),
                     openperf_timing=None,
+                    tags=tags,
                 )
 
+            stdout = stdout_byte.decode()
             stderr = stderr_byte.decode()
-            openperf_timing = self._parse_openperf_timing(stderr)
-            returncode = process.returncode
-            if returncode is None:
-                returncode = -256
+            openperf_timing = self._parse_openperf_timing(stdout + stderr)
+            returncode = process.returncode if process.returncode is not None else -256
+
             return TestResult(
                 test_name=name,
                 command=" ".join(command),
@@ -179,6 +220,7 @@ class TestRunner:
                 duration=asyncio.get_event_loop().time() - start_time,
                 timestamp=datetime.now().isoformat(),
                 openperf_timing=openperf_timing,
+                tags=tags,
             )
 
         except Exception as e:
@@ -190,17 +232,18 @@ class TestRunner:
                 duration=0.0,
                 timestamp=datetime.now().isoformat(),
                 openperf_timing=None,
+                tags=tags,
             )
 
     async def run_tests(
         self,
-        tests: List[Tuple[str, List[str], Optional[int]]],
+        tests: List[Tuple[str, List[str], Optional[int], List[str]]],
         max_concurrent: Optional[int],
     ) -> List[TestResult]:
         """Run multiple tests concurrently using asyncio.
 
         Args:
-            tests: List of tuples containing (test_name, args_list, timeout)
+            tests: List of tuples containing (test_name, args_list, timeout, tags)
             max_concurrent: Maximum number of concurrent test processes
         Returns:
             List of TestResult objects
@@ -257,34 +300,44 @@ def format_openperf_time(timing: Optional[OpenPerfTiming]) -> str:
         return "N/A"
 
 
-def run_from_config(config_path: str, output_file: Optional[str] = None) -> int:
+def run_from_config(
+    config_path: str,
+    output_file: Optional[str] = None,
+    include_tags: Optional[Set[str]] = None,
+) -> int:
     """Run all tests specified in a config file."""
     config = TestConfig(config_path)
-    runner = TestRunner(config.config["binary"])
+    runner = TestRunner()
 
-    test_cases = config.generate_test_cases()
+    test_cases = config.generate_test_cases(include_tags)
     results = asyncio.run(
         runner.run_tests(
-            list((t["name"], t["args"], t.get("timeout")) for t in test_cases),
-            max_concurrent=config.config.get("max_workers"),
+            list(
+                (t["name"], t["args"], t.get("timeout"), t["tags"]) for t in test_cases
+            ),
+            max_concurrent=config.config.max_workers,
         )
     )
 
     print(f"\nRunning tests from config: {config_path}")
+    if include_tags:
+        print(f"Including tags: {', '.join(include_tags)}")
     print(
-        "\n{:<30} {:<15} {:<25} {:<10}".format(
-            "Test Name", "Return Code", "OpenPerf Time", "Duration"
+        "\n{:<30} {:<15} {:<25} {:<10} {:<20}".format(
+            "Test Name", "Return Code", "OpenPerf Time", "Duration", "Tags"
         )
     )
-    print("-" * 80)
+    print("-" * 100)
+
     failed = 0
     for result in results:
         print(
-            "{:<30} {:<15} {:<25} {:.2f}s".format(
+            "{:<30} {:<15} {:<25} {:.2f}s {:<20}".format(
                 result.test_name,
                 result.returncode,
                 format_openperf_time(result.openperf_timing),
                 result.duration,
+                ", ".join(result.tags),
             )
         )
 
@@ -304,11 +357,18 @@ def main():
     parser = argparse.ArgumentParser(description="Test Runner for Binary Files")
     parser.add_argument("config", help="Path to YAML config file")
     parser.add_argument("--output", help="Output JSON file for results")
-
+    parser.add_argument(
+        "--tags",
+        help="Only run tests with these tags (comma-separated)",
+        type=str,
+    )
     args = parser.parse_args()
 
+    # Convert tag arguments to sets
+    include_tags = set(args.tags.split(",")) if args.tags else None
+
     try:
-        failed = run_from_config(args.config, args.output)
+        failed = run_from_config(args.config, args.output, include_tags)
         if failed == 0:
             sys.exit(0)
         else:
