@@ -10,7 +10,7 @@ X264_INCPATH += src/common/openlibm/include \
 
 X264_CFLAGS := $(CFLAGS) $(AM_CFLAGS) $(addprefix -I, $(X264_INCPATH))
 X264_LDFLAGS := $(LDFLAGS) $(AM_LDFLAGS)
-X264_ASFLAGS := $(AM_ASFLAGS) -Isrc/x264
+X264_ASFLAGS := $(AM_CFLAGS) -Isrc/x264
 
 $(eval $(call ADD_IMAGE,$(BUILDDIR)/images/x264-$(mainargs),X264_))
 

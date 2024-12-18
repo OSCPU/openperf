@@ -7,8 +7,8 @@ CPUEMU_INCPATH += src/common/openlibm/include \
                   src/common/bench/include
 
 CPUEMU_CFLAGS := $(CFLAGS) $(AM_CFLAGS) $(addprefix -I, $(CPUEMU_INCPATH))
-CPUEMU_CXXFLAGS := $(CXXFLAGS) $(AM_CXXFLAGS) $(addprefix -I, $(CPUEMU_INCPATH)) -Wno-c++20-compat -std=c++17
+CPUEMU_CXXFLAGS := $(CXXFLAGS) $(AM_CFLAGS) $(addprefix -I, $(CPUEMU_INCPATH)) -Wno-c++20-compat -std=c++17
 CPUEMU_LDFLAGS := $(LDFLAGS) $(AM_LDFLAGS)
-CPUEMU_ASFLAGS := $(AM_ASFLAGS) -Isrc/cpuemu
+CPUEMU_ASFLAGS := $(AM_CFLAGS) -Isrc/cpuemu
 
 $(eval $(call ADD_IMAGE,$(BUILDDIR)/images/cpuemu-$(mainargs),CPUEMU_))

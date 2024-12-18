@@ -8,7 +8,7 @@ TCC_INCPATH += src/common/openlibm/include \
 
 TCC_CFLAGS := $(CFLAGS) $(AM_CFLAGS) $(addprefix -I, $(TCC_INCPATH))
 TCC_LDFLAGS := $(LDFLAGS) $(AM_LDFLAGS)
-TCC_ASFLAGS := $(AM_ASFLAGS) -Isrc/tcc
+TCC_ASFLAGS := $(AM_CFLAGS) -Isrc/tcc
 
 $(eval $(call ADD_IMAGE,$(BUILDDIR)/images/tcc-$(mainargs),TCC_))
 

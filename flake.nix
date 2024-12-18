@@ -76,6 +76,9 @@
             }
             {
               name = "openperf";
+              nativeBuildInputs = [
+                pkgs.pkg-config
+              ];
               buildInputs = with pkgs; [
                 gnumake
                 SDL2

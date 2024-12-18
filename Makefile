@@ -30,8 +30,6 @@ LD :=
 
 
 ARCH ?= # Note that ARCH must be provided
-# dependency
-AM_ROOT ?= $(AM_HOME)/build/install/$(ARCH)
 # setup directories
 WORK_DIR  ?= $(shell pwd)
 DST_DIR   ?= $(WORK_DIR)/build
@@ -41,8 +39,17 @@ INSTALLDIR ?= $(WORK_DIR)/build/install/$(ARCH)
 LIB_INSTALLDIR ?= $(INSTALLDIR)/lib
 INC_INSTALLDIR ?= $(INSTALLDIR)/include
 
+# Find dependency
+AM_ROOT ?= $(AM_HOME)/build/install/$(ARCH)
+# Set PKG_CONFIG_PATH to look in AM_ROOT first, then system paths
+PKG_CONFIG_PATH := $(AM_ROOT)/lib/pkgconfig:$(PKG_CONFIG_PATH)
+export PKG_CONFIG_PATH
+AM_CFLAGS := $(shell pkg-config --cflags abstract-machine)
+AM_LDFLAGS := $(shell pkg-config --libs abstract-machine)
+$(info AM_CFLAGS = $(AM_CFLAGS))
+$(info AM_LDFLAGS = $(AM_LDFLAGS))
+
 include $(AM_ROOT)/lib/make/rules.mk
-include $(AM_ROOT)/lib/make/flags-$(ARCH).mk
 
 # Rules to build common libraries
 BENCH_SRCS := $(shell find src/common/bench -name "*.c")
