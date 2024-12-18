@@ -53,23 +53,18 @@ jobs:
           nix develop --no-use-registries /tmp/env/openperf-env-${{ matrix.arch }} --impure --command make -C openperf-nemu ARCH=${{ matrix.arch }} openperf_${{ matrix.arch }}_defconfig
           nix develop --no-use-registries /tmp/env/openperf-env-${{ matrix.arch }} --impure --command make -C openperf-nemu ARCH=${{ matrix.arch }}
 
-      - name: Build abstract-machine
-        run: |
-          nix develop --no-use-registries /tmp/env/openperf-env-${{ matrix.arch }} --impure --command make -C abstract-machine ARCH=${{ matrix.arch }} install
-
       - name: Build
         run: |
-          nix develop --no-use-registries /tmp/env/openperf-env-${{ matrix.arch }} --impure --command make ARCH=${{ matrix.arch }} mainargs=ref all
-          nix develop --no-use-registries /tmp/env/openperf-env-${{ matrix.arch }} --impure --command make ARCH=${{ matrix.arch }} mainargs=test all
+          nix develop --no-use-registries /tmp/env/openperf-env-${{ matrix.arch }} --impure --command scripts/build.sh -s ref,test -a ${{ matrix.arch }}
 
       - name: Run openperf benchmark
         run: |
-          nix develop --no-use-registries /tmp/env/openperf-env-${{ matrix.arch }} --impure --command make ARCH=${{ matrix.arch }} mainargs=test run
+          nix develop --no-use-registries /tmp/env/openperf-env-${{ matrix.arch }} --impure --command python3 scripts/run.py --tags ${{ matrix.arch }} test_config.example.yaml
 
       - name: Upload built binary
         uses: actions/upload-artifact@v4
         with:
           name: openperf-binary-${{ matrix.arch }}
           path: |
-            openperf/src/**/build/*-${{ matrix.arch }}*
+            openperf/build/images/*
 
