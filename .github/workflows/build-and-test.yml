@@ -48,6 +48,7 @@ jobs:
         with:
           token: '${{ secrets.DEPLOY_KEY }}'
           repository: xinyangli/openperf-abstract-machine
+          ref: "ba0f154cba55096a2342375df3375f4626b15866"
           path: abstract-machine
 
       - name: Prepare devshell
