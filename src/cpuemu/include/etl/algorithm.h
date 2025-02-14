@@ -46,7 +46,7 @@ SOFTWARE.
 #include "gcd.h"
 
 #include <stdint.h>
-#include <string.h>
+#include <klib.h>
 
 #include "private/minmax_push.h"
 

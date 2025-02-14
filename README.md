@@ -10,12 +10,56 @@ To use openperf in baseline practice, clone it into your project's [AbstractMach
 
 ```sh
 cd am-kernels
-git clone git@github.com:OSCPU/openperf.git
+git clone --recursive-submodules git@github.com:OSCPU/openperf.git
 cd openperf
-make ARCH= ... # NOTICE: `...` is not a part of the make command and you need to write it by yourself.
 ```
 
 The make recipe, like other benchmark programs in `am-kernel`, allows you to choose the architectures and the test scale.
+
+## Building
+
+You can use script/build.sh to build this project. build.sh take 2 flags: `-a` specify architecture of abstract-machine and `-s` specify size of test programs you want to build (test, ref, huge).
+
+```sh
+# Make sure you have set AM_HOME correctly
+scripts/build.sh build -s test,ref -a native
+
+# Find binary images under build/images
+ls build/images
+```
+
+When cross compiling, you need to explicitly provide the variable `CROSS_COMPILE` to make, so it knows where to find the toolchain. For example, when compiling to riscv32:
+
+```sh
+CROSS_COMPILE=riscv32-unknown-elf- scripts/build.sh build -s test,ref -a native
+```
+
+Under the hood, this script first build abstract-machine. Different from NJU-ProjectN/abstract-machine, abstract-machine in this project is built with command `make -C "$AM_HOME" ARCH=$ARCH install`. Header files, archives and pkgconfig file will be installed under abstract-machine/build/install by default. We then use `pkg-config` to determine what flags is needed to build and link against abstract-machine.
+
+```sh
+# What script/build.sh does (Assuming AM_HOME and ARCH is set):
+make -C "$AM_HOME" ARCH=$ARCH install 
+make ARCH=$ARCH mainargs=<size> all
+```
+
+## Run benchmark
+
+After building the images, you can run this benchmark with scripts/run.py. Note that tqdm and pyyaml is needed, install them with
+
+```sh
+pip3 install pyyaml tqdm
+```
+scripts/run.py takes a YAML configuration file, checkout test\_config.example.yaml for reference. Run the benchmark with:
+
+```sh
+python3 scripts/run.py test_config.example.yaml
+```
+
+You can filter tests with tags, a test is selected if it has any of the given tag. For example, if you only want to run tests with the tag `native`, you can run run.py with
+
+```sh
+python3 scripts/run.py test_config.example.yaml --tags native
+```
 
 ## Benchmark Programs
 

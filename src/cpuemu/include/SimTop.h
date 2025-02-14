@@ -2,8 +2,6 @@
 #define SIMTOP_H_
 
 #include "etl/array.h"
-#include <cstdint>
-#include <cstdlib>
 #include "uint.h"
 #include "sint.h"
 #define UNLIKELY(condition) __builtin_expect(static_cast<bool>(condition), 0)

@@ -110,7 +110,7 @@ void *x264_malloc( int64_t i_size )
 #define HUGE_PAGE_THRESHOLD HUGE_PAGE_SIZE*7/8 /* FIXME: Is this optimal? */
     if( i_size < 0 || (uint64_t)i_size > (SIZE_MAX - HUGE_PAGE_SIZE) /*|| (uint64_t)i_size > (SIZE_MAX - NATIVE_ALIGN - sizeof(void **))*/ )
     {
-        x264_log_internal( X264_LOG_ERROR, "invalid size of malloc: %"PRId64"\n", i_size );
+        x264_log_internal( X264_LOG_ERROR, "invalid size of malloc: %lld\n", i_size );
         return NULL;
     }
     uint8_t *align_buf = NULL;
@@ -124,7 +124,7 @@ void *x264_malloc( int64_t i_size )
     }
 
     if( !align_buf )
-        x264_log_internal( X264_LOG_ERROR, "malloc of size %"PRId64" failed\n", i_size );
+        x264_log_internal( X264_LOG_ERROR, "malloc of size %lld failed\n", i_size );
     return align_buf;
 #undef HUGE_PAGE_SIZE
 #undef HUGE_PAGE_THRESHOLD
@@ -1518,7 +1518,7 @@ char *x264_param2string( x264_param_t *p, int b_res )
         s += sprintf( s, " crop_rect=%d,%d,%d,%d", p->crop_rect.i_left, p->crop_rect.i_top,
                                                    p->crop_rect.i_right, p->crop_rect.i_bottom );
     if( p->mastering_display.b_mastering_display )
-        s += sprintf( s, " mastering-display=G(%d,%d)B(%d,%d)R(%d,%d)WP(%d,%d)L(%"PRId64",%"PRId64")",
+        s += sprintf( s, " mastering-display=G(%d,%d)B(%d,%d)R(%d,%d)WP(%d,%d)L(%lld,%lld)",
                       p->mastering_display.i_green_x, p->mastering_display.i_green_y,
                       p->mastering_display.i_blue_x, p->mastering_display.i_blue_y,
                       p->mastering_display.i_red_x, p->mastering_display.i_red_y,

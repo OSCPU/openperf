@@ -1,9 +1,3 @@
-
-BENCH_LIBS := bench openlibm soft-fp
-
-$(BENCH_LIBS): %:
-	$(MAKE) -s -C ./src/common/$* archive
-
 COLOR_RED   = \033[1;31m
 COLOR_GREEN = \033[1;32m
 COLOR_NONE  = \033[0m
@@ -16,12 +10,78 @@ KEEP_LOG_SUCCEED ?= false
 TIME := $(shell date --iso=seconds)
 
 ifeq ($(mainargs),ref)
-ALL = mcf x264 tcc stream linpack gemm whetstone
+IMAGES := mcf x264 tcc stream linpack gemm whetstone
 else
-ALL = cpuemu mcf x264 tcc stream linpack gemm whetstone
+IMAGES := cpuemu mcf x264 tcc stream linpack gemm whetstone
 endif
 
-all: $(BENCH_LIBS) $(ALL)
+# Toolchain settings
+### (Cross) compilers, e.g., mips-linux-gnu-g++
+CC ?= $(CROSS_COMPILE)gcc
+CXX ?= $(CROSS_COMPILE)g++
+AR ?= $(CROSS_COMPILE)ar
+OBJCOPY ?= $(CROSS_COMPILE)objcopy
+# $(AS) does not do preprocessing. Since we are using includes
+# in assembly source code, we need to use $(CC) as frontend
+# to invoke assembler.
+AS := $(CC)
+# We use $(CC) as a frontend to invoke $(LD)
+LD := 
+
+
+ARCH ?= # Note that ARCH must be provided
+# setup directories
+WORK_DIR  ?= $(shell pwd)
+DST_DIR   ?= $(WORK_DIR)/build
+BUILDDIR ?= $(DST_DIR)
+LIB_BUILDDIR ?= $(DST_DIR)/lib
+INSTALLDIR ?= $(WORK_DIR)/build/install/$(ARCH)
+LIB_INSTALLDIR ?= $(INSTALLDIR)/lib
+INC_INSTALLDIR ?= $(INSTALLDIR)/include
+
+# Find dependency
+AM_ROOT ?= $(AM_HOME)/build/install/$(ARCH)
+# Set PKG_CONFIG_PATH to look in AM_ROOT first, then system paths
+PKG_CONFIG_PATH := $(AM_ROOT)/lib/pkgconfig:$(PKG_CONFIG_PATH)
+export PKG_CONFIG_PATH
+AM_CFLAGS := $(shell pkg-config --cflags abstract-machine)
+AM_LDFLAGS := $(shell pkg-config --libs abstract-machine)
+$(info AM_CFLAGS = $(AM_CFLAGS))
+$(info AM_LDFLAGS = $(AM_LDFLAGS))
+
+include $(AM_ROOT)/lib/make/rules.mk
+
+# Rules to build common libraries
+BENCH_SRCS := $(shell find src/common/bench -name "*.c")
+BENCH_CFLAGS := $(CFLAGS) $(AM_CFLAGS) -I$(shell realpath ./src/common/bench/include)
+
+$(eval $(call ADD_LIBRARY,$(LIB_BUILDDIR)/libbench.a,BENCH_))
+
+OPENLIBM_SRCS := $(shell find src/common/openlibm/src -name "*.c")
+OPENLIBM_CFLAGS := $(CFLAGS) $(AM_CFLAGS) -I$(shell realpath ./src/common/openlibm/include)
+
+$(eval $(call ADD_LIBRARY,$(LIB_BUILDDIR)/libopenlibm.a,OPENLIBM_))
+
+SOFTFP_SRCS := $(shell find src/common/soft-fp -name "*.c")
+SOFTFP_CFLAGS := $(CFLAGS) $(AM_CFLAGS)
+
+$(eval $(call ADD_LIBRARY,$(LIB_BUILDDIR)/libsoftfp.a,SOFTFP_))
+
+LIBS := libbench.a libopenlibm.a libsoftfp.a
+libs: $(addprefix $(LIB_BUILDDIR)/, $(LIBS))
+
+LDFLAGS += -L$(LIB_BUILDDIR) -lbench -lopenlibm -lsoftfp 
+
+include $(addsuffix /Makefile, $(addprefix src/, $(IMAGES)))
+
+# Add libs to dependency of every image
+$(addsuffix -$(mainargs).elf, $(addprefix $(BUILDDIR)/images/, $(IMAGES))): %: $(addprefix $(LIB_BUILDDIR)/, $(LIBS))
+all: $(addsuffix -$(mainargs).bin, $(addprefix $(BUILDDIR)/images/, $(IMAGES)))
+
+test_config.yaml:
+	cp test_config.example.yaml test_config.yaml
+
+run: all test_config.yaml
 	@echo "OpenPerf [$(words $(ALL)) item(s)]:" $(ALL)
 	@if [ -z "$(mainargs)" ]; then \
 		echo "Empty mainargs, use \"ref\" by default"; \
@@ -29,68 +89,10 @@ all: $(BENCH_LIBS) $(ALL)
 	else \
 		echo "====== Running OpenPerf [input *$${mainargs}*] ======"; \
 	fi
+	python3 scripts/run.py test_config.yaml
 
-$(ALL): %: $(BENCH_LIBS)
-	@{\
-		  TMP=$*.tmp;\
-	    $(MAKE) -C ./src/$* ARCH=$(ARCH) run 2>&1 | tee -a $$TMP;\
-     if [ $${PIPESTATUS[0]} -eq 0 ]; then \
-		    printf "[%14s] $(COLOR_GREEN)PASS$(COLOR_NONE) " $* >> $(RESULT); \
-		    cat $$TMP | grep -E -i -e "OpenPerf time: ([0-9]*\.)?[0-9]*" >> $(RESULT); \
-				if $(KEEP_LOG_SUCCEED); then \
-					mkdir -p "logs/$(TIME)/"; \
-					mv $$TMP "logs/$(TIME)/"; \
-				else \
-					rm $$TMP; \
-				fi \
-	    else \
-			  printf "[%14s] $(COLOR_RED)***FAIL***$(COLOR_NONE)\n" $* >> $(RESULT); \
-				if $(KEEP_LOG_FAILED); then \
-					mkdir -p "logs/$(TIME)/"; \
-					mv $$TMP "logs/$(TIME)/"; \
-				else \
-					rm $$TMP; \
-				fi \
-	    fi \
-	}
+.PHONY: $(BENCH_LIBS) $(CLEAN_ALL) $(ALL) all run clean
 
-run: $(BENCH_LIBS) all
-	@cat $(RESULT)
-	@echo "============================================="
-	@awk '\
-		BEGIN {total_us = 0 } \
-		{ \
-			h = min = s = ms = us = 0;\
-			if (match($$0, /([0-9]+) h/, arr)) h = arr[1]; \
-    	if (match($$0, /([0-9]+) min/, arr)) min = arr[1]; \
-    	if (match($$0, /([0-9]+) s/, arr)) s = arr[1]; \
-			if (match($$0, /([0-9]+)\.([0-9]*) ms/, arr)) {ms = arr[1]; us = arr[2];} \
-    	total_us += h * 3600 * 1000 * 1000 + min * 60 * 1000 * 1000 + s * 1000 * 1000 + ms * 1000 + us; \
-		} \
-		END { \
-			printf "Total time: %d h %d min %d s %d.%d ms\n", \
-        int(total_us / (3600 * 1000 * 1000)), \
-        int((total_us % (3600 * 1000 * 1000)) / (60 * 1000 * 1000)), \
-        int((total_us % (60 * 1000 * 1000)) / (1000 * 1000)), \
-        int((total_us % (1000 * 1000) / 1000)), \
-				total_us % 1000; \
-	} \
-	' $(RESULT)
-	@if grep -q -i -e "fail" "$(RESULT)"; then \
-		echo "OpenPerf FAIL"; \
-		rm $(RESULT); \
-		exit 1; \
-	else \
-		echo "OpenPerf PASS"; \
-		rm $(RESULT); \
-		exit 0; \
-	fi
-
-CLEAN_ALL = $(dir $(shell find . -mindepth 2 -name Makefile))
-clean-all: $(CLEAN_ALL)
-	 
-$(CLEAN_ALL):
-	-@$(MAKE) -s -C $@ clean
-
-.PHONY: $(BENCH_LIBS) $(CLEAN_ALL) $(ALL) all run clean-all
+clean:
+	$(RM) -r $(BUILDDIR)
 

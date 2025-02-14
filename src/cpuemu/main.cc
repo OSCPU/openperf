@@ -11,6 +11,10 @@ uint64_t rng64() { return 0; }
 
 extern bench_cpuemu_config config;
 
+extern "C" {
+int main (const char *args);
+}
+
 int main(const char *args) {
 
   bench_malloc_init();
