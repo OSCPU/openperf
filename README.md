@@ -6,8 +6,10 @@
 | 小型 | [100.blockchain][blockchain] | 区块链               | 计算sha256      |
 |      | [101.igemm][igemm]           | 矩阵乘法             | 仅含整数操作    |
 |      | [102 queen][queen]           | N皇后问题            | 用位运算实现    |
+|      | [103.dinic][dinic]           | 求解二分图最大流     |                 |
 
 
 [blockchain]: https://github.com/aproxp/blockchain
 [igemm]: https://github.com/iVishalr/GEMM
 [queen]: https://github.com/NJU-ProjectN/am-kernels/tree/master/benchmarks/microbench
+[dinic]: https://github.com/lab104yifan/ACM/blob/93daae9b997aa4df1af96d3140ad81b3506cee49/UVA10779.cpp
