@@ -8,37 +8,18 @@
 #define B_col(i, j) b[(j) * ldb + (i)]
 #define C_col(i, j) c[(j) * ldc + (i)]
 
-void random_init(int m, int n, double *a, int lda, int type) {
+void random_init(int m, int n, unsigned *a, int lda, int type) {
   for (int j = 0; j < n; j++) {
     for (int i = 0; i < m; i++) {
       if (type == 0)
-        A_row(i, j) = 2.0 * bench_rand() - 1.0;
+        A_row(i, j) = 2 * bench_rand() - 1;
       else
-        A_col(i, j) = 2.0 * bench_rand() - 1.0;
+        A_col(i, j) = 2 * bench_rand() - 1;
     }
   }
 }
 
-void display(double *matrix, int m, int n, int type) {
-  if (type == 0) {
-    for (int i = 0; i < m; i++) {
-      for (int j = 0; j < n; j++) {
-        printf("%f ", matrix[i * m + j]);
-      }
-      printf("\n");
-    }
-  } else {
-    for (int j = 0; j < n; j++) {
-      for (int i = 0; i < m; i++) {
-        printf("%f ", matrix[j * m + i]);
-      }
-      printf("\n");
-    }
-  }
-  return;
-}
-
-void matmul_row(int m, int n, int k, double *a, int lda, double *b, int ldb, double *c, int ldc) {
+void matmul_row(int m, int n, int k, unsigned *a, int lda, unsigned *b, int ldb, unsigned *c, int ldc) {
   /*
      Computes the matrix multiplication of A and B and stores in C.
 
@@ -76,16 +57,16 @@ void matmul_row(int m, int n, int k, double *a, int lda, double *b, int ldb, dou
   return;
 }
 
-static double *A, *B, *C;
-static double duration_row;
+static unsigned *A, *B, *C;
+static unsigned long long duration_row;
 static int m = 4;
 static int n = 4;
 static int k = 4;
 
 void bench_init(int setting) {
-  A = (double *)malloc(m * k * sizeof(double)); //A = (m,k)
-  B = (double *)malloc(k * n * sizeof(double)); //B = (k,n)
-  C = (double *)malloc(m * n * sizeof(double)); //C = (m,n)
+  A = (unsigned *)malloc(m * k * sizeof(unsigned)); //A = (m,k)
+  B = (unsigned *)malloc(k * n * sizeof(unsigned)); //B = (k,n)
+  C = (unsigned *)malloc(m * n * sizeof(unsigned)); //C = (m,n)
 
   if (A == NULL || B == NULL || C == NULL) {
     printf("Out of Memory!\n");
@@ -101,13 +82,16 @@ uint64_t bench_run() {
   uint64_t t0 = bench_uptime();
   matmul_row(m, n, k, A, m, B, k, C, m);
   uint64_t t1 = bench_uptime();
-  duration_row = (t1 - t0) / 1000000.0;
+  duration_row = (t1 - t0);
+  if (duration_row == 0)
+    duration_row = 1;
   return 0;
 }
 
 int bench_validate() {
-  double gflops = 2.0 * m * n * k * 1.0e-09;
-  printf("Naive : Dot product with row major order took %f seconds GFLOPS : %f\n", duration_row, gflops / duration_row);
+  uint64_t op = 2ull * m * n * k;
+  printf("Dot product with row major order took %lld us, KOPS: %lld\n", duration_row, op * 1000 / duration_row);
+
   free(A);
   free(B);
   free(C);
