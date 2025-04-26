@@ -172,17 +172,19 @@
 #endif
 
 #ifndef STREAM_TYPE
-#define STREAM_TYPE double
+#define STREAM_TYPE unsigned
 #endif
 
 static STREAM_TYPE a[STREAM_ARRAY_SIZE + OFFSET], b[STREAM_ARRAY_SIZE + OFFSET], c[STREAM_ARRAY_SIZE + OFFSET];
 
-static uint64_t avgtime[4] = {0}, maxtime[4] = {0}, mintime[4] = {UINT64_MAX, UINT64_MAX, UINT64_MAX, UINT64_MAX};
+static unsigned long long avgtime[4] = {0}, maxtime[4] = {0},
+                          mintime[4] = {UINT64_MAX, UINT64_MAX, UINT64_MAX, UINT64_MAX};
 
 static char *label[4] = {"Copy:      ", "Scale:     ", "Add:       ", "Triad:     "};
 
-static double bytes[4] = {2 * sizeof(STREAM_TYPE) * STREAM_ARRAY_SIZE, 2 * sizeof(STREAM_TYPE) * STREAM_ARRAY_SIZE,
-                          3 * sizeof(STREAM_TYPE) * STREAM_ARRAY_SIZE, 3 * sizeof(STREAM_TYPE) * STREAM_ARRAY_SIZE};
+static unsigned long long bytes[4] = {
+  2 * sizeof(STREAM_TYPE) * STREAM_ARRAY_SIZE, 2 * sizeof(STREAM_TYPE) * STREAM_ARRAY_SIZE,
+  3 * sizeof(STREAM_TYPE) * STREAM_ARRAY_SIZE, 3 * sizeof(STREAM_TYPE) * STREAM_ARRAY_SIZE};
 
 extern void checkSTREAMresults();
 #ifdef TUNED
@@ -200,7 +202,7 @@ static uint64_t times[4][NTIMES];
 void bench_init(int setting) {
   int quantum, checktick();
   int BytesPerWord;
-  ssize_t j;
+  int j;
   uint64_t t;
 
   /* --- SETUP --- determine precision and check timing --- */
@@ -221,11 +223,10 @@ void bench_init(int setting) {
 #endif
 
   printf("Array size = %llu (elements), Offset = %d (elements)\n", (unsigned long long)STREAM_ARRAY_SIZE, OFFSET);
-  printf("Memory per array = %.1f MiB (= %.1f GiB).\n", BytesPerWord * ((double)STREAM_ARRAY_SIZE / 1024.0 / 1024.0),
-         BytesPerWord * ((double)STREAM_ARRAY_SIZE / 1024.0 / 1024.0 / 1024.0));
-  printf("Total memory required = %.1f MiB (= %.1f GiB).\n",
-         (3.0 * BytesPerWord) * ((double)STREAM_ARRAY_SIZE / 1024.0 / 1024.),
-         (3.0 * BytesPerWord) * ((double)STREAM_ARRAY_SIZE / 1024.0 / 1024. / 1024.));
+  printf("Memory per array = %lld MiB (%lld KiB).\n", 1ull * BytesPerWord * STREAM_ARRAY_SIZE / 1024 / 1024,
+         1ull * BytesPerWord * STREAM_ARRAY_SIZE / 1024);
+  printf("Total memory required = %lld MiB (%lld KiB).\n", 3ull * BytesPerWord * STREAM_ARRAY_SIZE / 1024 / 1024,
+         3ull * BytesPerWord * STREAM_ARRAY_SIZE / 1024);
   printf("Each kernel will be executed %d times.\n", NTIMES);
   printf(" The *best* time for each kernel (excluding the first iteration)\n");
   printf(" will be used to compute the reported bandwidth.\n");
@@ -252,9 +253,9 @@ void bench_init(int setting) {
 
   /* Get initial value for system clock. */
   for (j = 0; j < STREAM_ARRAY_SIZE; j++) {
-    a[j] = 1.0;
-    b[j] = 2.0;
-    c[j] = 0.0;
+    a[j] = 1;
+    b[j] = 2;
+    c[j] = 0;
   }
 
   printf(HLINE);
@@ -273,7 +274,7 @@ void bench_init(int setting) {
 
   t = bench_uptime();
   for (j = 0; j < STREAM_ARRAY_SIZE; j++)
-    a[j] = 2.0E0 * a[j];
+    a[j] = 2 * a[j];
   t = bench_uptime() - t;
 
   printf(
@@ -295,9 +296,8 @@ void bench_init(int setting) {
 uint64_t bench_run() {
   /*	--- MAIN LOOP --- repeat test cases NTIMES times --- */
 
-  int k;
-  ssize_t j;
-  STREAM_TYPE scalar = 3.0;
+  int j, k;
+  STREAM_TYPE scalar = 3;
   for (k = 0; k < NTIMES; k++) {
     times[0][k] = bench_uptime();
 #ifdef TUNED
@@ -341,8 +341,7 @@ uint64_t bench_run() {
 int bench_validate() {
   /*	--- SUMMARY --- */
 
-  int k;
-  ssize_t j;
+  int j, k;
   for (k = 1; k < NTIMES; k++) /* note -- skip first iteration */
   {
     for (j = 0; j < 4; j++) {
@@ -354,9 +353,9 @@ int bench_validate() {
 
   printf("Function    Best Rate MB/s  Avg time(us) Min time(us) Max time(us)\n");
   for (j = 0; j < 4; j++) {
-    avgtime[j] = avgtime[j] / (double)(NTIMES - 1);
+    avgtime[j] = avgtime[j] / (NTIMES - 1);
 
-    printf("%s%12.1f  %11lld  %11lld  %11lld\n", label[j], bytes[j] / mintime[j], avgtime[j], mintime[j], maxtime[j]);
+    printf("%s%12lld  %11lld  %11lld  %11lld\n", label[j], bytes[j] / mintime[j], avgtime[j], mintime[j], maxtime[j]);
   }
   printf(HLINE);
 
@@ -402,20 +401,19 @@ int checktick() {
 #endif
 void checkSTREAMresults() {
   STREAM_TYPE aj, bj, cj, scalar;
-  STREAM_TYPE aSumErr, bSumErr, cSumErr;
+  unsigned long long aSumErr, bSumErr, cSumErr;
   STREAM_TYPE aAvgErr, bAvgErr, cAvgErr;
   double epsilon;
-  ssize_t j;
-  int k, ierr, err;
+  int j, k, ierr, err;
 
   /* reproduce initialization */
-  aj = 1.0;
-  bj = 2.0;
-  cj = 0.0;
+  aj = 1;
+  bj = 2;
+  cj = 0;
   /* a[] is modified during timing check */
-  aj = 2.0E0 * aj;
+  aj = 2 * aj;
   /* now execute timing loop */
-  scalar = 3.0;
+  scalar = 3;
   for (k = 0; k < NTIMES; k++) {
     cj = aj;
     bj = scalar * cj;
@@ -424,9 +422,9 @@ void checkSTREAMresults() {
   }
 
   /* accumulate deltas between observed and expected results */
-  aSumErr = 0.0;
-  bSumErr = 0.0;
-  cSumErr = 0.0;
+  aSumErr = 0;
+  bSumErr = 0;
+  cSumErr = 0;
   for (j = 0; j < STREAM_ARRAY_SIZE; j++) {
     aSumErr += abs(a[j] - aj);
     bSumErr += abs(b[j] - bj);
@@ -457,7 +455,7 @@ void checkSTREAMresults() {
         ierr++;
 #ifdef VERBOSE
         if (ierr < 10) {
-          printf("         array a: index: %ld, expected: %e, observed: %e, relative error: %e\n", j, aj, a[j],
+          printf("         array a: index: %d, expected: %e, observed: %e, relative error: %e\n", j, aj, a[j],
                  abs((aj - a[j]) / aAvgErr));
         }
 #endif
@@ -476,7 +474,7 @@ void checkSTREAMresults() {
         ierr++;
 #ifdef VERBOSE
         if (ierr < 10) {
-          printf("         array b: index: %ld, expected: %e, observed: %e, relative error: %e\n", j, bj, b[j],
+          printf("         array b: index: %d, expected: %e, observed: %e, relative error: %e\n", j, bj, b[j],
                  abs((bj - b[j]) / bAvgErr));
         }
 #endif
@@ -495,7 +493,7 @@ void checkSTREAMresults() {
         ierr++;
 #ifdef VERBOSE
         if (ierr < 10) {
-          printf("         array c: index: %ld, expected: %e, observed: %e, relative error: %e\n", j, cj, c[j],
+          printf("         array c: index: %d, expected: %e, observed: %e, relative error: %e\n", j, cj, c[j],
                  abs((cj - c[j]) / cAvgErr));
         }
 #endif
