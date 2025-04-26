@@ -10,6 +10,7 @@
 |      | [104.malloc][malloc]         | 动态内存分配         |                 |
 |      | [105.bf][bf]                 | brainf\*ck语言解释器 |                 |
 |      | [106.qsort][qsort]           | 快速排序             |                 |
+|      | [107.stream][stream]         | 内存带宽测量         |                 |
 
 
 [blockchain]: https://github.com/aproxp/blockchain
@@ -19,3 +20,4 @@
 [malloc]: https://github.com/mit-pdos/xv6-riscv/blob/riscv/user/umalloc.c
 [bf]: http://github.com/kgabis/brainfuck-c
 [qsort]: https://github.com/NJU-ProjectN/am-kernels/tree/master/benchmarks/microbench
+[stream]: https://github.com/jeffhammond/STREAM
