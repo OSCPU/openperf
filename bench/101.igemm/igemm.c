@@ -1,7 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/time.h>
-#include <time.h>
+#include <bench.h>
 
 #define A_row(i, j) a[(i) * lda + (j)]
 #define B_row(i, j) b[(i) * ldb + (j)]
@@ -11,25 +8,13 @@
 #define B_col(i, j) b[(j) * ldb + (i)]
 #define C_col(i, j) c[(j) * ldc + (i)]
 
-void serial_init(int m, int n, double *a, int lda, int type) {
-  int count = 1;
-  for (int j = 0; j < n; j++) {
-    for (int i = 0; i < m; i++) {
-      if (type == 0)
-        A_row(i, j) = count++;
-      else
-        A_col(i, j) = count++;
-    }
-  }
-}
-
 void random_init(int m, int n, double *a, int lda, int type) {
   for (int j = 0; j < n; j++) {
     for (int i = 0; i < m; i++) {
       if (type == 0)
-        A_row(i, j) = 2.0 * drand48() - 1.0;
+        A_row(i, j) = 2.0 * bench_rand() - 1.0;
       else
-        A_col(i, j) = 2.0 * drand48() - 1.0;
+        A_col(i, j) = 2.0 * bench_rand() - 1.0;
     }
   }
 }
@@ -91,38 +76,38 @@ void matmul_row(int m, int n, int k, double *a, int lda, double *b, int ldb, dou
   return;
 }
 
-int main() {
+static double *A, *B, *C;
+static double duration_row;
+static int m = 4;
+static int n = 4;
+static int k = 4;
 
-  int m = 500;
-  int n = 500;
-  int k = 500;
-
-  double *A = (double *)malloc(m * k * sizeof(double)); //A = (m,k)
-  double *B = (double *)malloc(k * n * sizeof(double)); //B = (k,n)
-  double *C = (double *)malloc(m * n * sizeof(double)); //C = (m,n)
-
-  struct timeval start_row, finish_row;
-  double gflops = 2.0 * m * n * k * 1.0e-09;
-  srand((unsigned)time(NULL));
+void bench_init(int setting) {
+  A = (double *)malloc(m * k * sizeof(double)); //A = (m,k)
+  B = (double *)malloc(k * n * sizeof(double)); //B = (k,n)
+  C = (double *)malloc(m * n * sizeof(double)); //C = (m,n)
 
   if (A == NULL || B == NULL || C == NULL) {
     printf("Out of Memory!\n");
-    exit(EXIT_FAILURE);
+    bench_exit(1);
   }
 
+  bench_srand(1);
   random_init(m, k, A, m, 0);
   random_init(k, n, B, k, 0);
+}
 
-  gettimeofday(&start_row, NULL);
+uint64_t bench_run() {
+  uint64_t t0 = bench_uptime();
   matmul_row(m, n, k, A, m, B, k, C, m);
-  gettimeofday(&finish_row, NULL);
+  uint64_t t1 = bench_uptime();
+  duration_row = (t1 - t0) / 1000000.0;
+  return 0;
+}
 
-  double duration_row =
-      ((double)(finish_row.tv_sec - start_row.tv_sec) * 1000000 + (double)(finish_row.tv_usec - start_row.tv_usec)) /
-      1000000;
-
+int bench_validate() {
+  double gflops = 2.0 * m * n * k * 1.0e-09;
   printf("Naive : Dot product with row major order took %f seconds GFLOPS : %f\n", duration_row, gflops / duration_row);
-
   free(A);
   free(B);
   free(C);
