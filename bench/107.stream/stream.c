@@ -402,8 +402,6 @@ int checktick() {
 void checkSTREAMresults() {
   STREAM_TYPE aj, bj, cj, scalar;
   unsigned long long aSumErr, bSumErr, cSumErr;
-  STREAM_TYPE aAvgErr, bAvgErr, cAvgErr;
-  double epsilon;
   int j, k, ierr, err;
 
   /* reproduce initialization */
@@ -431,85 +429,61 @@ void checkSTREAMresults() {
     cSumErr += abs(c[j] - cj);
     // if (j == 417) printf("Index 417: c[j]: %f, cj: %f\n",c[j],cj);	// MCCALPIN
   }
-  aAvgErr = aSumErr / (STREAM_TYPE)STREAM_ARRAY_SIZE;
-  bAvgErr = bSumErr / (STREAM_TYPE)STREAM_ARRAY_SIZE;
-  cAvgErr = cSumErr / (STREAM_TYPE)STREAM_ARRAY_SIZE;
-
-  if (sizeof(STREAM_TYPE) == 4) {
-    epsilon = 1.e-6;
-  } else if (sizeof(STREAM_TYPE) == 8) {
-    epsilon = 1.e-13;
-  } else {
-    printf("WEIRD: sizeof(STREAM_TYPE) = %lu\n", sizeof(STREAM_TYPE));
-    epsilon = 1.e-6;
-  }
 
   err = 0;
-  if (abs(aAvgErr / aj) > epsilon) {
+  if (aSumErr != 0) {
     err++;
-    printf("Failed Validation on array a[], AvgRelAbsErr > epsilon (%e)\n", epsilon);
-    printf("     Expected Value: %e, AvgAbsErr: %e, AvgRelAbsErr: %e\n", aj, aAvgErr, abs(aAvgErr) / aj);
+    printf("Failed Validation on array a[]\n");
+    printf("     Expected Value: %d\n", aj);
     ierr = 0;
     for (j = 0; j < STREAM_ARRAY_SIZE; j++) {
-      if (abs(a[j] / aj - 1.0) > epsilon) {
+      if (a[j] != aj) {
         ierr++;
-#ifdef VERBOSE
         if (ierr < 10) {
-          printf("         array a: index: %d, expected: %e, observed: %e, relative error: %e\n", j, aj, a[j],
-                 abs((aj - a[j]) / aAvgErr));
+          printf("         array a: index: %d, expected: %d, observed: %d\n", j, aj, a[j]);
         }
-#endif
       }
     }
     printf("     For array a[], %d errors were found.\n", ierr);
   }
-  if (abs(bAvgErr / bj) > epsilon) {
+  if (bSumErr != 0) {
     err++;
-    printf("Failed Validation on array b[], AvgRelAbsErr > epsilon (%e)\n", epsilon);
-    printf("     Expected Value: %e, AvgAbsErr: %e, AvgRelAbsErr: %e\n", bj, bAvgErr, abs(bAvgErr) / bj);
-    printf("     AvgRelAbsErr > Epsilon (%e)\n", epsilon);
+    printf("Failed Validation on array b[]\n");
+    printf("     Expected Value: %d\n", bj);
     ierr = 0;
     for (j = 0; j < STREAM_ARRAY_SIZE; j++) {
-      if (abs(b[j] / bj - 1.0) > epsilon) {
+      if (b[j] != bj) {
         ierr++;
-#ifdef VERBOSE
         if (ierr < 10) {
-          printf("         array b: index: %d, expected: %e, observed: %e, relative error: %e\n", j, bj, b[j],
-                 abs((bj - b[j]) / bAvgErr));
+          printf("         array b: index: %d, expected: %d, observed: %d\n", j, bj, b[j]);
         }
-#endif
       }
     }
     printf("     For array b[], %d errors were found.\n", ierr);
   }
-  if (abs(cAvgErr / cj) > epsilon) {
+  if (cSumErr != 0) {
     err++;
-    printf("Failed Validation on array c[], AvgRelAbsErr > epsilon (%e)\n", epsilon);
-    printf("     Expected Value: %e, AvgAbsErr: %e, AvgRelAbsErr: %e\n", cj, cAvgErr, abs(cAvgErr) / cj);
-    printf("     AvgRelAbsErr > Epsilon (%e)\n", epsilon);
+    printf("Failed Validation on array c[]\n");
+    printf("     Expected Value: %d\n", cj);
     ierr = 0;
     for (j = 0; j < STREAM_ARRAY_SIZE; j++) {
-      if (abs(c[j] / cj - 1.0) > epsilon) {
+      if (c[j] != cj) {
         ierr++;
-#ifdef VERBOSE
         if (ierr < 10) {
-          printf("         array c: index: %d, expected: %e, observed: %e, relative error: %e\n", j, cj, c[j],
-                 abs((cj - c[j]) / cAvgErr));
+          printf("         array c: index: %d, expected: %d, observed: %d\n", j, cj, c[j]);
         }
-#endif
       }
     }
     printf("     For array c[], %d errors were found.\n", ierr);
   }
   if (err == 0) {
-    printf("Solution Validates: avg error less than %e on all three arrays\n", epsilon);
+    printf("Solution Validates: no error on all three arrays\n");
+  } else {
+    printf("Results Validation Verbose Results: \n");
+    printf("    Expected a(1), b(1), c(1): %d %d %d \n", aj, bj, cj);
+    printf("    Observed a(1), b(1), c(1): %d %d %d \n", a[1], b[1], c[1]);
+    printf("    SumErr on a, b, c:         %lld %lld %lld \n", aSumErr, bSumErr, cSumErr);
   }
-#ifdef VERBOSE
-  printf("Results Validation Verbose Results: \n");
-  printf("    Expected a(1), b(1), c(1): %f %f %f \n", aj, bj, cj);
-  printf("    Observed a(1), b(1), c(1): %f %f %f \n", a[1], b[1], c[1]);
-  printf("    Rel Errors on a, b, c:     %e %e %e \n", abs(aAvgErr / aj), abs(bAvgErr / bj), abs(cAvgErr / cj));
-#endif
 }
 
 #ifdef TUNED
