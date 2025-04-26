@@ -40,11 +40,10 @@
 /*     program constitutes acceptance of these licensing restrictions.   */
 /*  5. Absolutely no warranty is expressed or implied.                   */
 /*-----------------------------------------------------------------------*/
+#include <bench.h>
 #include <float.h>
 #include <limits.h>
 #include <math.h>
-#include <stdio.h>
-#include <sys/time.h>
 #include <unistd.h>
 
 /*-----------------------------------------------------------------------
@@ -178,14 +177,13 @@
 
 static STREAM_TYPE a[STREAM_ARRAY_SIZE + OFFSET], b[STREAM_ARRAY_SIZE + OFFSET], c[STREAM_ARRAY_SIZE + OFFSET];
 
-static double avgtime[4] = {0}, maxtime[4] = {0}, mintime[4] = {FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX};
+static uint64_t avgtime[4] = {0}, maxtime[4] = {0}, mintime[4] = {UINT64_MAX, UINT64_MAX, UINT64_MAX, UINT64_MAX};
 
 static char *label[4] = {"Copy:      ", "Scale:     ", "Add:       ", "Triad:     "};
 
 static double bytes[4] = {2 * sizeof(STREAM_TYPE) * STREAM_ARRAY_SIZE, 2 * sizeof(STREAM_TYPE) * STREAM_ARRAY_SIZE,
                           3 * sizeof(STREAM_TYPE) * STREAM_ARRAY_SIZE, 3 * sizeof(STREAM_TYPE) * STREAM_ARRAY_SIZE};
 
-extern double mysecond();
 extern void checkSTREAMresults();
 #ifdef TUNED
 extern void tuned_STREAM_Copy();
@@ -196,13 +194,14 @@ extern void tuned_STREAM_Triad(STREAM_TYPE scalar);
 #ifdef _OPENMP
 extern int omp_get_num_threads();
 #endif
-int main() {
+
+static uint64_t times[4][NTIMES];
+
+void bench_init(int setting) {
   int quantum, checktick();
   int BytesPerWord;
-  int k;
   ssize_t j;
-  STREAM_TYPE scalar;
-  double t, times[4][NTIMES];
+  uint64_t t;
 
   /* --- SETUP --- determine precision and check timing --- */
 
@@ -252,7 +251,6 @@ int main() {
 #endif
 
   /* Get initial value for system clock. */
-#pragma omp parallel for
   for (j = 0; j < STREAM_ARRAY_SIZE; j++) {
     a[j] = 1.0;
     b[j] = 2.0;
@@ -273,11 +271,10 @@ int main() {
     quantum = 1;
   }
 
-  t = mysecond();
-#pragma omp parallel for
+  t = bench_uptime();
   for (j = 0; j < STREAM_ARRAY_SIZE; j++)
     a[j] = 2.0E0 * a[j];
-  t = 1.0E6 * (mysecond() - t);
+  t = bench_uptime() - t;
 
   printf(
       "Each test below will take on the order"
@@ -293,54 +290,59 @@ int main() {
   printf("For best results, please be sure you know the\n");
   printf("precision of your system timer.\n");
   printf(HLINE);
+}
 
+uint64_t bench_run() {
   /*	--- MAIN LOOP --- repeat test cases NTIMES times --- */
 
-  scalar = 3.0;
+  int k;
+  ssize_t j;
+  STREAM_TYPE scalar = 3.0;
   for (k = 0; k < NTIMES; k++) {
-    times[0][k] = mysecond();
+    times[0][k] = bench_uptime();
 #ifdef TUNED
     tuned_STREAM_Copy();
 #else
-#pragma omp parallel for
     for (j = 0; j < STREAM_ARRAY_SIZE; j++)
       c[j] = a[j];
 #endif
-    times[0][k] = mysecond() - times[0][k];
+    times[0][k] = bench_uptime() - times[0][k];
 
-    times[1][k] = mysecond();
+    times[1][k] = bench_uptime();
 #ifdef TUNED
     tuned_STREAM_Scale(scalar);
 #else
-#pragma omp parallel for
     for (j = 0; j < STREAM_ARRAY_SIZE; j++)
       b[j] = scalar * c[j];
 #endif
-    times[1][k] = mysecond() - times[1][k];
+    times[1][k] = bench_uptime() - times[1][k];
 
-    times[2][k] = mysecond();
+    times[2][k] = bench_uptime();
 #ifdef TUNED
     tuned_STREAM_Add();
 #else
-#pragma omp parallel for
     for (j = 0; j < STREAM_ARRAY_SIZE; j++)
       c[j] = a[j] + b[j];
 #endif
-    times[2][k] = mysecond() - times[2][k];
+    times[2][k] = bench_uptime() - times[2][k];
 
-    times[3][k] = mysecond();
+    times[3][k] = bench_uptime();
 #ifdef TUNED
     tuned_STREAM_Triad(scalar);
 #else
-#pragma omp parallel for
     for (j = 0; j < STREAM_ARRAY_SIZE; j++)
       a[j] = b[j] + scalar * c[j];
 #endif
-    times[3][k] = mysecond() - times[3][k];
+    times[3][k] = bench_uptime() - times[3][k];
   }
+  return 0;
+}
 
+int bench_validate() {
   /*	--- SUMMARY --- */
 
+  int k;
+  ssize_t j;
   for (k = 1; k < NTIMES; k++) /* note -- skip first iteration */
   {
     for (j = 0; j < 4; j++) {
@@ -350,12 +352,11 @@ int main() {
     }
   }
 
-  printf("Function    Best Rate MB/s  Avg time     Min time     Max time\n");
+  printf("Function    Best Rate MB/s  Avg time(us) Min time(us) Max time(us)\n");
   for (j = 0; j < 4; j++) {
     avgtime[j] = avgtime[j] / (double)(NTIMES - 1);
 
-    printf("%s%12.1f  %11.6f  %11.6f  %11.6f\n", label[j], 1.0E-06 * bytes[j] / mintime[j], avgtime[j], mintime[j],
-           maxtime[j]);
+    printf("%s%12.1f  %11lld  %11lld  %11lld\n", label[j], bytes[j] / mintime[j], avgtime[j], mintime[j], maxtime[j]);
   }
   printf(HLINE);
 
@@ -370,13 +371,13 @@ int main() {
 
 int checktick() {
   int i, minDelta, Delta;
-  double t1, t2, timesfound[M];
+  uint64_t t1, t2, timesfound[M];
 
   /*  Collect a sequence of M unique time values from the system. */
 
   for (i = 0; i < M; i++) {
-    t1 = mysecond();
-    while (((t2 = mysecond()) - t1) < 1.0E-6)
+    t1 = bench_uptime();
+    while (((t2 = bench_uptime()) - t1) < 1)
       ;
     timesfound[i] = t1 = t2;
   }
@@ -389,25 +390,11 @@ int checktick() {
 
   minDelta = 1000000;
   for (i = 1; i < M; i++) {
-    Delta = (int)(1.0E6 * (timesfound[i] - timesfound[i - 1]));
+    Delta = (int)(timesfound[i] - timesfound[i - 1]);
     minDelta = MIN(minDelta, MAX(Delta, 0));
   }
 
   return (minDelta);
-}
-
-/* A gettimeofday routine to give access to the wall
-   clock timer on most UNIX-like systems.  */
-
-#include <sys/time.h>
-
-double mysecond() {
-  struct timeval tp;
-  struct timezone tzp;
-  int i;
-
-  i = gettimeofday(&tp, &tzp);
-  return ((double)tp.tv_sec + (double)tp.tv_usec * 1.e-6);
 }
 
 #ifndef abs
