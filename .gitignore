@@ -16,4 +16,5 @@ _*
 *~
 build/
 !.gitignore
+!.clang-format
 .vscode
