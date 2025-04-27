@@ -25,8 +25,7 @@
 
 #include "genann.h"
 #include "minctest.h"
-#include <math.h>
-#include <stdio.h>
+#include <bench.h>
 #include <stdlib.h>
 
 void basic() {
@@ -181,19 +180,22 @@ void train_xor() {
   genann_free(ann);
 }
 
-int main(int argc, char *argv[]) {
+void bench_init(int setting) {
   printf("GENANN TEST SUITE\n");
+  bench_srand(100); //Repeatable test results.
+}
 
-  srand(100); //Repeatable test results.
-
+uint64_t bench_run() {
   lrun("basic", basic);
   lrun("xor", xor_);
   lrun("backprop", backprop);
   lrun("train and", train_and);
   lrun("train or", train_or);
   lrun("train xor", train_xor);
+  return 0;
+}
 
+int bench_validate() {
   lresults();
-
-  return lfails != 0;
+  return lfails;
 }

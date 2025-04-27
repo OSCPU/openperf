@@ -24,10 +24,7 @@
  */
 
 #include "genann.h"
-#include <assert.h>
-#include <errno.h>
-#include <math.h>
-#include <stdio.h>
+#include <bench.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -160,34 +157,6 @@ genann *genann_init(int inputs, int hidden_layers, int hidden, int outputs) {
   return ret;
 }
 
-genann *genann_read(FILE *in) {
-  int inputs, hidden_layers, hidden, outputs;
-  int rc;
-
-  errno = 0;
-  rc = fscanf(in, "%d %d %d %d", &inputs, &hidden_layers, &hidden, &outputs);
-  if (rc < 4 || errno != 0) {
-    perror("fscanf");
-    return NULL;
-  }
-
-  genann *ann = genann_init(inputs, hidden_layers, hidden, outputs);
-
-  int i;
-  for (i = 0; i < ann->total_weights; ++i) {
-    errno = 0;
-    rc = fscanf(in, " %le", ann->weight + i);
-    if (rc < 1 || errno != 0) {
-      perror("fscanf");
-      genann_free(ann);
-
-      return NULL;
-    }
-  }
-
-  return ann;
-}
-
 genann *genann_copy(genann const *ann) {
   const int size =
       sizeof(genann) + sizeof(int) * (ann->total_weights + ann->total_neurons + (ann->total_neurons - ann->inputs));
@@ -208,9 +177,10 @@ genann *genann_copy(genann const *ann) {
 void genann_randomize(genann *ann) {
   int i;
   for (i = 0; i < ann->total_weights; ++i) {
-    double r = GENANN_RANDOM();
+    //double r = GENANN_RANDOM();
     /* Sets weights from -0.5 to 0.5. */
-    ann->weight[i] = SCALE_UP(r - 0.5);
+    //ann->weight[i] = SCALE_UP(GENANN_RANDOM() - 0.5);
+    ann->weight[i] = bench_rand() % ONE - HALF;
   }
 }
 
@@ -388,14 +358,5 @@ void genann_train(genann const *ann, int const *inputs, int const *desired_outpu
       }
       ++d;
     }
-  }
-}
-
-void genann_write(genann const *ann, FILE *out) {
-  fprintf(out, "%d %d %d %d", ann->inputs, ann->hidden_layers, ann->hidden, ann->outputs);
-
-  int i;
-  for (i = 0; i < ann->total_weights; ++i) {
-    fprintf(out, " %.20e", ann->weight[i]);
   }
 }

@@ -79,15 +79,14 @@ static int lfails = 0;
   } while (0)
 
 /* Run a test. Name can be any string to print out, test is the function name to call. */
-#define lrun(name, test)                                                                \
-  do {                                                                                  \
-    const int ts = ltests;                                                              \
-    const int fs = lfails;                                                              \
-    const clock_t start = clock();                                                      \
-    printf("\t%-14s", name);                                                            \
-    test();                                                                             \
-    printf("pass:%2d   fail:%2d   %4dms\n", (ltests - ts) - (lfails - fs), lfails - fs, \
-           (int)((clock() - start) * 1000 / CLOCKS_PER_SEC));                           \
+#define lrun(name, test)                                                                                          \
+  do {                                                                                                            \
+    const int ts = ltests;                                                                                        \
+    const int fs = lfails;                                                                                        \
+    const unsigned long long start = bench_uptime();                                                              \
+    printf("\t%-14s", name);                                                                                      \
+    test();                                                                                                       \
+    printf("pass:%2d   fail:%2d   %lldus\n", (ltests - ts) - (lfails - fs), lfails - fs, bench_uptime() - start); \
   } while (0)
 
 /* Assert a true statement. */
@@ -111,15 +110,14 @@ static int lfails = 0;
   } while (0)
 
 /* Assert two floats are equal (Within LTEST_FLOAT_TOLERANCE). */
-#define lfequal(a, b)                                                                                  \
-  do {                                                                                                 \
-    ++ltests;                                                                                          \
-    int _a = a, _b = b;                                                                                \
-    if (abs((_a) - (_b)) > SCALE_UP(LTEST_FLOAT_TOLERANCE)) {                                          \
-      ++lfails;                                                                                        \
-      printf("%s:%d (%f(scaled: %d) != %f(scaled: %d))\n", __FILE__, __LINE__, (double)_a / SCALE, _a, \
-             (double)_b / SCALE, _b);                                                                  \
-    }                                                                                                  \
+#define lfequal(a, b)                                                          \
+  do {                                                                         \
+    ++ltests;                                                                  \
+    int _a = a, _b = b;                                                        \
+    if (abs((_a) - (_b)) > SCALE_UP(LTEST_FLOAT_TOLERANCE)) {                  \
+      ++lfails;                                                                \
+      printf("%s:%d (%d(scaled != %d(scaled))\n", __FILE__, __LINE__, _a, _b); \
+    }                                                                          \
   } while (0)
 
 #endif /*__MINCTEST_H__*/
