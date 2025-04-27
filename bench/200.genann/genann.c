@@ -49,8 +49,8 @@ double genann_act_output_indirect(const struct genann *ann, double a) {
   return ann->activation_output(ann, a);
 }
 
-const double sigmoid_dom_min = -15.0;
-const double sigmoid_dom_max = 15.0;
+const double sigmoid_dom_min = -16.0;
+const double sigmoid_dom_max = 16.0;
 double interval;
 double lookup[LOOKUP_SIZE];
 
