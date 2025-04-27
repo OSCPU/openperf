@@ -111,13 +111,15 @@ static int lfails = 0;
   } while (0)
 
 /* Assert two floats are equal (Within LTEST_FLOAT_TOLERANCE). */
-#define lfequal(a, b)                                                             \
-  do {                                                                            \
-    ++ltests;                                                                     \
-    if (fabs((double)(a) - (double)(b)) > LTEST_FLOAT_TOLERANCE) {                \
-      ++lfails;                                                                   \
-      printf("%s:%d (%f != %f)\n", __FILE__, __LINE__, (double)(a), (double)(b)); \
-    }                                                                             \
+#define lfequal(a, b)                                                                                  \
+  do {                                                                                                 \
+    ++ltests;                                                                                          \
+    int _a = a, _b = b;                                                                                \
+    if (abs((_a) - (_b)) > SCALE_UP(LTEST_FLOAT_TOLERANCE)) {                                          \
+      ++lfails;                                                                                        \
+      printf("%s:%d (%f(scaled: %d) != %f(scaled: %d))\n", __FILE__, __LINE__, (double)_a / SCALE, _a, \
+             (double)_b / SCALE, _b);                                                                  \
+    }                                                                                                  \
   } while (0)
 
 #endif /*__MINCTEST_H__*/

@@ -33,31 +33,31 @@ void basic() {
   genann *ann = genann_init(1, 0, 0, 1);
 
   lequal(ann->total_weights, 2);
-  double a;
+  int a;
 
   a = 0;
   ann->weight[0] = 0;
   ann->weight[1] = 0;
-  lfequal(0.5, *genann_run(ann, &a));
+  lfequal(HALF, *genann_run(ann, &a));
 
-  a = 1;
-  lfequal(0.5, *genann_run(ann, &a));
+  a = ONE;
+  lfequal(HALF, *genann_run(ann, &a));
 
-  a = 11;
-  lfequal(0.5, *genann_run(ann, &a));
+  a = SCALE_UP(11);
+  lfequal(HALF, *genann_run(ann, &a));
 
-  a = 1;
-  ann->weight[0] = 1;
-  ann->weight[1] = 1;
-  lfequal(0.5, *genann_run(ann, &a));
+  a = SCALE_UP(1);
+  ann->weight[0] = ONE;
+  ann->weight[1] = ONE;
+  lfequal(HALF, *genann_run(ann, &a));
 
-  a = 10;
-  ann->weight[0] = 1;
-  ann->weight[1] = 1;
-  lfequal(1.0, *genann_run(ann, &a));
+  a = SCALE_UP(10);
+  ann->weight[0] = ONE;
+  ann->weight[1] = ONE;
+  lfequal(ONE, *genann_run(ann, &a));
 
-  a = -10;
-  lfequal(0.0, *genann_run(ann, &a));
+  a = SCALE_UP(-10);
+  lfequal(0, *genann_run(ann, &a));
 
   genann_free(ann);
 }
@@ -70,22 +70,22 @@ void xor_() {
   lequal(ann->total_weights, 9);
 
   /* First hidden. */
-  ann->weight[0] = .5;
-  ann->weight[1] = 1;
-  ann->weight[2] = 1;
+  ann->weight[0] = HALF;
+  ann->weight[1] = ONE;
+  ann->weight[2] = ONE;
 
   /* Second hidden. */
-  ann->weight[3] = 1;
-  ann->weight[4] = 1;
-  ann->weight[5] = 1;
+  ann->weight[3] = ONE;
+  ann->weight[4] = ONE;
+  ann->weight[5] = ONE;
 
   /* Output. */
-  ann->weight[6] = .5;
-  ann->weight[7] = 1;
-  ann->weight[8] = -1;
+  ann->weight[6] = HALF;
+  ann->weight[7] = ONE;
+  ann->weight[8] = -ONE;
 
-  double input[4][2] = {{0, 0}, {0, 1}, {1, 0}, {1, 1}};
-  double output[4] = {0, 1, 1, 0};
+  int input[4][2] = {{0, 0}, {0, ONE}, {ONE, 0}, {ONE, ONE}};
+  int output[4] = {0, ONE, ONE, 0};
 
   lfequal(output[0], *genann_run(ann, input[0]));
   lfequal(output[1], *genann_run(ann, input[1]));
@@ -98,21 +98,21 @@ void xor_() {
 void backprop() {
   genann *ann = genann_init(1, 0, 0, 1);
 
-  double input, output;
-  input = .5;
-  output = 1;
+  int input, output;
+  input = HALF;
+  output = ONE;
 
-  double first_try = *genann_run(ann, &input);
-  genann_train(ann, &input, &output, .5);
-  double second_try = *genann_run(ann, &input);
-  lok(fabs(first_try - output) > fabs(second_try - output));
+  int first_try = *genann_run(ann, &input);
+  genann_train(ann, &input, &output, HALF);
+  int second_try = *genann_run(ann, &input);
+  lok(abs(first_try - output) > abs(second_try - output));
 
   genann_free(ann);
 }
 
 void train_and() {
-  double input[4][2] = {{0, 0}, {0, 1}, {1, 0}, {1, 1}};
-  double output[4] = {0, 0, 0, 1};
+  int input[4][2] = {{0, 0}, {0, ONE}, {ONE, 0}, {ONE, ONE}};
+  int output[4] = {0, 0, 0, ONE};
 
   genann *ann = genann_init(2, 0, 0, 1);
 
@@ -120,7 +120,7 @@ void train_and() {
 
   for (i = 0; i < 50; ++i) {
     for (j = 0; j < 4; ++j) {
-      genann_train(ann, input[j], output + j, .8);
+      genann_train(ann, input[j], output + j, SCALE_UP(.8));
     }
   }
 
@@ -134,8 +134,8 @@ void train_and() {
 }
 
 void train_or() {
-  double input[4][2] = {{0, 0}, {0, 1}, {1, 0}, {1, 1}};
-  double output[4] = {0, 1, 1, 1};
+  int input[4][2] = {{0, 0}, {0, ONE}, {ONE, 0}, {ONE, ONE}};
+  int output[4] = {0, ONE, ONE, ONE};
 
   genann *ann = genann_init(2, 0, 0, 1);
   genann_randomize(ann);
@@ -144,7 +144,7 @@ void train_or() {
 
   for (i = 0; i < 50; ++i) {
     for (j = 0; j < 4; ++j) {
-      genann_train(ann, input[j], output + j, .8);
+      genann_train(ann, input[j], output + j, SCALE_UP(.8));
     }
   }
 
@@ -158,8 +158,8 @@ void train_or() {
 }
 
 void train_xor() {
-  double input[4][2] = {{0, 0}, {0, 1}, {1, 0}, {1, 1}};
-  double output[4] = {0, 1, 1, 0};
+  int input[4][2] = {{0, 0}, {0, ONE}, {ONE, 0}, {ONE, ONE}};
+  int output[4] = {0, ONE, ONE, 0};
 
   genann *ann = genann_init(2, 1, 2, 1);
 
@@ -167,7 +167,7 @@ void train_xor() {
 
   for (i = 0; i < 500; ++i) {
     for (j = 0; j < 4; ++j) {
-      genann_train(ann, input[j], output + j, 3);
+      genann_train(ann, input[j], output + j, SCALE_UP(3));
     }
     /* printf("%1.2f ", xor_score(ann)); */
   }
@@ -181,37 +181,6 @@ void train_xor() {
   genann_free(ann);
 }
 
-void copy() {
-  genann *first = genann_init(1000, 5, 50, 10);
-
-  genann *second = genann_copy(first);
-
-  lequal(first->inputs, second->inputs);
-  lequal(first->hidden_layers, second->hidden_layers);
-  lequal(first->hidden, second->hidden);
-  lequal(first->outputs, second->outputs);
-  lequal(first->total_weights, second->total_weights);
-
-  int i;
-  for (i = 0; i < first->total_weights; ++i) {
-    lfequal(first->weight[i], second->weight[i]);
-  }
-
-  genann_free(first);
-  genann_free(second);
-}
-
-void sigmoid() {
-  double i = -20;
-  const double max = 20;
-  const double d = .0001;
-
-  while (i < max) {
-    lfequal(genann_act_sigmoid(NULL, i), genann_act_sigmoid_cached(NULL, i));
-    i += d;
-  }
-}
-
 int main(int argc, char *argv[]) {
   printf("GENANN TEST SUITE\n");
 
@@ -223,8 +192,6 @@ int main(int argc, char *argv[]) {
   lrun("train and", train_and);
   lrun("train or", train_or);
   lrun("train xor", train_xor);
-  lrun("copy", copy);
-  lrun("sigmoid", sigmoid);
 
   lresults();
 

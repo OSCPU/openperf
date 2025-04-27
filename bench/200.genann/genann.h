@@ -28,6 +28,15 @@
 
 #include <stdio.h>
 
+#define SCALE           (1 << 24)
+#define SCALE_UP(x)     ((int)((x) * SCALE))
+#define SCALE_DN(x)     ((int)((x) / SCALE))
+#define SCALE_MUL(x, y) SCALE_DN((int64_t)(x) * (y))
+
+#define ONE  (SCALE_UP(1))
+#define TWO  (SCALE_UP(2))
+#define HALF (SCALE_UP(1) / 2)
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -40,7 +49,7 @@ extern "C" {
 
 struct genann;
 
-typedef double (*genann_actfun)(const struct genann *ann, double a);
+typedef int (*genann_actfun)(const struct genann *ann, int a);
 
 typedef struct genann {
   /* How many inputs, outputs, and hidden neurons. */
@@ -59,13 +68,13 @@ typedef struct genann {
   int total_neurons;
 
   /* All weights (total_weights long). */
-  double *weight;
+  int *weight;
 
   /* Stores input array and output of each neuron (total_neurons long). */
-  double *output;
+  int *output;
 
   /* Stores delta of each hidden and output neuron (total_neurons - inputs long). */
-  double *delta;
+  int *delta;
 
 } genann;
 
@@ -85,19 +94,19 @@ genann *genann_copy(genann const *ann);
 void genann_free(genann *ann);
 
 /* Runs the feedforward algorithm to calculate the ann's output. */
-double const *genann_run(genann const *ann, double const *inputs);
+int const *genann_run(genann const *ann, int const *inputs);
 
 /* Does a single backprop update. */
-void genann_train(genann const *ann, double const *inputs, double const *desired_outputs, double learning_rate);
+void genann_train(genann const *ann, int const *inputs, int const *desired_outputs, int learning_rate);
 
 /* Saves the ann. */
 void genann_write(genann const *ann, FILE *out);
 
 void genann_init_sigmoid_lookup(const genann *ann);
 double genann_act_sigmoid(const genann *ann, double a);
-double genann_act_sigmoid_cached(const genann *ann, double a);
-double genann_act_threshold(const genann *ann, double a);
-double genann_act_linear(const genann *ann, double a);
+int genann_act_sigmoid_cached(const genann *ann, int a);
+int genann_act_threshold(const genann *ann, int a);
+int genann_act_linear(const genann *ann, int a);
 
 #ifdef __cplusplus
 }
