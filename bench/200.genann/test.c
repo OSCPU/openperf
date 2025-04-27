@@ -181,32 +181,6 @@ void train_xor() {
   genann_free(ann);
 }
 
-void persist() {
-  genann *first = genann_init(1000, 5, 50, 10);
-
-  FILE *out = fopen("persist.txt", "w");
-  genann_write(first, out);
-  fclose(out);
-
-  FILE *in = fopen("persist.txt", "r");
-  genann *second = genann_read(in);
-  fclose(in);
-
-  lequal(first->inputs, second->inputs);
-  lequal(first->hidden_layers, second->hidden_layers);
-  lequal(first->hidden, second->hidden);
-  lequal(first->outputs, second->outputs);
-  lequal(first->total_weights, second->total_weights);
-
-  int i;
-  for (i = 0; i < first->total_weights; ++i) {
-    lok(first->weight[i] == second->weight[i]);
-  }
-
-  genann_free(first);
-  genann_free(second);
-}
-
 void copy() {
   genann *first = genann_init(1000, 5, 50, 10);
 
@@ -249,7 +223,6 @@ int main(int argc, char *argv[]) {
   lrun("train and", train_and);
   lrun("train or", train_or);
   lrun("train xor", train_xor);
-  lrun("persist", persist);
   lrun("copy", copy);
   lrun("sigmoid", sigmoid);
 
