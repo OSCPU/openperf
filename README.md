@@ -11,6 +11,7 @@
 |      | [105.bf][bf]                 | brainf\*ck语言解释器 |                 |
 |      | [106.qsort][qsort]           | 快速排序             |                 |
 |      | [107.stream][stream]         | 内存带宽测量         |                 |
+| 中型 | [200.genann][genann]         | 神经网络             | 仅含整数操作    |
 
 
 [blockchain]: https://github.com/aproxp/blockchain
@@ -21,3 +22,4 @@
 [bf]: http://github.com/kgabis/brainfuck-c
 [qsort]: https://github.com/NJU-ProjectN/am-kernels/tree/master/benchmarks/microbench
 [stream]: https://github.com/jeffhammond/STREAM
+[genann]: https://github.com/codeplea/genann
