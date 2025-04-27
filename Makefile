@@ -3,12 +3,24 @@ ifeq ($(wildcard $(BENCH_HOME)/libbench/bench.c),)
 endif
 
 LIBBENCH_PATH = $(BENCH_HOME)/libbench
-LIBBENCH_A = $(LIBBENCH_PATH)/build/libbench-$(TARGET).a
-
 INC_PATH += $(LIBBENCH_PATH)/include
+
+ifdef ARCH
+LIBBENCH_A = $(LIBBENCH_PATH)/build/libbench-$(ARCH).a
+MK = $(AM_HOME)/Makefile
+else ifdef TARGET
+LIBBENCH_A = $(LIBBENCH_PATH)/build/libbench-$(TARGET).a
+MK = $(NAVY_HOME)/Makefile
+else ifeq ($(MAKECMDGOALS),clean)
+MK = $(AM_HOME)/Makefile
+else
+$(error Should specify ARCH=xxx for AM or TARGET=xxx for Navy-apps)
+endif
+
 LINKAGE += $(LIBBENCH_A)
+include $(MK)
 
-include $(NAVY_HOME)/Makefile
-
+ifneq ($(MAKECMDGOALS),archive)
 $(LIBBENCH_A): force
 	@$(MAKE) -s -C $(LIBBENCH_PATH) archive
+endif

@@ -2,9 +2,14 @@
 #define __BENCH_H__
 
 #include <stdint.h>
+#ifdef __ARCH__ // defined in AM
+#include <klib.h>
+#else
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#endif
 
 enum {
   BENCH_SETTING_TEST,

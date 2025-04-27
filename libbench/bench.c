@@ -1,15 +1,27 @@
 #include <bench.h>
-#include <sys/time.h>
 
 #define NR_REPEAT 1
 #define REF_SCORE 1000000
 #define REF_CPU   "AMD Ryzen(TM) 9 7950X3D"
 
+#ifdef __ARCH__ // defined in AM
+#define MAIN_ARGS   const char *args
+#define SETTING_ARG args
+#define EXIT_FUN    halt
+uint64_t bench_uptime() {
+  return io_read(AM_TIMER_UPTIME).us;
+}
+#else
+#include <sys/time.h>
+#define MAIN_ARGS   int argc, char *argv[]
+#define SETTING_ARG argv[1]
+#define EXIT_FUN    exit
 uint64_t bench_uptime() { // unit: us
   struct timeval tv;
   gettimeofday(&tv, NULL);
   return tv.tv_sec * 1000000ull + tv.tv_usec;
 }
+#endif
 
 static int str2setting(const char *args) {
   if (args == NULL || strcmp(args, "") == 0) {
@@ -62,13 +74,13 @@ static char *format_time(unsigned long long _us) {
 #define ANSI_NONE          "\33[0m"
 #define ANSI_FMT(str, fmt) fmt str ANSI_NONE
 
-int main(int argc, char *argv[]) {
+int main(MAIN_ARGS) {
   extern void bench_init(int setting);
   extern uint64_t bench_run();
   extern int bench_validate();
 
   uint64_t t0 = bench_uptime();
-  int setting = str2setting(argv[1]);
+  int setting = str2setting(SETTING_ARG);
 
   uint64_t ref_time = 0;
   uint64_t scored_time = 0;
@@ -114,5 +126,5 @@ int main(int argc, char *argv[]) {
 }
 
 void bench_exit(int status) {
-  exit(status);
+  EXIT_FUN(status);
 }

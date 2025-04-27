@@ -1,3 +1,3 @@
 NAME = libbench
 SRCS = bench.c
-include $(NAVY_HOME)/Makefile
+include $(BENCH_HOME)/Makefile
