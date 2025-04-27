@@ -146,6 +146,7 @@ void bench_init(int setting) {
   for (int i = 0; i < ARR_SIZE; i++) {
     input[i] = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"[bench_rand() % 62];
   }
+  input[ARR_SIZE] = 0;
 }
 
 uint64_t bench_run() {
