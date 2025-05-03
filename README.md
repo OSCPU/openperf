@@ -18,6 +18,7 @@
 |      | [203.rsa][rsa]               | RSA加解密            |                 |
 |      | [204.hypergraph][hypergraph] | 超图划分             |                 |
 | 大型 | [300.bzip3][bzip3]           | 数据压缩             |                 |
+|      | [301.gsim][gsim]             | RTL仿真              |                 |
 
 
 [blockchain]: https://github.com/aproxp/blockchain
@@ -35,3 +36,4 @@
 [rsa]: https://github.com/pantaloons/RSA
 [hypergraph]: https://github.com/alidasdan/hypergraph-partitioning-algorithms
 [bzip3]: https://github.com/iczelia/bzip3
+[gsim]: https://github.com/OpenXiangShan/gsim
