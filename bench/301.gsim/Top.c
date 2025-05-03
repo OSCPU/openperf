@@ -303,21 +303,21 @@ void gprintf(const char *fmt, ...) {
       default: printf("%c", c); continue;
     }
 
-    uint64_t lval = 0;
+    unsigned long long lval = 0;
     int bits = va_arg(args, uint32_t);
     if (bits <= 32) {
       lval = va_arg(args, uint32_t);
     } else if (bits <= 64) {
-      lval = va_arg(args, uint64_t);
+      lval = va_arg(args, unsigned long long);
     } else {
       assert(0);
     }
 
     c = fmt[fmt_idx++];
     switch (c) {
-      case 'd': printf("%ld", lval); break;
-      case 'c': printf("%c", lval & 0xff); break;
-      case 'x': printf("%lx", lval); break;
+      case 'd': printf("%lld", lval); break;
+      case 'c': printf("%c", (char)lval & 0xff); break;
+      case 'x': printf("%llx", lval); break;
       default: assert(0);
     }
   }

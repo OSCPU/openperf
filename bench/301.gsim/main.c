@@ -10,7 +10,6 @@ typedef uint32_t word_t;
 typedef int32_t sword_t;
 
 static uint8_t *pmem = NULL;
-static uint64_t cycles = 0, insts = 0;
 
 static void reset(int n) {
   set_reset(1);
@@ -21,10 +20,9 @@ static void reset(int n) {
 }
 
 static size_t load_prog(char *bin) {
-  bin = "input/microbench-riscv32e-npc.bin";
   FILE *fp = fopen(bin, "r");
   assert(fp);
-  size_t s = fread(pmem, 1, PMEM_SIZE, fp);
+  int s = fread(pmem, 1, PMEM_SIZE, fp);
   fclose(fp);
   printf("image size = %d\n", s);
   return s;
@@ -85,19 +83,24 @@ void SimDMEM(uint8_t ren, uint32_t raddr, uint32_t *rdata, uint8_t wen, uint32_t
     pmem_write(waddr, wdata, wmask);
 }
 
-int main(int argc, char *argv[]) {
+static unsigned long long t;
+static unsigned long long cycles, insts;
+static int exit_code;
+
+void bench_init(int setting) {
   pmem = (uint8_t *)malloc(PMEM_SIZE);
   assert(pmem != NULL);
-  size_t img_size = load_prog(argv[1]);
-  uint64_t last_commit_cycle = 0;
-  int exit_code = 0;
-
+  load_prog("input/microbench-riscv32e-npc.bin");
+  exit_code = 0;
+  cycles = 0;
+  insts = 0;
   STop_init();
+}
 
-  uint64_t t0 = bench_uptime();
-
+uint64_t bench_run() {
+  t = bench_uptime();
+  uint64_t last_commit_cycle = 0;
   reset(10);
-
   while (true) {
     step();
     cycles++;
@@ -122,10 +125,12 @@ int main(int argc, char *argv[]) {
       }
     }
   }
+  t = bench_uptime() - t;
+  return 0;
+}
 
-  uint64_t us = bench_uptime() - t0;
-  printf("finish after %ld cycles, %lld us, simulation freq = %lld Hz\n", cycles, us, cycles * 1000000 / us);
-  printf("#inst = %ld, IPC = %lld * 10^{-3}\n", insts, insts * 1000 / cycles);
-
+int bench_validate() {
+  printf("finish after %lld cycles, %lld us, simulation freq = %lld Hz\n", cycles, t, cycles * 1000000 / t);
+  printf("#inst = %lld, IPC = %lld * 10^{-3}\n", insts, insts * 1000 / cycles);
   return exit_code;
 }

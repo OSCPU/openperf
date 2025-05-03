@@ -1,6 +1,7 @@
 #ifndef Top_H
 #define Top_H
-#include <assert.h>
+
+#include <bench.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
