@@ -4,7 +4,7 @@
 
 #define MAX_IDLE_CYCLE 100
 #define PMEM_BASE      0x80000000
-#define PMEM_SIZE      (128 * 1024)
+#define PMEM_SIZE      256 * 1024
 
 typedef uint32_t word_t;
 typedef int32_t sword_t;
@@ -90,7 +90,7 @@ static int exit_code;
 void bench_init(int setting) {
   pmem = (uint8_t *)malloc(PMEM_SIZE);
   assert(pmem != NULL);
-  load_prog("input/microbench-riscv32e-npc.bin");
+  load_prog("input/rtthread-riscv32e-npc.bin");
   exit_code = 0;
   cycles = 0;
   insts = 0;
