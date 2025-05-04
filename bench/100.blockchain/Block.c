@@ -4,38 +4,38 @@
 
 #include "Block.h"
 #include "sha256.h"
-#include <ctime>
-#include <sstream>
+#include <stdio.h>
+#include <time.h>
 
-Block::Block(uint32_t nIndexIn, const string &sDataIn) : _nIndex(nIndexIn), _sData(sDataIn) {
-  _nNonce = -1;
-  _tTime = time(nullptr);
+static void _CalculateHash(Block *this) {
+  static char str[1024];
+  sprintf(str, "%d%d%s%d%s", this->_nIndex, this->_tTime, this->_sData, this->_nNonce, this->sPrevHash);
+  sha256(this->_sHash, str);
 }
 
-string Block::GetHash() {
-  return _sHash;
+void initBlock(Block *this, uint32_t nIndexIn, const char *sDataIn) {
+  this->_nIndex = nIndexIn;
+  this->_sData = sDataIn;
+  this->_nNonce = -1;
+  this->_tTime = time(NULL);
+  this->_sHash[0] = '\0';
 }
 
-void Block::MineBlock(uint32_t nDifficulty) {
+const char *GetHash(Block *this) {
+  return this->_sHash;
+}
+
+void MineBlock(Block *this, uint32_t nDifficulty) {
   char cstr[nDifficulty + 1];
   for (uint32_t i = 0; i < nDifficulty; ++i) {
     cstr[i] = '0';
   }
   cstr[nDifficulty] = '\0';
 
-  string str(cstr);
-
   do {
-    _nNonce++;
-    _sHash = _CalculateHash();
-  } while (_sHash.substr(0, nDifficulty) != str);
+    this->_nNonce++;
+    _CalculateHash(this);
+  } while (memcmp(this->_sHash, cstr, nDifficulty) != 0);
 
-  cout << "Block mined: " << _sHash << endl;
-}
-
-inline string Block::_CalculateHash() const {
-  stringstream ss;
-  ss << _nIndex << _tTime << _sData << _nNonce << sPrevHash;
-
-  return sha256(ss.str());
+  printf("Block mined: %s\n", this->_sHash);
 }

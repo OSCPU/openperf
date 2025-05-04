@@ -4,17 +4,21 @@
 
 #include "Blockchain.h"
 
-Blockchain::Blockchain() {
-  _vChain.emplace_back(Block(0, "Genesis Block"));
-  _nDifficulty = 6;
+static Block *_GetLastBlock(Blockchain *this) {
+  return &(this->_vChain[this->nrBlock - 1]);
 }
 
-void Blockchain::AddBlock(Block bNew) {
-  bNew.sPrevHash = _GetLastBlock().GetHash();
-  bNew.MineBlock(_nDifficulty);
-  _vChain.push_back(bNew);
+void initBlockchain(Blockchain *this) {
+  initBlock(&this->_vChain[0], 0, "Genesis Block");
+  this->nrBlock = 1;
+  this->_nDifficulty = 4;
 }
 
-Block Blockchain::_GetLastBlock() const {
-  return _vChain.back();
+void AddBlock(Blockchain *this, uint32_t nIndexIn, const char *sDataIn) {
+  Block *bLast = _GetLastBlock(this);
+  Block *bNew = &this->_vChain[this->nrBlock];
+  initBlock(bNew, nIndexIn, sDataIn);
+  bNew->sPrevHash = GetHash(bLast);
+  MineBlock(bNew, this->_nDifficulty);
+  this->nrBlock++;
 }

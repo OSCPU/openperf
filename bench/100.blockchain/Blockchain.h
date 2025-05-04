@@ -5,22 +5,15 @@
 #ifndef BLOCKCHAIN_BLOCKCHAIN_H
 #define BLOCKCHAIN_BLOCKCHAIN_H
 #include "Block.h"
-#include <cstdint>
-#include <vector>
+#include <stdint.h>
 
-using namespace std;
-
-class Blockchain {
-public:
-  Blockchain();
-
-  void AddBlock(Block bNew);
-
-private:
+typedef struct Blockchain {
   uint32_t _nDifficulty;
-  vector<Block> _vChain;
+  Block _vChain[8];
+  int nrBlock;
+} Blockchain;
 
-  Block _GetLastBlock() const;
-};
+void initBlockchain(Blockchain *this);
+void AddBlock(Blockchain *this, uint32_t nIndexIn, const char *sDataIn);
 
 #endif //BLOCKCHAIN_BLOCKCHAIN_H
