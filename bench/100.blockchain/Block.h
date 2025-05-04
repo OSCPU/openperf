@@ -7,14 +7,13 @@
 
 #include "sha256.h"
 #include <stdint.h>
-#include <time.h>
 
 typedef struct Block {
-  int64_t _nNonce;
+  long long _nNonce;
   const char *_sData;
   const char *sPrevHash;
   uint32_t _nIndex;
-  time_t _tTime;
+  uint32_t _tTime;
   char _sHash[2 * DIGEST_SIZE + 1];
 } Block;
 

@@ -1,7 +1,10 @@
 #include "Blockchain.h"
+#include <bench.h>
 #include <stdio.h>
 
 int main() {
+  bench_srand(0);
+
   Blockchain bChain;
   initBlockchain(&bChain);
 

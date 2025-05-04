@@ -4,12 +4,12 @@
 
 #include "Block.h"
 #include "sha256.h"
+#include <bench.h>
 #include <stdio.h>
-#include <time.h>
 
 static void _CalculateHash(Block *this) {
   static char str[1024];
-  sprintf(str, "%d%d%s%d%s", this->_nIndex, this->_tTime, this->_sData, this->_nNonce, this->sPrevHash);
+  sprintf(str, "%d%d%s%lld%s", this->_nIndex, this->_tTime, this->_sData, this->_nNonce, this->sPrevHash);
   sha256(this->_sHash, str);
 }
 
@@ -17,7 +17,7 @@ void initBlock(Block *this, uint32_t nIndexIn, const char *sDataIn) {
   this->_nIndex = nIndexIn;
   this->_sData = sDataIn;
   this->_nNonce = -1;
-  this->_tTime = time(NULL);
+  this->_tTime = bench_rand();
   this->_sHash[0] = '\0';
 }
 
