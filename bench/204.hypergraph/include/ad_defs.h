@@ -51,7 +51,7 @@ typedef struct parts_st {
   int pmax_size;  /* maximum size of part */
   int pmin_size;  /* minimum size of part */
   int pcurr_size; /* current size of part */
-  float pratio;   /* pmax_size / totsize */
+  int pratio_inv; /* pmax_size / totsize */
 } parts_t;
 
 /* individual type */
@@ -118,10 +118,5 @@ typedef struct parts_info_st {
   int pmin_size;  /* minimum size of part */
   int pcurr_size; /* current size of part */
 } parts_info_t;
-
-/* precomputed exponential values */
-typedef struct eval_st {
-  float val;
-} eval_t;
 
 #endif

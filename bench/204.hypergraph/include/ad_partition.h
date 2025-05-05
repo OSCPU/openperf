@@ -12,7 +12,7 @@
 #include <string.h>
 
 /* create initial partition */
-int create_partition(int nocells, int noparts, int totcellsize, int max_cweight, float *off_ratio, cells_t cells[],
+int create_partition(int nocells, int noparts, int totcellsize, int max_cweight, int *off_ratio_x20, cells_t cells[],
                      nets_t nets[], corn_t cnets[], ind_t *ind);
 
 /* copy partition properties to parts_info for temporary use */

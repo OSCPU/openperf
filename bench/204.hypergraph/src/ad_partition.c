@@ -11,11 +11,11 @@
 #include <string.h>
 
 /* create initial partition */
-int create_partition(int nocells, int noparts, int totcellsize, int max_cweight, float *off_ratio, cells_t cells[],
+int create_partition(int nocells, int noparts, int totcellsize, int max_cweight, int *off_ratio_x20, cells_t cells[],
                      nets_t nets[], corn_t cnets[], ind_t *ind) {
   /* init current size */
   for (int i = 0; i < noparts; i++) {
-    ind->parts[i].pratio = 1.0 / noparts;
+    ind->parts[i].pratio_inv = noparts;
     ind->parts[i].pcurr_size = 0;
     ind->parts[i].pmax_cells = 0;
   } /* for i */
@@ -70,16 +70,15 @@ int create_partition(int nocells, int noparts, int totcellsize, int max_cweight,
   /* also adjust the min & max part sizes */
   int part_fit = True;
   int max_size = -1;
-  while (((*off_ratio) < 1.05) && (part_fit)) {
+  while (((*off_ratio_x20) < 21) && (part_fit)) {
 
     for (int i = 0; i < noparts; i++) {
-      float part_size = ((float)totcellsize) * ind->parts[i].pratio;
-      if (part_size < max_cweight) {
+      if (totcellsize < max_cweight * ind->parts[i].pratio_inv) {
         printf("\nError: Too small part size.\n");
         bench_exit(1);
       } /* if */
-      ind->parts[i].pmax_size = (int)(part_size * (1.0 + (*off_ratio)) + 1.0);
-      ind->parts[i].pmin_size = (int)(part_size * (1.0 - (*off_ratio)) - 1.0);
+      ind->parts[i].pmax_size = (totcellsize + totcellsize * *off_ratio_x20 / 20) / ind->parts[i].pratio_inv + 1;
+      ind->parts[i].pmin_size = (totcellsize - totcellsize * *off_ratio_x20 / 20) / ind->parts[i].pratio_inv - 1;
       if (ind->parts[i].pmax_size > max_size) {
         max_size = ind->parts[i].pmax_size;
       }
@@ -96,8 +95,8 @@ int create_partition(int nocells, int noparts, int totcellsize, int max_cweight,
       part_fit = False;
     } else {
       part_fit = True;
-      (*off_ratio) += 0.05;
-      if ((*off_ratio) > 1.0) {
+      (*off_ratio_x20) += 1;
+      if ((*off_ratio_x20) > 20) {
         printf("\nError: Cannot adjust part sizes.\n");
         bench_exit(1);
       } /* if */

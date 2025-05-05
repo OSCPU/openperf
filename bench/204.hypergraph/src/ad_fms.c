@@ -114,11 +114,11 @@ void bench_init(int setting) {
 }
 
 uint64_t bench_run() {
-  float off_ratio = (float)0.1;
-  create_partition(nocells, noparts, totcellsize, max_cweight, &off_ratio, cells, nets, cnets, &pop[0]);
+  int off_ratio_x20 = 2;
+  create_partition(nocells, noparts, totcellsize, max_cweight, &off_ratio_x20, cells, nets, cnets, &pop[0]);
 
 #ifdef DEBUG
-  printf("off=%f\n", off_ratio);
+  printf("off(X20)=%d\n", off_ratio_x20);
   printf("Initial : Part_no min_size curr_size max_size\n");
   for (int i = 0; i < noparts; i++) {
     printf("II %d %d %d %d\n", i, pop[0].parts[i].pmin_size, pop[0].parts[i].pcurr_size, pop[0].parts[i].pmax_size);
