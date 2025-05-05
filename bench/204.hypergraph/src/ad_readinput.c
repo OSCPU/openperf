@@ -4,7 +4,7 @@
 #include "ad_readinput.h"
 #include "ad_defs.h"
 #include "ad_fileio.h"
-#include <errno.h>
+#include <bench.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -39,7 +39,7 @@ void init_netlist(int nonets, cells_t cells[], nets_t nets[], corn_t cnets[], co
       cells[cell_no].cno_inets++;
       if (cells[cell_no].cno_inets > cells[cell_no].cno_nets) {
         printf("Error: Inconsistency in cell_%d degrees.\n", j);
-        exit(1);
+        bench_exit(1);
       } /* if */
     } /* for j */
   } /* for i */
@@ -51,15 +51,15 @@ void read_hgraph_size(char fname[], int *nocells, int *nonets, int *nopins) {
   open_file(&fp, fname, "r");
 
   if (fscanf(fp, "%d%d%d", nocells, nonets, nopins) == EOF) {
-    printf("Error: Cannot read from %s: errno= %d error= %s\n", fname, errno, strerror(errno));
+    printf("Error: Cannot read from %s\n", fname);
     close_file(&fp);
-    exit(1);
+    bench_exit(1);
   }
 
   if ((*nocells < 0) || (*nonets < 0) || (*nopins < 0)) {
     printf("Error: Invalid attributes of graph.\n");
     close_file(&fp);
-    exit(1);
+    bench_exit(1);
   } /* if */
 
   close_file(&fp);
@@ -75,9 +75,9 @@ void read_hgraph(char fname[], int nocells, int nonets, int nopins, int noparts,
   /* hgraph size is already read so re-read and discard. */
   int ignore1, ignore2, ignore3;
   if (fscanf(fp, "%d%d%d", &ignore1, &ignore2, &ignore3) == EOF) {
-    printf("Error: Cannot read from %s: errno= %d error= %s\n", fname, errno, strerror(errno));
+    printf("Error: Cannot read from %s\n", fname);
     close_file(&fp);
-    exit(1);
+    bench_exit(1);
   }
 
   /* initialize cells & nets arrays */
@@ -96,9 +96,9 @@ void read_hgraph(char fname[], int nocells, int nonets, int nopins, int noparts,
   int ncells_inx = 0;
   for (int i = 0; i < nonets; i++) {
     if (fscanf(fp, "%d%d", &nets[i].nweight, &nets[i].nno_cells) == EOF) {
-      printf("Error: Cannot read from %s: errno= %d error= %s\n", fname, errno, strerror(errno));
+      printf("Error: Cannot read from %sn", fname);
       close_file(&fp);
-      exit(1);
+      bench_exit(1);
     }
     (*totnetsize) += nets[i].nweight;
     if (nets[i].nweight > (*max_nweight)) {
@@ -112,9 +112,9 @@ void read_hgraph(char fname[], int nocells, int nonets, int nopins, int noparts,
     for (int j = 0; j < nets[i].nno_cells; j++) {
       int cell_no;
       if (fscanf(fp, "%d", &cell_no) == EOF) {
-        printf("Error: Cannot read from %s: errno= %d error= %s\n", fname, errno, strerror(errno));
+        printf("Error: Cannot read from %s\n", fname);
         close_file(&fp);
-        exit(1);
+        bench_exit(1);
       }
       ncells[ncells_inx].corn_no = cell_no;
       ncells_inx++;
@@ -126,9 +126,9 @@ void read_hgraph(char fname[], int nocells, int nonets, int nopins, int noparts,
   int cnets_inx = 0;
   for (int i = 0; i < nocells; i++) {
     if (fscanf(fp, "%d", &cells[i].cweight) == EOF) {
-      printf("Error: Cannot read from %s: errno= %d error= %s\n", fname, errno, strerror(errno));
+      printf("Error: Cannot read from %s\n", fname);
       close_file(&fp);
-      exit(1);
+      bench_exit(1);
     }
     (*totcellsize) += cells[i].cweight;
     if (cells[i].cweight > (*max_cweight))

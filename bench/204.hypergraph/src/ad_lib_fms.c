@@ -12,7 +12,7 @@ int map_gain(int mov_gain, int max_gain) {
 } /* map_gain */
 
 /* fill all bucket arrays */
-void create_buckets(int nocells, int noparts, int max_gain, allele chrom[], partb_t partb[][noparts - 1],
+void create_buckets(int nocells, int noparts, int max_gain, allele chrom[], partb_t **partb,
                     cells_info_t cells_info[]) {
   /* read cell gains from cells_info and insert them into buckets */
   for (int cell_no = 0; cell_no < nocells; cell_no++) {
@@ -38,8 +38,8 @@ void create_buckets(int nocells, int noparts, int max_gain, allele chrom[], part
 } /* create_buckets */
 
 /* select a cell to move */
-int select_cell(int noparts, selected_cell_t scell[], parts_info_t parts_info[], cells_t cells[],
-                partb_t partb[][noparts - 1], cells_info_t cells_info[]) {
+int select_cell(int noparts, selected_cell_t scell[], parts_info_t parts_info[], cells_t cells[], partb_t **partb,
+                cells_info_t cells_info[]) {
   /*
       add to the 1st "if"   && (parts_info[from].pmax_cells > 0)
     */
@@ -118,7 +118,7 @@ void move_cell(mcells_t mcells[], int msize, selected_cell_t scell[]) {
 
 /* update gains after a move */
 void update_gains(int noparts, int max_gain, selected_cell_t scell[], cells_t cells[], nets_t nets[], corn_t cnets[],
-                  corn_t ncells[], nets_info_t nets_info[], partb_t partb[][noparts - 1], cells_info_t cells_info[],
+                  corn_t ncells[], nets_info_t nets_info[], partb_t **partb, cells_info_t cells_info[],
                   allele tchrom[]) {
   int net_ptr = cells[scell[0].mov_cell_no].netlist;
   int mov_cell_no = scell[0].mov_cell_no;
@@ -166,7 +166,7 @@ void update_gains(int noparts, int max_gain, selected_cell_t scell[], cells_t ce
 
 /* update gain of a cell */
 void update1(int flag, int noparts, int max_gain, int dest_part, int mov_cell_no, int cell_ptr, int net_no,
-             int net_weight, nets_t nets[], corn_t ncells[], partb_t partb[][noparts - 1], cells_info_t cells_info[],
+             int net_weight, nets_t nets[], corn_t ncells[], partb_t **partb, cells_info_t cells_info[],
              allele tchrom[]) {
   int i = 0;
   while (i < nets[net_no].nno_cells) {
@@ -192,7 +192,7 @@ void update1(int flag, int noparts, int max_gain, int dest_part, int mov_cell_no
 
 /* update gain of a cell */
 void update2(int flag, int noparts, int max_gain, int dest_part, int mov_cell_no, int cell_ptr, int net_no,
-             int net_weight, nets_t nets[], corn_t ncells[], partb_t partb[][noparts - 1], cells_info_t cells_info[],
+             int net_weight, nets_t nets[], corn_t ncells[], partb_t **partb, cells_info_t cells_info[],
              allele tchrom[]) {
   int other_cell, other_part_no;
 
@@ -227,7 +227,7 @@ void update2(int flag, int noparts, int max_gain, int dest_part, int mov_cell_no
                     &cells_info[other_cell]);
 } /* update2 */
 
-void create_partb_nodes_of_cell(int noparts, int max_gain, int cell_no, int part_no, partb_t partb[][noparts - 1],
+void create_partb_nodes_of_cell(int noparts, int max_gain, int cell_no, int part_no, partb_t **partb,
                                 cells_info_t cells_info[]) {
   if (cell_no == -1) {
     return;

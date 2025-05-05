@@ -26,8 +26,8 @@ void print_chrom(int nocells, allele chrom[]);
 
 void print_cells_info(int nocells, int noparts, cells_info_t cells_info[]);
 
-void print_inx(int noparts, partb_t partb[][noparts - 1]);
+void print_inx(int noparts, partb_t **partb);
 
-void print_buckets(int noparts, int bucketsize, partb_t partb[][noparts - 1]);
+void print_buckets(int noparts, int bucketsize, partb_t **partb);
 
 #endif

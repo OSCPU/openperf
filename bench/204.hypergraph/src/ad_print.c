@@ -160,7 +160,7 @@ void print_cells_info(int nocells, int noparts, cells_info_t cells_info[]) {
   } /* for i */
 } /* print_cells_info */
 
-void print_inx(int noparts, partb_t partb[][noparts - 1]) {
+void print_inx(int noparts, partb_t **partb) {
   printf("\nINDICES:\n");
   for (int i = 0; i < noparts; i++) {
     for (int j = 0; j < (noparts - 1); j++) {
@@ -170,7 +170,7 @@ void print_inx(int noparts, partb_t partb[][noparts - 1]) {
   } /* for i */
 } /* print_inx */
 
-void print_buckets(int noparts, int bucketsize, partb_t partb[][noparts - 1]) {
+void print_buckets(int noparts, int bucketsize, partb_t **partb) {
   printf("\nPARTB:\n");
 
   for (int i = 0; i < noparts; i++) {

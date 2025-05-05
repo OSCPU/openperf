@@ -3,11 +3,12 @@
 
 #include "ad_lib.h"
 #include "ad_defs.h"
+#include <bench.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 /* initialize all bucket indices and pointers */
-void init_buckets(int noparts, int bucketsize, partb_t partb[][noparts - 1]) {
+void init_buckets(int noparts, int bucketsize, partb_t **partb) {
   /* init partition bucket indices */
   for (int i = 0; i < noparts; i++) {
     for (int j = 0; j < (noparts - 1); j++) {
@@ -32,7 +33,8 @@ int map_part_no(int dest_part, int home_part) {
     return (dest_part - 1);
   } else {
     printf("Error: Unexpected inputs\n");
-    exit(1);
+    bench_exit(1);
+    return 0;
   }
 } /* map_part_no */
 
@@ -145,7 +147,7 @@ void compute_gains2(int nocells, int noparts, cells_t cells[], nets_t nets[], co
 } /* compute_gains2 */
 
 /* free all allocated nodes */
-void free_nodes(int noparts, int bucketsize, partb_t partb[][noparts - 1]) {
+void free_nodes(int noparts, int bucketsize, partb_t **partb) {
   /* delete nodes connected to partb */
   for (int i = 0; i < noparts; i++) {
     for (int j = 0; j < (noparts - 1); j++) {
@@ -168,7 +170,7 @@ void free_nodes(int noparts, int bucketsize, partb_t partb[][noparts - 1]) {
 } /* free_nodes */
 
 /* count number of bucket nodes */
-void number_nodes(int noparts, int bucketsize, int *npartb, partb_t partb[][noparts - 1]) {
+void number_nodes(int noparts, int bucketsize, int *npartb, partb_t **partb) {
   *npartb = 0;
 
   /* count nodes connected to partb */

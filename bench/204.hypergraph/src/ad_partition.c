@@ -5,6 +5,7 @@
 #include "ad_defs.h"
 #include "ad_fileio.h"
 #include "ad_random.h"
+#include <bench.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
@@ -23,7 +24,7 @@ int create_partition(int nocells, int noparts, int totcellsize, int max_cweight,
   int *tparts = (int *)calloc(noparts, sizeof(int));
   if (tparts == NULL) {
     printf("Error: Unable to allocate memory for tparts.\n");
-    exit(1);
+    bench_exit(1);
   } /* if */
 
   /* insert cells */
@@ -75,7 +76,7 @@ int create_partition(int nocells, int noparts, int totcellsize, int max_cweight,
       float part_size = ((float)totcellsize) * ind->parts[i].pratio;
       if (part_size < max_cweight) {
         printf("\nError: Too small part size.\n");
-        exit(1);
+        bench_exit(1);
       } /* if */
       ind->parts[i].pmax_size = (int)(part_size * (1.0 + (*off_ratio)) + 1.0);
       ind->parts[i].pmin_size = (int)(part_size * (1.0 - (*off_ratio)) - 1.0);
@@ -98,7 +99,7 @@ int create_partition(int nocells, int noparts, int totcellsize, int max_cweight,
       (*off_ratio) += 0.05;
       if ((*off_ratio) > 1.0) {
         printf("\nError: Cannot adjust part sizes.\n");
-        exit(1);
+        bench_exit(1);
       } /* if */
     } /* if not fit */
 

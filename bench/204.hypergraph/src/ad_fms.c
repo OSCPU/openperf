@@ -10,9 +10,7 @@
 #include "ad_print.h"
 #include "ad_random.h"
 #include "ad_readinput.h"
-#include <assert.h>
-#include <stdio.h>
-#include <string.h>
+#include <bench.h>
 
 /* FOR SANCHIS' VERSION OF MULTI-WAY PARTITIONING */
 /* Also mentioned as the SN algorithm */
@@ -21,22 +19,31 @@
    Cells are moved wrt their gains
 */
 
-int main(int argc, char *argv[]) {
+static int nocells;     /* number of cells */
+static int nonets;      /* number of nets */
+static int noparts;     /* number of partitions */
+static int totcellsize; /* total cell weight of the partition */
+static int totnetsize;  /* total net weight of the partition */
+static int cutsize;     /* cutsize of the partition */
+static int max_gain;    /* max gain of a cell */
+static int max_cweight; /* max cell weight */
+static int bucketsize;  /* max size of a bucket array */
+static partb_t **partb; /* partition buckets */
+static cells_t *cells;
+static nets_t *nets;
+static corn_t *cnets;
+static ind_t pop[MAX_POP]; /* population (w/ one individual!) */
+static nets_info_t *nets_info;
+static cells_info_t *cells_info;
+static mcells_t *mcells;
+static corn_t *ncells;
+
+void bench_init(int setting) {
   /* definitions */
-  int nocells;     /* number of cells */
-  int nonets;      /* number of nets */
   int nopins;      /* number of pins */
-  int noparts;     /* number of partitions */
-  int totcellsize; /* total cell weight of the partition */
-  int totnetsize;  /* total net weight of the partition */
-  int cutsize;     /* cutsize of the partition */
-  int max_gain;    /* max gain of a cell */
   int max_cdeg;    /* max density of a cell */
   int max_ndeg;    /* max density of a net */
-  int max_cweight; /* max cell weight */
   int max_nweight; /* max net weight */
-  int bucketsize;  /* max size of a bucket array */
-  int msize;       /* index to mcells */
 
   char fname[STR_SIZE] = "input/hp9";
   noparts = 10;
@@ -48,9 +55,9 @@ int main(int argc, char *argv[]) {
   read_hgraph_size(fname, &nocells, &nonets, &nopins);
 
   /* alloc memory for all data structures */
-  cells_t *cells = (cells_t *)calloc(nocells, sizeof(cells_t));
+  cells = (cells_t *)calloc(nocells, sizeof(cells_t));
   assert(cells != NULL);
-  cells_info_t *cells_info = (cells_info_t *)calloc(nocells, sizeof(cells_info_t));
+  cells_info = (cells_info_t *)calloc(nocells, sizeof(cells_info_t));
   assert(cells_info != NULL);
   for (int i = 0; i < nocells; i++) {
     cells_info[i].mgain = (int *)calloc(noparts, sizeof(int));
@@ -61,9 +68,9 @@ int main(int argc, char *argv[]) {
     assert(cells_info[i].partb_gain_inx != NULL);
   }
 
-  nets_t *nets = (nets_t *)calloc(nonets, sizeof(nets_t));
+  nets = (nets_t *)calloc(nonets, sizeof(nets_t));
   assert(nets != NULL);
-  nets_info_t *nets_info = (nets_info_t *)calloc(nonets, sizeof(nets_info_t));
+  nets_info = (nets_info_t *)calloc(nonets, sizeof(nets_info_t));
   assert(nets_info != NULL);
   for (int i = 0; i < nonets; i++) {
     nets[i].npartdeg = (int *)calloc(noparts, sizeof(int));
@@ -73,18 +80,12 @@ int main(int argc, char *argv[]) {
   }
 
   /* cells of nets */
-  corn_t *cnets = (corn_t *)calloc(nopins, sizeof(corn_t));
+  cnets = (corn_t *)calloc(nopins, sizeof(corn_t));
   assert(cnets != NULL);
   /* nets of cells */
-  corn_t *ncells = (corn_t *)calloc(nopins, sizeof(corn_t));
+  ncells = (corn_t *)calloc(nopins, sizeof(corn_t));
   assert(ncells != NULL);
 
-  /* partition buckets */
-  partb_t partb[noparts][noparts - 1];
-  parts_info_t parts_info[noparts];
-
-  /* population (w/ one individual!) */
-  ind_t pop[MAX_POP];
   for (int i = 0; i < MAX_POP; i++) {
     pop[i].chrom = (allele *)calloc(nocells, sizeof(allele));
     assert(pop[i].chrom != NULL);
@@ -92,11 +93,8 @@ int main(int argc, char *argv[]) {
     assert(pop[i].parts != NULL);
   }
 
-  /* selected cell */
-  selected_cell_t scell[1];
-
   /* moved cells */
-  mcells_t *mcells = (mcells_t *)calloc(nocells, sizeof(mcells_t));
+  mcells = (mcells_t *)calloc(nocells, sizeof(mcells_t));
   assert(mcells != NULL);
 
   read_hgraph(fname, nocells, nonets, nopins, noparts, &totcellsize, &totnetsize, &max_cdeg, &max_ndeg, &max_cweight,
@@ -106,12 +104,16 @@ int main(int argc, char *argv[]) {
   bucketsize = 2 * max_gain + 1;
 
   /* alloc memory (statically if possible) */
+  partb = malloc(sizeof(partb_t *) * noparts);
   for (int i = 0; i < noparts; i++) {
+    partb[i] = malloc(sizeof(partb_t) * (noparts - 1));
     for (int j = 0; j < noparts - 1; ++j) {
       partb[i][j].bnode_ptr = (bnode_ptr_t *)calloc(bucketsize, sizeof(bnode_ptr_t));
     }
   }
+}
 
+uint64_t bench_run() {
   float off_ratio = (float)0.1;
   create_partition(nocells, noparts, totcellsize, max_cweight, &off_ratio, cells, nets, cnets, &pop[0]);
 
@@ -123,12 +125,17 @@ int main(int argc, char *argv[]) {
   }
 #endif
 
-  init_buckets(noparts, bucketsize, partb);
+  init_buckets(noparts, bucketsize, partb); // try
   cutsize = find_cut_size(nonets, noparts, totnetsize, nets, &pop[0]);
 
 #ifdef DEBUG
   printf("Totalsize = %d Initial cutsize = %d\n", totnetsize, cutsize);
 #endif
+
+  selected_cell_t scell[1]; /* selected cell */
+  parts_info_t parts_info[noparts];
+
+  int msize; /* index to mcells */
 
   int gain_sum;
   int no_iter = 0;
@@ -186,6 +193,10 @@ int main(int argc, char *argv[]) {
   printf("pass_no = %d Final cutsize = %d Check cutsize = %d\n", no_iter, cutsize,
          find_cut_size(nonets, noparts, totnetsize, nets, &pop[0]));
 
+  return 0;
+}
+
+int bench_validate() {
   free_nodes(noparts, bucketsize, partb);
 
 #ifdef DEBUG
@@ -218,7 +229,9 @@ int main(int argc, char *argv[]) {
     for (int j = 0; j < noparts - 1; ++j) {
       free(partb[i][j].bnode_ptr);
     }
+    free(partb[i]);
   }
+  free(partb);
 
   for (int i = 0; i < MAX_POP; i++) {
     free(pop[i].chrom);
@@ -228,6 +241,4 @@ int main(int argc, char *argv[]) {
   free(mcells);
 
   return (0);
-} /* main-fms */
-
-/* EOF */
+}
