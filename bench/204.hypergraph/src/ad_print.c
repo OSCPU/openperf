@@ -2,7 +2,6 @@
 /* COPYRIGHT C 1991- Ali Dasdan */
 
 #include "ad_print.h"
-#include "ad_defs.h"
 #include <stdio.h>
 
 void print_hgraph(int nocells, int nonets, cells_t cells[], nets_t nets[], corn_t ncells[]) {

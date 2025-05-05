@@ -3,6 +3,8 @@
 
 /* COPYRIGHT C 1991- Ali Dasdan */
 
+#include "ad_defs.h"
+
 void print_hgraph(int nocells, int nonets, cells_t cells[], nets_t nets[], corn_t ncells[]);
 
 void print_vars(int nocells, int nonets, int noparts, int nopins, int totcellsize, int totnetsize, int max_cdeg,

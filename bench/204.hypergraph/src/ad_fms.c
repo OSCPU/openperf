@@ -11,7 +11,6 @@
 #include "ad_random.h"
 #include "ad_readinput.h"
 #include <assert.h>
-#include <malloc/malloc.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -39,22 +38,10 @@ int main(int argc, char *argv[]) {
   int bucketsize;  /* max size of a bucket array */
   int msize;       /* index to mcells */
 
-  if (argc < 3) {
-    printf("\nUsage: %s InputFileName NoParts [Seed]\n", argv[0]);
-    exit(1);
-  } /* if */
+  char fname[STR_SIZE] = "input/hp9";
+  noparts = 10;
 
-  char fname[STR_SIZE];
-  sprintf(fname, "%s", argv[1]);
-
-  noparts = atoi(argv[2]);
-
-  long seed;
-  if (argc > 3) {
-    seed = (long)atoi(argv[3]);
-  } else {
-    seed = -1;
-  }
+  long seed = 1;
   seed = randomize((long)seed);
   printf("SEED = %ld fname = %s\n", seed, fname);
 

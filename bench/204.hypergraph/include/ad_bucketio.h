@@ -3,6 +3,8 @@
 
 /* COPYRIGHT C 1991- Ali Dasdan */
 
+#include "ad_defs.h"
+
 /* create a partb node */
 void create_partb_node(int noparts, int mov_cell_no, int home_part, int mapped_dest_part, int mov_gain_inx,
                        partb_t partb[][noparts - 1], cells_info_t cells_info[]);

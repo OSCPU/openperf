@@ -6,7 +6,6 @@
 #include "ad_fileio.h"
 #include "ad_random.h"
 #include <errno.h>
-#include <malloc/malloc.h>
 #include <stdlib.h>
 #include <string.h>
 

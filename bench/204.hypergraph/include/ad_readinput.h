@@ -3,6 +3,8 @@
 
 /* COPYRIGHT C 1991- Ali Dasdan */
 
+#include "ad_defs.h"
+
 /* initialize cells array */
 void init_cells(int nocells, cells_t cells[]);
 

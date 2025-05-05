@@ -3,6 +3,8 @@
 
 /* COPYRIGHT C 1991- Ali Dasdan */
 
+#include "ad_defs.h"
+
 /* initialize all bucket indices and pointers */
 void init_buckets(int noparts, int bucketsize, partb_t partb[][noparts - 1]);
 
