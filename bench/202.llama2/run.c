@@ -1,14 +1,9 @@
 /* Inference for Llama-2 Transformer model in pure C */
 
-#include <ctype.h>
-#include <fcntl.h>
+#include <bench.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include <sys/mman.h>
-#include <unistd.h>
 // ----------------------------------------------------------------------------
 // Transformer model
 
@@ -86,8 +81,8 @@ void malloc_run_state(RunState *s, Config *p) {
   // ensure all mallocs went fine
   if (!s->x || !s->xb || !s->xb2 || !s->hb || !s->hb2 || !s->q || !s->key_cache || !s->value_cache || !s->att ||
       !s->logits) {
-    fprintf(stderr, "malloc failed!\n");
-    exit(EXIT_FAILURE);
+    printf("malloc failed!\n");
+    bench_exit(1);
   }
 }
 
@@ -139,12 +134,12 @@ void read_checkpoint(char *checkpoint, Config *config, TransformerWeights *weigh
                      ssize_t *file_size) {
   FILE *file = fopen(checkpoint, "rb");
   if (!file) {
-    fprintf(stderr, "Couldn't open file %s\n", checkpoint);
-    exit(EXIT_FAILURE);
+    printf("Couldn't open file %s\n", checkpoint);
+    bench_exit(1);
   }
   // read in the config header
   if (fread(config, sizeof(Config), 1, file) != 1) {
-    exit(EXIT_FAILURE);
+    bench_exit(1);
   }
   // negative vocab size is hacky way of signaling unshared weights. bit yikes.
   int shared_weights = config->vocab_size > 0 ? 1 : 0;
@@ -152,18 +147,12 @@ void read_checkpoint(char *checkpoint, Config *config, TransformerWeights *weigh
   // figure out the file size
   fseek(file, 0, SEEK_END); // move file pointer to end of file
   *file_size = ftell(file); // get the file size, in bytes
+
+  fseek(file, 0, SEEK_SET);
+  *data = malloc(*file_size);
+  fread(*data, *file_size, 1, file);
   fclose(file);
   // memory map the Transformer weights into the data pointer
-  *fd = open(checkpoint, O_RDONLY); // open in read only mode
-  if (*fd == -1) {
-    fprintf(stderr, "open failed!\n");
-    exit(EXIT_FAILURE);
-  }
-  *data = mmap(NULL, *file_size, PROT_READ, MAP_PRIVATE, *fd, 0);
-  if (*data == MAP_FAILED) {
-    fprintf(stderr, "mmap failed!\n");
-    exit(EXIT_FAILURE);
-  }
   float *weights_ptr = *data + sizeof(Config) / sizeof(float);
   memory_map_weights(weights, config, weights_ptr, shared_weights);
 }
@@ -176,13 +165,8 @@ void build_transformer(Transformer *t, char *checkpoint_path) {
 }
 
 void free_transformer(Transformer *t) {
-  // close the memory mapping
-  if (t->data != MAP_FAILED) {
-    munmap(t->data, t->file_size);
-  }
-  if (t->fd != -1) {
-    close(t->fd);
-  }
+  // free the memory
+  free(t->data);
   // free the RunState buffers
   free_run_state(&t->state);
 }
@@ -404,27 +388,27 @@ void build_tokenizer(Tokenizer *t, char *tokenizer_path, int vocab_size) {
   // read in the file
   FILE *file = fopen(tokenizer_path, "rb");
   if (!file) {
-    fprintf(stderr, "couldn't load %s\n", tokenizer_path);
-    exit(EXIT_FAILURE);
+    printf("couldn't load %s\n", tokenizer_path);
+    bench_exit(1);
   }
   if (fread(&t->max_token_length, sizeof(int), 1, file) != 1) {
-    fprintf(stderr, "failed read\n");
-    exit(EXIT_FAILURE);
+    printf("failed read\n");
+    bench_exit(1);
   }
   int len;
   for (int i = 0; i < vocab_size; i++) {
     if (fread(t->vocab_scores + i, sizeof(float), 1, file) != 1) {
-      fprintf(stderr, "failed read\n");
-      exit(EXIT_FAILURE);
+      printf("failed read\n");
+      bench_exit(1);
     }
     if (fread(&len, sizeof(int), 1, file) != 1) {
-      fprintf(stderr, "failed read\n");
-      exit(EXIT_FAILURE);
+      printf("failed read\n");
+      bench_exit(1);
     }
     t->vocab[i] = (char *)malloc(len + 1);
     if (fread(t->vocab[i], len, 1, file) != 1) {
-      fprintf(stderr, "failed read\n");
-      exit(EXIT_FAILURE);
+      printf("failed read\n");
+      bench_exit(1);
     }
     t->vocab[i][len] = '\0'; // add the string terminating token
   }
@@ -484,8 +468,8 @@ void encode(Tokenizer *t, char *text, int8_t bos, int8_t eos, int *tokens, int *
   // encode the string text (input) into an upper-bound preallocated tokens[] array
   // bos != 0 means prepend the BOS token (=1), eos != 0 means append the EOS token (=2)
   if (text == NULL) {
-    fprintf(stderr, "cannot encode NULL text\n");
-    exit(EXIT_FAILURE);
+    printf("cannot encode NULL text\n");
+    bench_exit(1);
   }
 
   if (t->sorted_vocab == NULL) {
@@ -758,9 +742,7 @@ int sample(Sampler *sampler, float *logits) {
 
 long time_in_ms() {
   // return time in milliseconds, for benchmarking the model speed
-  struct timespec time;
-  clock_gettime(CLOCK_REALTIME, &time);
-  return time.tv_sec * 1000 + time.tv_nsec / 1000000;
+  return bench_uptime() / 1000;
 }
 
 // ----------------------------------------------------------------------------
@@ -777,8 +759,8 @@ void generate(Transformer *transformer, Tokenizer *tokenizer, Sampler *sampler, 
   int *prompt_tokens = (int *)malloc((strlen(prompt) + 3) * sizeof(int)); // +3 for '\0', ?BOS, ?EOS
   encode(tokenizer, prompt, 1, 0, prompt_tokens, &num_prompt_tokens);
   if (num_prompt_tokens < 1) {
-    fprintf(stderr, "something is wrong, expected at least 1 prompt token\n");
-    exit(EXIT_FAILURE);
+    printf("something is wrong, expected at least 1 prompt token\n");
+    bench_exit(1);
   }
 
   // start the main loop
@@ -822,7 +804,7 @@ void generate(Transformer *transformer, Tokenizer *tokenizer, Sampler *sampler, 
   // report achieved tok/s (pos-1 because the timer starts after first iteration)
   if (pos > 1) {
     long end = time_in_ms();
-    fprintf(stderr, "achieved tok/s: %f\n", (pos - 1) / (double)(end - start) * 1000);
+    printf("achieved tok/s: %f\n", (pos - 1) / (double)(end - start) * 1000);
   }
 
   free(prompt_tokens);
@@ -859,9 +841,9 @@ void chat(Transformer *transformer, Tokenizer *tokenizer, Sampler *sampler, char
 
   // start the main loop
   int8_t user_turn = 1; // user starts
-  int next;             // will store the next token in the sequence
+  int next = 0;         // will store the next token in the sequence
   int token;            // stores the current token to feed into the transformer
-  int prev_token;
+  //int prev_token;
   int pos = 0; // position in the sequence
   while (pos < steps) {
 
@@ -934,75 +916,42 @@ void chat(Transformer *transformer, Tokenizer *tokenizer, Sampler *sampler, char
 }
 
 void error_usage() {
-  fprintf(stderr, "Usage:   run <checkpoint> [options]\n");
-  fprintf(stderr, "Example: run model.bin -n 256 -i \"Once upon a time\"\n");
-  fprintf(stderr, "Options:\n");
-  fprintf(stderr, "  -t <float>  temperature in [0,inf], default 1.0\n");
-  fprintf(stderr, "  -p <float>  p value in top-p (nucleus) sampling in [0,1] default 0.9\n");
-  fprintf(stderr, "  -s <int>    random seed, default time(NULL)\n");
-  fprintf(stderr, "  -n <int>    number of steps to run for, default 256. 0 = max_seq_len\n");
-  fprintf(stderr, "  -i <string> input prompt\n");
-  fprintf(stderr, "  -z <string> optional path to custom tokenizer\n");
-  fprintf(stderr, "  -m <string> mode: generate|chat, default: generate\n");
-  fprintf(stderr, "  -y <string> (optional) system prompt in chat mode\n");
-  exit(EXIT_FAILURE);
+  printf("Usage:   run <checkpoint> [options]\n");
+  printf("Example: run model.bin -n 256 -i \"Once upon a time\"\n");
+  printf("Options:\n");
+  printf("  -t <float>  temperature in [0,inf], default 1.0\n");
+  printf("  -p <float>  p value in top-p (nucleus) sampling in [0,1] default 0.9\n");
+  printf("  -s <int>    random seed, default time(NULL)\n");
+  printf("  -n <int>    number of steps to run for, default 256. 0 = max_seq_len\n");
+  printf("  -i <string> input prompt\n");
+  printf("  -z <string> optional path to custom tokenizer\n");
+  printf("  -m <string> mode: generate|chat, default: generate\n");
+  printf("  -y <string> (optional) system prompt in chat mode\n");
+  bench_exit(1);
 }
 
-int main(int argc, char *argv[]) {
+static int steps = 256;            // number of steps to run for
+static char *prompt = NULL;        // prompt string
+static char *mode = "generate";    // generate|chat
+static char *system_prompt = NULL; // the (optional) system prompt to use in chat mode
+static Transformer transformer;
+static Tokenizer tokenizer;
+static Sampler sampler;
 
+void bench_init(int setting) {
   // default parameters
   char *checkpoint_path = NULL; // e.g. out/model.bin
   char *tokenizer_path = "tokenizer.bin";
   float temperature = 1.0f;        // 0.0 = greedy deterministic. 1.0 = original. don't set higher
   float topp = 0.9f;               // top-p in nucleus sampling. 1.0 = off. 0.9 works well, but slower
-  int steps = 256;                 // number of steps to run for
-  char *prompt = NULL;             // prompt string
   unsigned long long rng_seed = 0; // seed rng with time by default
-  char *mode = "generate";         // generate|chat
-  char *system_prompt = NULL;      // the (optional) system prompt to use in chat mode
 
-  // poor man's C argparse so we can override the defaults above from the command line
-  if (argc >= 2) {
-    checkpoint_path = argv[1];
-  } else {
-    error_usage();
-  }
-  for (int i = 2; i < argc; i += 2) {
-    // do some basic validation
-    if (i + 1 >= argc) {
-      error_usage();
-    } // must have arg after flag
-    if (argv[i][0] != '-') {
-      error_usage();
-    } // must start with dash
-    if (strlen(argv[i]) != 2) {
-      error_usage();
-    } // must be -x (one dash, one letter)
-    // read in the args
-    if (argv[i][1] == 't') {
-      temperature = atof(argv[i + 1]);
-    } else if (argv[i][1] == 'p') {
-      topp = atof(argv[i + 1]);
-    } else if (argv[i][1] == 's') {
-      rng_seed = atoi(argv[i + 1]);
-    } else if (argv[i][1] == 'n') {
-      steps = atoi(argv[i + 1]);
-    } else if (argv[i][1] == 'i') {
-      prompt = argv[i + 1];
-    } else if (argv[i][1] == 'z') {
-      tokenizer_path = argv[i + 1];
-    } else if (argv[i][1] == 'm') {
-      mode = argv[i + 1];
-    } else if (argv[i][1] == 'y') {
-      system_prompt = argv[i + 1];
-    } else {
-      error_usage();
-    }
-  }
+  checkpoint_path = "input/stories260K.bin";
+  tokenizer_path = "input/tok512.bin";
+  rng_seed = 133742;
+  steps = 36;
 
   // parameter validation/overrides
-  if (rng_seed <= 0)
-    rng_seed = (unsigned int)time(NULL);
   if (temperature < 0.0)
     temperature = 0.0;
   if (topp < 0.0 || 1.0 < topp)
@@ -1011,29 +960,31 @@ int main(int argc, char *argv[]) {
     steps = 0;
 
   // build the Transformer via the model .bin file
-  Transformer transformer;
   build_transformer(&transformer, checkpoint_path);
   if (steps == 0 || steps > transformer.config.seq_len)
     steps = transformer.config.seq_len; // override to ~max length
 
   // build the Tokenizer via the tokenizer .bin file
-  Tokenizer tokenizer;
   build_tokenizer(&tokenizer, tokenizer_path, transformer.config.vocab_size);
 
   // build the Sampler
-  Sampler sampler;
   build_sampler(&sampler, transformer.config.vocab_size, temperature, topp, rng_seed);
+}
 
+uint64_t bench_run() {
   // run!
   if (strcmp(mode, "generate") == 0) {
     generate(&transformer, &tokenizer, &sampler, prompt, steps);
   } else if (strcmp(mode, "chat") == 0) {
     chat(&transformer, &tokenizer, &sampler, prompt, system_prompt, steps);
   } else {
-    fprintf(stderr, "unknown mode: %s\n", mode);
+    printf("unknown mode: %s\n", mode);
     error_usage();
   }
+  return 0;
+}
 
+int bench_validate() {
   // memory and file handles cleanup
   free_sampler(&sampler);
   free_tokenizer(&tokenizer);
