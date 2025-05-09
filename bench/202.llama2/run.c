@@ -974,7 +974,7 @@ void bench_init(int setting) {
   checkpoint_path = "input/stories260K.bin";
   tokenizer_path = "input/tok512.bin";
   rng_seed = 133742;
-  steps = 36;
+  steps = 35;
   topp = FIXEDPT_ONE;
   temperature = 0;
 
