@@ -1,9 +1,10 @@
 /* Inference for Llama-2 Transformer model in pure C */
 
+#include "fixedptc.h"
 #include <bench.h>
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+
 // ----------------------------------------------------------------------------
 // Transformer model
 
@@ -19,40 +20,40 @@ typedef struct {
 
 typedef struct {
   // token embedding table
-  float *token_embedding_table; // (vocab_size, dim)
+  fixedpt *token_embedding_table; // (vocab_size, dim)
   // weights for rmsnorms
-  float *rms_att_weight; // (layer, dim) rmsnorm weights
-  float *rms_ffn_weight; // (layer, dim)
+  fixedpt *rms_att_weight; // (layer, dim) rmsnorm weights
+  fixedpt *rms_ffn_weight; // (layer, dim)
   // weights for matmuls. note dim == n_heads * head_size
-  float *wq; // (layer, dim, n_heads * head_size)
-  float *wk; // (layer, dim, n_kv_heads * head_size)
-  float *wv; // (layer, dim, n_kv_heads * head_size)
-  float *wo; // (layer, n_heads * head_size, dim)
+  fixedpt *wq; // (layer, dim, n_heads * head_size)
+  fixedpt *wk; // (layer, dim, n_kv_heads * head_size)
+  fixedpt *wv; // (layer, dim, n_kv_heads * head_size)
+  fixedpt *wo; // (layer, n_heads * head_size, dim)
   // weights for ffn
-  float *w1; // (layer, hidden_dim, dim)
-  float *w2; // (layer, dim, hidden_dim)
-  float *w3; // (layer, hidden_dim, dim)
+  fixedpt *w1; // (layer, hidden_dim, dim)
+  fixedpt *w2; // (layer, dim, hidden_dim)
+  fixedpt *w3; // (layer, hidden_dim, dim)
   // final rmsnorm
-  float *rms_final_weight; // (dim,)
+  fixedpt *rms_final_weight; // (dim,)
   // (optional) classifier weights for the logits, on the last layer
-  float *wcls;
+  fixedpt *wcls;
 } TransformerWeights;
 
 typedef struct {
   // current wave of activations
-  float *x;      // activation at current time stamp (dim,)
-  float *xb;     // same, but inside a residual branch (dim,)
-  float *xb2;    // an additional buffer just for convenience (dim,)
-  float *hb;     // buffer for hidden dimension in the ffn (hidden_dim,)
-  float *hb2;    // buffer for hidden dimension in the ffn (hidden_dim,)
-  float *q;      // query (dim,)
-  float *k;      // key (dim,)
-  float *v;      // value (dim,)
-  float *att;    // buffer for scores/attention values (n_heads, seq_len)
-  float *logits; // output logits
+  fixedpt *x;      // activation at current time stamp (dim,)
+  fixedpt *xb;     // same, but inside a residual branch (dim,)
+  fixedpt *xb2;    // an additional buffer just for convenience (dim,)
+  fixedpt *hb;     // buffer for hidden dimension in the ffn (hidden_dim,)
+  fixedpt *hb2;    // buffer for hidden dimension in the ffn (hidden_dim,)
+  fixedpt *q;      // query (dim,)
+  fixedpt *k;      // key (dim,)
+  fixedpt *v;      // value (dim,)
+  fixedpt *att;    // buffer for scores/attention values (n_heads, seq_len)
+  fixedpt *logits; // output logits
   // kv cache
-  float *key_cache;   // (layer, seq_len, dim)
-  float *value_cache; // (layer, seq_len, dim)
+  fixedpt *key_cache;   // (layer, seq_len, dim)
+  fixedpt *value_cache; // (layer, seq_len, dim)
 } RunState;
 
 typedef struct {
@@ -61,23 +62,23 @@ typedef struct {
   RunState state;             // buffers for the "wave" of activations in the forward pass
   // some more state needed to properly clean up the memory mapping (sigh)
   int fd;            // file descriptor for memory mapping
-  float *data;       // memory mapped data pointer
+  fixedpt *data;     // memory mapped data pointer
   ssize_t file_size; // size of the checkpoint file in bytes
 } Transformer;
 
 void malloc_run_state(RunState *s, Config *p) {
   // we calloc instead of malloc to keep valgrind happy
   int kv_dim = (p->dim * p->n_kv_heads) / p->n_heads;
-  s->x = calloc(p->dim, sizeof(float));
-  s->xb = calloc(p->dim, sizeof(float));
-  s->xb2 = calloc(p->dim, sizeof(float));
-  s->hb = calloc(p->hidden_dim, sizeof(float));
-  s->hb2 = calloc(p->hidden_dim, sizeof(float));
-  s->q = calloc(p->dim, sizeof(float));
-  s->key_cache = calloc(p->n_layers * p->seq_len * kv_dim, sizeof(float));
-  s->value_cache = calloc(p->n_layers * p->seq_len * kv_dim, sizeof(float));
-  s->att = calloc(p->n_heads * p->seq_len, sizeof(float));
-  s->logits = calloc(p->vocab_size, sizeof(float));
+  s->x = calloc(p->dim, sizeof(fixedpt));
+  s->xb = calloc(p->dim, sizeof(fixedpt));
+  s->xb2 = calloc(p->dim, sizeof(fixedpt));
+  s->hb = calloc(p->hidden_dim, sizeof(fixedpt));
+  s->hb2 = calloc(p->hidden_dim, sizeof(fixedpt));
+  s->q = calloc(p->dim, sizeof(fixedpt));
+  s->key_cache = calloc(p->n_layers * p->seq_len * kv_dim, sizeof(fixedpt));
+  s->value_cache = calloc(p->n_layers * p->seq_len * kv_dim, sizeof(fixedpt));
+  s->att = calloc(p->n_heads * p->seq_len, sizeof(fixedpt));
+  s->logits = calloc(p->vocab_size, sizeof(fixedpt));
   // ensure all mallocs went fine
   if (!s->x || !s->xb || !s->xb2 || !s->hb || !s->hb2 || !s->q || !s->key_cache || !s->value_cache || !s->att ||
       !s->logits) {
@@ -99,38 +100,60 @@ void free_run_state(RunState *s) {
   free(s->value_cache);
 }
 
-void memory_map_weights(TransformerWeights *w, Config *p, float *ptr, int shared_weights) {
+void preprocess_to_fixedpt(void *ptr, int len) {
+  uint32_t *p = (uint32_t *)ptr;
+  for (int i = 0; i < len; i++) {
+    p[i] = fixedpt_fromfloatbits(p[i]);
+    assert(abs(p[i]) < fixedpt_fromint(8));
+  }
+}
+
+void memory_map_weights(TransformerWeights *w, Config *p, fixedpt *ptr, int shared_weights) {
   int head_size = p->dim / p->n_heads;
   // make sure the multiplications below are done in 64bit to fit the parameter counts of 13B+ models
   unsigned long long n_layers = p->n_layers;
   w->token_embedding_table = ptr;
+  preprocess_to_fixedpt(ptr, p->vocab_size * p->dim);
   ptr += p->vocab_size * p->dim;
   w->rms_att_weight = ptr;
+  preprocess_to_fixedpt(ptr, p->n_layers * p->dim);
   ptr += n_layers * p->dim;
   w->wq = ptr;
+  preprocess_to_fixedpt(ptr, n_layers * p->dim * (p->n_heads * head_size));
   ptr += n_layers * p->dim * (p->n_heads * head_size);
   w->wk = ptr;
+  preprocess_to_fixedpt(ptr, n_layers * p->dim * (p->n_kv_heads * head_size));
   ptr += n_layers * p->dim * (p->n_kv_heads * head_size);
   w->wv = ptr;
+  preprocess_to_fixedpt(ptr, n_layers * p->dim * (p->n_kv_heads * head_size));
   ptr += n_layers * p->dim * (p->n_kv_heads * head_size);
   w->wo = ptr;
+  preprocess_to_fixedpt(ptr, n_layers * (p->n_heads * head_size) * p->dim);
   ptr += n_layers * (p->n_heads * head_size) * p->dim;
   w->rms_ffn_weight = ptr;
+  preprocess_to_fixedpt(ptr, n_layers * p->dim);
   ptr += n_layers * p->dim;
   w->w1 = ptr;
+  preprocess_to_fixedpt(ptr, n_layers * p->dim * p->hidden_dim);
   ptr += n_layers * p->dim * p->hidden_dim;
   w->w2 = ptr;
+  preprocess_to_fixedpt(ptr, n_layers * p->hidden_dim * p->dim);
   ptr += n_layers * p->hidden_dim * p->dim;
   w->w3 = ptr;
+  preprocess_to_fixedpt(ptr, n_layers * p->dim * p->hidden_dim);
   ptr += n_layers * p->dim * p->hidden_dim;
   w->rms_final_weight = ptr;
+  preprocess_to_fixedpt(ptr, p->dim);
   ptr += p->dim;
   ptr += p->seq_len * head_size / 2; // skip what used to be freq_cis_real (for RoPE)
   ptr += p->seq_len * head_size / 2; // skip what used to be freq_cis_imag (for RoPE)
   w->wcls = shared_weights ? w->token_embedding_table : ptr;
+  if (!shared_weights) {
+    preprocess_to_fixedpt(w->wcls, p->dim * p->vocab_size);
+  }
 }
 
-void read_checkpoint(char *checkpoint, Config *config, TransformerWeights *weights, int *fd, float **data,
+void read_checkpoint(char *checkpoint, Config *config, TransformerWeights *weights, int *fd, fixedpt **data,
                      ssize_t *file_size) {
   FILE *file = fopen(checkpoint, "rb");
   if (!file) {
@@ -153,7 +176,7 @@ void read_checkpoint(char *checkpoint, Config *config, TransformerWeights *weigh
   fread(*data, *file_size, 1, file);
   fclose(file);
   // memory map the Transformer weights into the data pointer
-  float *weights_ptr = *data + sizeof(Config) / sizeof(float);
+  fixedpt *weights_ptr = *data + sizeof(Config) / sizeof(fixedpt);
   memory_map_weights(weights, config, weights_ptr, shared_weights);
 }
 
@@ -174,60 +197,60 @@ void free_transformer(Transformer *t) {
 // ----------------------------------------------------------------------------
 // neural net blocks; the dynamics of the Transformer
 
-void rmsnorm(float *o, float *x, float *weight, int size) {
+void rmsnorm(fixedpt *o, fixedpt *x, fixedpt *weight, int size) {
   // calculate sum of squares
-  float ss = 0.0f;
+  fixedpt ss = 0;
   for (int j = 0; j < size; j++) {
-    ss += x[j] * x[j];
+    ss += fixedpt_mul(x[j], x[j]);
   }
   ss /= size;
-  ss += 1e-5f;
-  ss = 1.0f / sqrtf(ss);
+  ss += fixedpt_rconst(1e-5f);
+  ss = fixedpt_div(FIXEDPT_ONE, fixedpt_sqrt(ss));
   // normalize and scale
   for (int j = 0; j < size; j++) {
-    o[j] = weight[j] * (ss * x[j]);
+    o[j] = fixedpt_mul(weight[j], fixedpt_mul(ss, x[j]));
   }
 }
 
-void softmax(float *x, int size) {
+void softmax(fixedpt *x, int size) {
   // find max value (for numerical stability)
-  float max_val = x[0];
+  fixedpt max_val = x[0];
   for (int i = 1; i < size; i++) {
     if (x[i] > max_val) {
       max_val = x[i];
     }
   }
   // exp and sum
-  float sum = 0.0f;
+  fixedpt sum = 0;
   for (int i = 0; i < size; i++) {
-    x[i] = expf(x[i] - max_val);
+    x[i] = fixedpt_exp(x[i] - max_val);
     sum += x[i];
   }
   // normalize
   for (int i = 0; i < size; i++) {
-    x[i] /= sum;
+    x[i] = fixedpt_div(x[i], sum);
   }
 }
 
-void matmul(float *xout, float *x, float *w, int n, int d) {
+void matmul(fixedpt *xout, fixedpt *x, fixedpt *w, int n, int d) {
   // W (d,n) @ x (n,) -> xout (d,)
   int i;
   for (i = 0; i < d; i++) {
-    float val = 0.0f;
+    fixedpt val = 0;
     for (int j = 0; j < n; j++) {
-      val += w[i * n + j] * x[j];
+      val += fixedpt_mul(w[i * n + j], x[j]);
     }
     xout[i] = val;
   }
 }
 
-float *forward(Transformer *transformer, int token, int pos) {
+fixedpt *forward(Transformer *transformer, int token, int pos) {
 
   // a few convenience variables
   Config *p = &transformer->config;
   TransformerWeights *w = &transformer->weights;
   RunState *s = &transformer->state;
-  float *x = s->x;
+  fixedpt *x = s->x;
   int dim = p->dim;
   int kv_dim = (p->dim * p->n_kv_heads) / p->n_heads;
   int kv_mul = p->n_heads / p->n_kv_heads; // integer multiplier of the kv sharing in multiquery
@@ -235,7 +258,7 @@ float *forward(Transformer *transformer, int token, int pos) {
   int head_size = dim / p->n_heads;
 
   // copy the token embedding into x
-  float *content_row = w->token_embedding_table + token * dim;
+  fixedpt *content_row = w->token_embedding_table + token * dim;
   memcpy(x, content_row, dim * sizeof(*x));
 
   // forward all the layers
@@ -257,17 +280,17 @@ float *forward(Transformer *transformer, int token, int pos) {
     // RoPE relative positional encoding: complex-valued rotate q and k in each head
     for (int i = 0; i < dim; i += 2) {
       int head_dim = i % head_size;
-      float freq = 1.0f / powf(10000.0f, head_dim / (float)head_size);
-      float val = pos * freq;
-      float fcr = cosf(val);
-      float fci = sinf(val);
+      fixedpt freq = fixedpt_pow(FIXEDPT_ONE * 10, -4 * fixedpt_fromint(head_dim) / head_size);
+      fixedpt val = pos * freq;
+      fixedpt fcr = fixedpt_cos(val);
+      fixedpt fci = fixedpt_sin(val);
       int rotn = i < kv_dim ? 2 : 1; // how many vectors? 2 = q & k, 1 = q only
       for (int v = 0; v < rotn; v++) {
-        float *vec = v == 0 ? s->q : s->k; // the vector to rotate (query or key)
-        float v0 = vec[i];
-        float v1 = vec[i + 1];
-        vec[i] = v0 * fcr - v1 * fci;
-        vec[i + 1] = v0 * fci + v1 * fcr;
+        fixedpt *vec = v == 0 ? s->q : s->k; // the vector to rotate (query or key)
+        fixedpt v0 = vec[i];
+        fixedpt v1 = vec[i + 1];
+        vec[i] = fixedpt_mul(v0, fcr) - fixedpt_mul(v1, fci);
+        vec[i + 1] = fixedpt_mul(v0, fci) + fixedpt_mul(v1, fcr);
       }
     }
 
@@ -275,19 +298,19 @@ float *forward(Transformer *transformer, int token, int pos) {
     int h;
     for (h = 0; h < p->n_heads; h++) {
       // get the query vector for this head
-      float *q = s->q + h * head_size;
+      fixedpt *q = s->q + h * head_size;
       // attention scores for this head
-      float *att = s->att + h * p->seq_len;
+      fixedpt *att = s->att + h * p->seq_len;
       // iterate over all timesteps, including the current one
       for (int t = 0; t <= pos; t++) {
         // get the key vector for this head and at this timestep
-        float *k = s->key_cache + loff + t * kv_dim + (h / kv_mul) * head_size;
+        fixedpt *k = s->key_cache + loff + t * kv_dim + (h / kv_mul) * head_size;
         // calculate the attention score as the dot product of q and k
-        float score = 0.0f;
+        fixedpt score = 0;
+        fixedpt sqrt_head_size = fixedpt_sqrt(fixedpt_fromint(head_size));
         for (int i = 0; i < head_size; i++) {
-          score += q[i] * k[i];
+          score += fixedpt_div(fixedpt_mul(q[i], k[i]), sqrt_head_size);
         }
-        score /= sqrtf(head_size);
         // save the score to the attention buffer
         att[t] = score;
       }
@@ -296,16 +319,16 @@ float *forward(Transformer *transformer, int token, int pos) {
       softmax(att, pos + 1);
 
       // weighted sum of the values, store back into xb
-      float *xb = s->xb + h * head_size;
-      memset(xb, 0, head_size * sizeof(float));
+      fixedpt *xb = s->xb + h * head_size;
+      memset(xb, 0, head_size * sizeof(fixedpt));
       for (int t = 0; t <= pos; t++) {
         // get the value vector for this head and at this timestep
-        float *v = s->value_cache + loff + t * kv_dim + (h / kv_mul) * head_size;
+        fixedpt *v = s->value_cache + loff + t * kv_dim + (h / kv_mul) * head_size;
         // get the attention weight for this timestep
-        float a = att[t];
+        fixedpt a = att[t];
         // accumulate the weighted value into xb
         for (int i = 0; i < head_size; i++) {
-          xb[i] += a * v[i];
+          xb[i] += fixedpt_mul(a, v[i]);
         }
       }
     }
@@ -328,11 +351,11 @@ float *forward(Transformer *transformer, int token, int pos) {
 
     // SwiGLU non-linearity
     for (int i = 0; i < hidden_dim; i++) {
-      float val = s->hb[i];
+      fixedpt val = s->hb[i];
       // silu(x)=x*σ(x), where σ(x) is the logistic sigmoid
-      val *= (1.0f / (1.0f + expf(-val)));
+      val = fixedpt_mul(val, fixedpt_div(FIXEDPT_ONE, FIXEDPT_ONE + fixedpt_exp(-val)));
       // elementwise multiply with w3(x)
-      val *= s->hb2[i];
+      val = fixedpt_mul(val, s->hb2[i]);
       s->hb[i] = val;
     }
 
@@ -363,7 +386,7 @@ typedef struct {
 
 typedef struct {
   char **vocab;
-  float *vocab_scores;
+  fixedpt *vocab_scores;
   TokenIndex *sorted_vocab;
   int vocab_size;
   unsigned int max_token_length;
@@ -379,7 +402,7 @@ void build_tokenizer(Tokenizer *t, char *tokenizer_path, int vocab_size) {
   t->vocab_size = vocab_size;
   // malloc space to hold the scores and the strings
   t->vocab = (char **)malloc(vocab_size * sizeof(char *));
-  t->vocab_scores = (float *)malloc(vocab_size * sizeof(float));
+  t->vocab_scores = (fixedpt *)malloc(vocab_size * sizeof(fixedpt));
   t->sorted_vocab = NULL; // initialized lazily
   for (int i = 0; i < 256; i++) {
     t->byte_pieces[i * 2] = (unsigned char)i;
@@ -397,7 +420,7 @@ void build_tokenizer(Tokenizer *t, char *tokenizer_path, int vocab_size) {
   }
   int len;
   for (int i = 0; i < vocab_size; i++) {
-    if (fread(t->vocab_scores + i, sizeof(float), 1, file) != 1) {
+    if (fread(t->vocab_scores + i, sizeof(fixedpt), 1, file) != 1) {
       printf("failed read\n");
       bench_exit(1);
     }
@@ -554,7 +577,7 @@ void encode(Tokenizer *t, char *text, int8_t bos, int8_t eos, int *tokens, int *
 
   // merge the best consecutive pair each iteration, according the scores in vocab_scores
   while (1) {
-    float best_score = -1e10;
+    fixedpt best_score = 0x80000000;
     int best_id = -1;
     int best_idx = -1;
 
@@ -595,22 +618,22 @@ void encode(Tokenizer *t, char *text, int8_t bos, int8_t eos, int *tokens, int *
 // sampling can be done in a few ways: greedy argmax, sampling, top-p sampling
 
 typedef struct {
-  float prob;
+  fixedpt prob;
   int index;
 } ProbIndex; // struct used when sorting probabilities during top-p sampling
 
 typedef struct {
   int vocab_size;
   ProbIndex *probindex; // buffer used in top-p sampling
-  float temperature;
-  float topp;
+  fixedpt temperature;
+  fixedpt topp;
   unsigned long long rng_state;
 } Sampler;
 
-int sample_argmax(float *probabilities, int n) {
+int sample_argmax(fixedpt *probabilities, int n) {
   // return the index that has the highest probability
   int max_i = 0;
-  float max_p = probabilities[0];
+  fixedpt max_p = probabilities[0];
   for (int i = 1; i < n; i++) {
     if (probabilities[i] > max_p) {
       max_i = i;
@@ -620,10 +643,10 @@ int sample_argmax(float *probabilities, int n) {
   return max_i;
 }
 
-int sample_mult(float *probabilities, int n, float coin) {
+int sample_mult(fixedpt *probabilities, int n, fixedpt coin) {
   // sample index from probabilities (they must sum to 1!)
   // coin is a random number in [0, 1), usually from random_f32()
-  float cdf = 0.0f;
+  fixedpt cdf = 0;
   for (int i = 0; i < n; i++) {
     cdf += probabilities[i];
     if (coin < cdf) {
@@ -643,7 +666,7 @@ int compare(const void *a, const void *b) {
   return 0;
 }
 
-int sample_topp(float *probabilities, int n, float topp, ProbIndex *probindex, float coin) {
+int sample_topp(fixedpt *probabilities, int n, fixedpt topp, ProbIndex *probindex, fixedpt coin) {
   // top-p sampling (or "nucleus sampling") samples from the smallest set of
   // tokens that exceed probability topp. This way we never sample tokens that
   // have very low probabilities and are less likely to go "off the rails".
@@ -653,7 +676,7 @@ int sample_topp(float *probabilities, int n, float topp, ProbIndex *probindex, f
   // quicksort indices in descending order of probabilities
   // values smaller than (1 - topp) / (n - 1) cannot be part of the result
   // so for efficiency we crop these out as candidates before sorting
-  const float cutoff = (1.0f - topp) / (n - 1);
+  const fixedpt cutoff = (FIXEDPT_ONE - topp) / (n - 1);
   for (int i = 0; i < n; i++) {
     if (probabilities[i] >= cutoff) {
       probindex[n0].index = i;
@@ -664,7 +687,7 @@ int sample_topp(float *probabilities, int n, float topp, ProbIndex *probindex, f
   qsort(probindex, n0, sizeof(ProbIndex), compare);
 
   // truncate the list where cumulative probability exceeds topp
-  float cumulative_prob = 0.0f;
+  fixedpt cumulative_prob = 0;
   int last_idx = n0 - 1; // in case of rounding errors consider all elements
   for (int i = 0; i < n0; i++) {
     cumulative_prob += probindex[i].prob;
@@ -675,8 +698,8 @@ int sample_topp(float *probabilities, int n, float topp, ProbIndex *probindex, f
   }
 
   // sample from the truncated list
-  float r = coin * cumulative_prob;
-  float cdf = 0.0f;
+  fixedpt r = fixedpt_mul(coin, cumulative_prob);
+  fixedpt cdf = 0;
   for (int i = 0; i <= last_idx; i++) {
     cdf += probindex[i].prob;
     if (r < cdf) {
@@ -686,7 +709,7 @@ int sample_topp(float *probabilities, int n, float topp, ProbIndex *probindex, f
   return probindex[last_idx].index; // in case of rounding errors
 }
 
-void build_sampler(Sampler *sampler, int vocab_size, float temperature, float topp, unsigned long long rng_seed) {
+void build_sampler(Sampler *sampler, int vocab_size, fixedpt temperature, fixedpt topp, unsigned long long rng_seed) {
   sampler->vocab_size = vocab_size;
   sampler->temperature = temperature;
   sampler->topp = topp;
@@ -706,27 +729,27 @@ unsigned int random_u32(unsigned long long *state) {
   *state ^= *state >> 27;
   return (*state * 0x2545F4914F6CDD1Dull) >> 32;
 }
-float random_f32(unsigned long long *state) { // random float32 in [0,1)
-  return (random_u32(state) >> 8) / 16777216.0f;
+fixedpt random_f32(unsigned long long *state) { // random fixedpt in [0,1)
+  return random_u32(state) % FIXEDPT_ONE;
 }
 
-int sample(Sampler *sampler, float *logits) {
+int sample(Sampler *sampler, fixedpt *logits) {
   // sample the token given the logits and some hyperparameters
   int next;
-  if (sampler->temperature == 0.0f) {
+  if (sampler->temperature == 0) {
     // greedy argmax sampling: take the token with the highest probability
     next = sample_argmax(logits, sampler->vocab_size);
   } else {
     // apply the temperature to the logits
     for (int q = 0; q < sampler->vocab_size; q++) {
-      logits[q] /= sampler->temperature;
+      logits[q] = fixedpt_div(logits[q], sampler->temperature);
     }
     // apply softmax to the logits to get the probabilities for next token
     softmax(logits, sampler->vocab_size);
-    // flip a (float) coin (this is our source of entropy for sampling)
-    float coin = random_f32(&sampler->rng_state);
+    // flip a (fixedpt) coin (this is our source of entropy for sampling)
+    fixedpt coin = random_f32(&sampler->rng_state);
     // we sample from this distribution to get the next token
-    if (sampler->topp <= 0 || sampler->topp >= 1) {
+    if (sampler->topp <= 0 || sampler->topp >= FIXEDPT_ONE) {
       // simply sample from the predicted probability distribution
       next = sample_mult(logits, sampler->vocab_size, coin);
     } else {
@@ -771,7 +794,7 @@ void generate(Transformer *transformer, Tokenizer *tokenizer, Sampler *sampler, 
   while (pos < steps) {
 
     // forward the transformer to get logits for the next token
-    float *logits = forward(transformer, token, pos);
+    fixedpt *logits = forward(transformer, token, pos);
 
     // advance the state machine
     if (pos < num_prompt_tokens - 1) {
@@ -804,7 +827,7 @@ void generate(Transformer *transformer, Tokenizer *tokenizer, Sampler *sampler, 
   // report achieved tok/s (pos-1 because the timer starts after first iteration)
   if (pos > 1) {
     long end = time_in_ms();
-    printf("achieved tok/s: %f\n", (pos - 1) / (double)(end - start) * 1000);
+    printf("achieved tok/s: %s\n", fixedpt_cstr(fixedpt_fromint(pos - 1) / (end - start) * 1000, -1));
   }
 
   free(prompt_tokens);
@@ -897,7 +920,7 @@ void chat(Transformer *transformer, Tokenizer *tokenizer, Sampler *sampler, char
     }
 
     // forward the transformer to get logits for the next token
-    float *logits = forward(transformer, token, pos);
+    fixedpt *logits = forward(transformer, token, pos);
     next = sample(sampler, logits);
     pos++;
 
@@ -942,20 +965,22 @@ void bench_init(int setting) {
   // default parameters
   char *checkpoint_path = NULL; // e.g. out/model.bin
   char *tokenizer_path = "tokenizer.bin";
-  float temperature = 1.0f;        // 0.0 = greedy deterministic. 1.0 = original. don't set higher
-  float topp = 0.9f;               // top-p in nucleus sampling. 1.0 = off. 0.9 works well, but slower
-  unsigned long long rng_seed = 0; // seed rng with time by default
+  fixedpt temperature = FIXEDPT_ONE;   // 0.0 = greedy deterministic. 1.0 = original. don't set higher
+  fixedpt topp = FIXEDPT_ONE * 9 / 10; // top-p in nucleus sampling. 1.0 = off. 0.9 works well, but slower
+  unsigned long long rng_seed = 0;     // seed rng with time by default
 
   checkpoint_path = "input/stories260K.bin";
   tokenizer_path = "input/tok512.bin";
   rng_seed = 133742;
   steps = 36;
+  topp = FIXEDPT_ONE;
+  temperature = 0;
 
   // parameter validation/overrides
-  if (temperature < 0.0)
-    temperature = 0.0;
-  if (topp < 0.0 || 1.0 < topp)
-    topp = 0.9;
+  if (temperature < 0)
+    temperature = 0;
+  if (topp < 0 || FIXEDPT_ONE < topp)
+    topp = FIXEDPT_ONE * 9 / 10;
   if (steps < 0)
     steps = 0;
 

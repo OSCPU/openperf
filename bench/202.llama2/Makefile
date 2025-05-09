@@ -1,4 +1,3 @@
 NAME = llama2
-SRCS = run.c
-LDFLAGS += -lm
+SRCS = run.c fixedptc.c
 include $(BENCH_HOME)/Makefile
