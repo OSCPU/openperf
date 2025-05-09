@@ -62,21 +62,9 @@ PORTABILITY
  * SUCH DAMAGE.
  */
 
-#include <_ansi.h>
 #include <stdlib.h>
-#include <sys/cdefs.h>
 
-#ifndef __GNUC__
-#define inline
-#endif
-
-#if defined(I_AM_QSORT_R)
-typedef int cmp_t(void *, const void *, const void *);
-#elif defined(I_AM_GNU_QSORT_R)
-typedef int cmp_t(const void *, const void *, void *);
-#else
 typedef int cmp_t(const void *, const void *);
-#endif
 static inline char *med3(char *, char *, char *, cmp_t *, void *);
 static inline void swapfunc(char *, char *, int, int);
 
@@ -117,20 +105,9 @@ static inline void swapfunc(char *a, char *b, int n, int swaptype) {
   if ((n) > 0)           \
   swapfunc(a, b, n, swaptype)
 
-#if defined(I_AM_QSORT_R)
-#define CMP(t, x, y) (cmp((t), (x), (y)))
-#elif defined(I_AM_GNU_QSORT_R)
-#define CMP(t, x, y) (cmp((x), (y), (t)))
-#else
 #define CMP(t, x, y) (cmp((x), (y)))
-#endif
 
-static inline char *med3(char *a, char *b, char *c, cmp_t *cmp,
-                         void *thunk
-#if !defined(I_AM_QSORT_R) && !defined(I_AM_GNU_QSORT_R)
-                             __unused
-#endif
-) {
+static inline char *med3(char *a, char *b, char *c, cmp_t *cmp, void *thunk) {
   return CMP(thunk, a, b) < 0 ? (CMP(thunk, b, c) < 0 ? b : (CMP(thunk, a, c) < 0 ? c : a))
                               : (CMP(thunk, b, c) > 0 ? b : (CMP(thunk, a, c) < 0 ? a : c));
 }
@@ -151,15 +128,8 @@ static inline char *med3(char *a, char *b, char *c, cmp_t *cmp,
  */
 #define PARAMETER_STACK_LEVELS 8u
 
-#if defined(I_AM_QSORT_R)
-void __bsd_qsort_r(void *a, size_t n, size_t es, void *thunk, cmp_t *cmp)
-#elif defined(I_AM_GNU_QSORT_R)
-void qsort_r(void *a, size_t n, size_t es, cmp_t *cmp, void *thunk)
-#else
 #define thunk NULL
-void qsort(void *a, size_t n, size_t es, cmp_t *cmp)
-#endif
-{
+void qsort(void *a, size_t n, size_t es, cmp_t *cmp) {
   char *pa, *pb, *pc, *pd, *pl, *pm, *pn;
   size_t d, r;
   int cmp_result;
@@ -297,13 +267,7 @@ loop:
 			 * is sorted using function call recursion. The larger
 			 * part will be sorted after the function call returns.
 			 */
-#if defined(I_AM_QSORT_R)
-      __bsd_qsort_r(pa, r / es, es, thunk, cmp);
-#elif defined(I_AM_GNU_QSORT_R)
-      qsort_r(pa, r / es, es, cmp, thunk);
-#else
       qsort(pa, r / es, es, cmp);
-#endif
     }
   }
   if (n > es) { /* The larger part needs sorting. Iterate to sort.  */
