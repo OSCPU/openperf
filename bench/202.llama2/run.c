@@ -833,6 +833,7 @@ void generate(Transformer *transformer, Tokenizer *tokenizer, Sampler *sampler, 
   free(prompt_tokens);
 }
 
+#if 0
 void read_stdin(const char *guide, char *buffer, size_t bufsize) {
   // read a line from stdin, up to but not including \n
   printf("%s", guide);
@@ -937,6 +938,7 @@ void chat(Transformer *transformer, Tokenizer *tokenizer, Sampler *sampler, char
   printf("\n");
   free(prompt_tokens);
 }
+#endif
 
 void error_usage() {
   printf("Usage:   run <checkpoint> [options]\n");
@@ -948,15 +950,15 @@ void error_usage() {
   printf("  -n <int>    number of steps to run for, default 256. 0 = max_seq_len\n");
   printf("  -i <string> input prompt\n");
   printf("  -z <string> optional path to custom tokenizer\n");
-  printf("  -m <string> mode: generate|chat, default: generate\n");
-  printf("  -y <string> (optional) system prompt in chat mode\n");
+  //  printf("  -m <string> mode: generate|chat, default: generate\n");
+  //  printf("  -y <string> (optional) system prompt in chat mode\n");
   bench_exit(1);
 }
 
 static int steps = 256;            // number of steps to run for
 static char *prompt = NULL;        // prompt string
 static char *mode = "generate";    // generate|chat
-static char *system_prompt = NULL; // the (optional) system prompt to use in chat mode
+//static char *system_prompt = NULL; // the (optional) system prompt to use in chat mode
 static Transformer transformer;
 static Tokenizer tokenizer;
 static Sampler sampler;
@@ -1000,8 +1002,8 @@ uint64_t bench_run() {
   // run!
   if (strcmp(mode, "generate") == 0) {
     generate(&transformer, &tokenizer, &sampler, prompt, steps);
-  } else if (strcmp(mode, "chat") == 0) {
-    chat(&transformer, &tokenizer, &sampler, prompt, system_prompt, steps);
+    //  } else if (strcmp(mode, "chat") == 0) {
+    //    chat(&transformer, &tokenizer, &sampler, prompt, system_prompt, steps);
   } else {
     printf("unknown mode: %s\n", mode);
     error_usage();
