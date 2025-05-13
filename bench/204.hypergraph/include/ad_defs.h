@@ -12,7 +12,6 @@
 
 #define MAX_POP       1    /* max numbr of individuals in population */
 #define NIL           -1   /* point to nowhere */
-#define STR_SIZE      30   /* string size */
 #define NO_ITERATIONS 200  /* max number of iterations for KL */
 #define EPSILON       0.01 /* min move value of a cell */
 

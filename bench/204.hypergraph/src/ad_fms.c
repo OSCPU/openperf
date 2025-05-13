@@ -45,7 +45,7 @@ void bench_init(int setting) {
   int max_ndeg;    /* max density of a net */
   int max_nweight; /* max net weight */
 
-  char fname[STR_SIZE] = "input/hp9";
+  char fname[] = "input/hp9";
   noparts = 10;
 
   long seed = 1;
