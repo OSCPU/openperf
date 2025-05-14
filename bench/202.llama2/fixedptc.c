@@ -46,7 +46,7 @@ void fixedpt_str(fixedpt A, char *str, int max_dec) {
     str[slen++] = tmp[--ndec];
   str[slen++] = '.';
 
-  fr = (fixedpt_fracpart(A) << FIXEDPT_WBITS) & mask;
+  fr = ((fixedptu)fixedpt_fracpart(A) << FIXEDPT_WBITS) & mask;
   do {
     fr = (fr & mask) * 10;
 
