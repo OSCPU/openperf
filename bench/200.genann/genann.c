@@ -95,7 +95,7 @@ int genann_act_sigmoid_cached(const genann *ann unused, int a) {
   if (a >= SCALE_UP(sigmoid_dom_max))
     return lookup[LOOKUP_SIZE - 1];
 
-  size_t j = (size_t)SCALE_DN(((a - SCALE_UP(sigmoid_dom_min)) * interval));
+  size_t j = (size_t)SCALE_DN(((int64_t)(a - SCALE_UP(sigmoid_dom_min)) * interval));
 
   /* Because floating point... */
   if (unlikely(j >= LOOKUP_SIZE))
