@@ -6,7 +6,6 @@
 #include "ad_fileio.h"
 #include "ad_random.h"
 #include <bench.h>
-#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -117,6 +116,7 @@ void copy_partition(int noparts, parts_info_t parts_info[], ind_t *ind) {
   } /* for i */
 } /* copy_partition */
 
+#if 0
 /* read a partition prepared beforehand */
 int read_partition(FILE *fp, char *filename, int noparts, cells_t cells[], nets_t nets[], corn_t cnets[], ind_t *ind) {
   int max_size = -1;
@@ -176,5 +176,6 @@ void write_partition(FILE *fp, char *filename, int nocells, int noparts, ind_t *
 
   close_file(&fp);
 } /* read_partition */
+#endif
 
 /* EOF */

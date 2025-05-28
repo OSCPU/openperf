@@ -7,7 +7,6 @@
 #include "ad_fileio.h"
 #include "ad_partition.h"
 #include "ad_random.h"
-#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 
