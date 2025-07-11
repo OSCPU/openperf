@@ -23,6 +23,16 @@
 
 #include <bench.h>
 
+static const struct {
+  int size;
+  uint64_t ref_time;
+} *ps, settings[BENCH_NR_SETTING] = {
+         {1, 0},
+         {12, 161},
+         {1000, 327586},
+         {10000, 37029478},
+};
+
 #define CODE                                                               \
   ">>+>>>>>,[>+>>,]>+[--[+<<<-]<[<+>-]<[<[->[<<<+>>>>+<-]<<[>>+>[->]<<[<]" \
   "<-]>]>>>+<[[-]<[>+<-]<]>[[>>>]+<<<-<[<<[<<<]>>+>[>>>]<-]<<[<<<]>[>>[>>" \
@@ -43,7 +53,7 @@
 
 #define PROGRAM_SIZE 4096
 #define STACK_SIZE   512
-#define DATA_SIZE    4096
+#define DATA_SIZE    32768
 
 #define STACK_PUSH(A) (STACK[SP++] = A)
 #define STACK_POP()   (STACK[--SP])
@@ -60,7 +70,7 @@ static struct instruction_t *PROGRAM;
 static unsigned short *STACK;
 static unsigned int SP;
 static const char *code;
-static char *input;
+static char *input, *input0;
 static unsigned short *data;
 static char *output;
 static int noutput;
@@ -132,11 +142,13 @@ static void execute_bf() {
 }
 
 void bench_init(int setting) {
-  ARR_SIZE = 5;
+  ps = &settings[setting];
+  ARR_SIZE = ps->size;
+
   SP = 0;
   PROGRAM = malloc(sizeof(PROGRAM[0]) * PROGRAM_SIZE);
   STACK = malloc(sizeof(STACK[0]) * STACK_SIZE);
-  data = malloc(sizeof(data[0]) * DATA_SIZE);
+  data = calloc(1, sizeof(data[0]) * DATA_SIZE);
   code = CODE;
   input = malloc(ARR_SIZE + 1);
   output = malloc(DATA_SIZE);
@@ -147,16 +159,51 @@ void bench_init(int setting) {
     input[i] = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"[bench_rand() % 62];
   }
   input[ARR_SIZE] = 0;
+  input0 = input;
+  printf("input  = %s\n", input);
 }
 
 uint64_t bench_run() {
-  compile_bf();
-  execute_bf();
-  return 0;
+  int ret = compile_bf();
+  if (ret == SUCCESS) {
+    execute_bf();
+  } else {
+    printf("compile fail!\n");
+  }
+  return ps->ref_time;
+}
+
+static void swap(char *a, char *b) {
+  char t = *a;
+  *a = *b;
+  *b = t;
+}
+
+static void qsort(char *a, int l, int r) {
+  if (l < r) {
+    char p = a[l];
+    int pivot = l, j;
+    for (j = l + 1; j < r; j++) {
+      if (a[j] < p) {
+        swap(&a[++pivot], &a[j]);
+      }
+    }
+    swap(&a[pivot], &a[l]);
+    qsort(a, l, pivot);
+    qsort(a, pivot + 1, r);
+  }
 }
 
 int bench_validate() {
-  uint32_t cs = bench_checksum(output, output + noutput);
-  printf("cs = 0x%x\n", cs);
-  return 0;
+  output[noutput] = 0;
+  printf("output = %s\n", output);
+
+  qsort(input0, 0, ARR_SIZE);
+  int same = (memcmp(input0, output, noutput) == 0);
+  free(PROGRAM);
+  free(STACK);
+  free(data);
+  free(input0);
+  free(output);
+  return (noutput == ARR_SIZE && same) ? 0 : 1;
 }
