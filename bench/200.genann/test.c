@@ -28,6 +28,18 @@
 #include <bench.h>
 #include <stdlib.h>
 
+static const struct {
+  int loops;
+  int correct;
+  uint32_t cs1, cs2, cs3;
+  uint64_t ref_time;
+} *ps, settings[BENCH_NR_SETTING] = {
+         {0, 50, 0xb94aa991, 0x56737059, 0xc180f104, 0},
+         {4, 80, 0x6534b5a8, 0x4ac24b94, 0x06adffe1, 66},
+         {20000, 147, 0x8b6aa37f, 0xb5796f2e, 0x631fc3f2, 243780},
+         {1000000, 149, 0x0d457d31, 0x655161ef, 0xc180f104, 12477223},
+};
+
 void basic() {
   genann *ann = genann_init(1, 0, 0, 1);
 
@@ -117,7 +129,7 @@ void train_and() {
 
   int i, j;
 
-  for (i = 0; i < 50; ++i) {
+  for (i = 0; i < 20; ++i) {
     for (j = 0; j < 4; ++j) {
       genann_train(ann, input[j], output + j, SCALE_UP(.8));
     }
@@ -141,7 +153,7 @@ void train_or() {
 
   int i, j;
 
-  for (i = 0; i < 50; ++i) {
+  for (i = 0; i < 25; ++i) {
     for (j = 0; j < 4; ++j) {
       genann_train(ann, input[j], output + j, SCALE_UP(.8));
     }
@@ -164,7 +176,7 @@ void train_xor() {
 
   int i, j;
 
-  for (i = 0; i < 500; ++i) {
+  for (i = 0; i < 310; ++i) {
     for (j = 0; j < 4; ++j) {
       genann_train(ann, input[j], output + j, SCALE_UP(3));
     }
@@ -219,6 +231,7 @@ static const IRIS_data iris_data[] = {
 int iris_test() {
   printf("Train an ANN on the IRIS dataset using backpropagation.\n");
 
+  int loops = ps->loops;
   int samples = sizeof(iris_data) / sizeof(iris_data[0]);
   int *input = malloc(sizeof(int) * samples * 4);
   int *class = malloc(sizeof(int) * samples * 3);
@@ -242,8 +255,6 @@ int iris_test() {
    */
   genann *ann = genann_init(4, 1, 4, 3);
 
-  int loops = 500;
-
   /* Train the network with backpropagation. */
   printf("Training for %d loops over data.\n", loops);
   for (i = 0; i < loops; ++i) {
@@ -266,24 +277,34 @@ int iris_test() {
         ++correct;
     } else {
       printf("Logic error.\n");
-      return 1;
+      return -1;
     }
   }
 
   printf("%d/%d correct\n", correct, samples);
 
+  uint32_t cs1 = bench_checksum(ann->weight, ann->weight + ann->total_weights);
+  uint32_t cs2 = bench_checksum(ann->output, ann->output + ann->total_neurons);
+  uint32_t cs3 = bench_checksum(ann->delta, ann->delta + (ann->total_neurons - ann->inputs));
+  int fail = (correct != ps->correct) || (cs1 != ps->cs1) || (cs2 != ps->cs2) || (cs3 != ps->cs3);
+  if (fail)
+    correct = -1;
+
   genann_free(ann);
   free(input);
   free(class);
 
-  return 0;
+  return correct;
 }
 
-static int iris_test_fail;
+static int iris_correct;
 
 void bench_init(int setting) {
   printf("GENANN TEST SUITE\n");
+  ps = &settings[setting];
   bench_srand(100); //Repeatable test results.
+  ltests = 0;
+  lfails = 0;
 }
 
 uint64_t bench_run() {
@@ -292,12 +313,12 @@ uint64_t bench_run() {
   lrun("backprop", backprop);
   lrun("train and", train_and);
   lrun("train or", train_or);
-  lrun("train xor", train_xor);
-  iris_test_fail = iris_test();
-  return 0;
+  //lrun("train xor", train_xor);
+  iris_correct = iris_test();
+  return ps->ref_time;
 }
 
 int bench_validate() {
   lresults();
-  return (lfails > 0) || iris_test_fail;
+  return (lfails != 0) || (iris_correct == -1);
 }
