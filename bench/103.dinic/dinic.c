@@ -3,6 +3,17 @@
 #include <bench.h>
 #include <stdbool.h>
 
+static const struct {
+  int size;
+  int ans;
+  uint64_t ref_time;
+} *ps, settings[BENCH_NR_SETTING] = {
+         {10, 402, 0},
+         {60, 12911, 110},
+         {209, 99568, 648311},
+         {219, 106697, 38544532},
+};
+
 static int N;
 const int INF = 0x3f3f3f;
 
@@ -27,7 +38,7 @@ typedef struct Dinic {
 static Dinic *G;
 static int ans;
 
-void init(Dinic *this, int n) {
+static void init(Dinic *this, int n) {
   int nold = (n - 2) / 2;
   int maxm = (nold * nold + nold * 2) * 2;
 
@@ -46,7 +57,7 @@ void init(Dinic *this, int n) {
   this->m = 0;
 }
 
-void AddEdge(Dinic *this, int u, int v, int c) {
+static void AddEdge(Dinic *this, int u, int v, int c) {
   if (c == 0)
     return;
   this->edges[this->m] = (Edge){u, v, c, 0};
@@ -57,7 +68,7 @@ void AddEdge(Dinic *this, int u, int v, int c) {
   this->head[v] = this->m++;
 }
 
-bool BFS(Dinic *this) {
+static bool BFS(Dinic *this) {
   for (int i = 0; i < this->n; i++)
     this->vis[i] = 0;
   int qf = 0, qr = 0;
@@ -78,7 +89,7 @@ bool BFS(Dinic *this) {
   return this->vis[this->t];
 }
 
-int DFS(Dinic *this, int x, int a) {
+static int DFS(Dinic *this, int x, int a) {
   if (x == this->t || a == 0)
     return a;
   int flow = 0, f;
@@ -96,7 +107,7 @@ int DFS(Dinic *this, int x, int a) {
   return flow;
 }
 
-int Maxflow(Dinic *this, int s, int t) {
+static int Maxflow(Dinic *this, int s, int t) {
   this->s = s;
   this->t = t;
   int flow = 0;
@@ -109,7 +120,8 @@ int Maxflow(Dinic *this, int s, int t) {
 }
 
 void bench_init(int setting) {
-  N = 10;
+  ps = &settings[setting];
+  N = ps->size;
   bench_srand(1);
   int s = 2 * N, t = 2 * N + 1;
   G = (Dinic *)malloc(sizeof(Dinic));
@@ -127,7 +139,7 @@ void bench_init(int setting) {
 
 uint64_t bench_run() {
   ans = Maxflow(G, 2 * N, 2 * N + 1);
-  return 0;
+  return ps->ref_time;
 }
 
 int bench_validate() {
@@ -140,5 +152,5 @@ int bench_validate() {
   free(G->cur);
   free(G->queue);
   free(G);
-  return 0;
+  return ans == ps->ans ? 0 : 1;
 }
