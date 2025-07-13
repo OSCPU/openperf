@@ -1,5 +1,4 @@
-input/biomed
-input/hp1
-input/hp9
-input/industry2
-input/industry3
+input/test-hp1
+input/train-hp9
+input/ref-biomed
+input/huge-industry3

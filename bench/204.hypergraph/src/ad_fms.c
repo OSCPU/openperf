@@ -12,6 +12,19 @@
 #include "ad_readinput.h"
 #include <bench.h>
 
+static const struct {
+  char *data;
+  int noparts;
+  int cutsize;
+  uint32_t cs;
+  uint64_t ref_time;
+} *ps, settings[BENCH_NR_SETTING] = {
+         {"input/test-hp1", 3, 3, 0xb1880007, 0},
+         {"input/train-hp9", 2, 88, 0x8946539f, 1742},
+         {"input/ref-biomed", 45, 1318, 0x8e1c759d, 553338},
+         {"input/huge-industry3", 275, 11070, 0x7ddb49c2, 61666771},
+};
+
 /* FOR SANCHIS' VERSION OF MULTI-WAY PARTITIONING */
 /* Also mentioned as the SN algorithm */
 /* Direct multi-way partitioning.
@@ -37,16 +50,19 @@ static nets_info_t *nets_info;
 static cells_info_t *cells_info;
 static mcells_t *mcells;
 static corn_t *ncells;
+static parts_info_t *parts_info;
 
 void bench_init(int setting) {
+  ps = &settings[setting];
+
   /* definitions */
   int nopins;      /* number of pins */
   int max_cdeg;    /* max density of a cell */
   int max_ndeg;    /* max density of a net */
   int max_nweight; /* max net weight */
 
-  char fname[] = "input/hp9";
-  noparts = 10;
+  char *fname = ps->data;
+  noparts = ps->noparts;
 
   long seed = 1;
   seed = randomize((long)seed);
@@ -104,13 +120,15 @@ void bench_init(int setting) {
   bucketsize = 2 * max_gain + 1;
 
   /* alloc memory (statically if possible) */
-  partb = malloc(sizeof(partb_t *) * noparts);
+  partb = malloc(sizeof(partb[0]) * noparts);
   for (int i = 0; i < noparts; i++) {
-    partb[i] = malloc(sizeof(partb_t) * (noparts - 1));
+    partb[i] = malloc(sizeof(partb[i][0]) * (noparts - 1));
     for (int j = 0; j < noparts - 1; ++j) {
       partb[i][j].bnode_ptr = (bnode_ptr_t *)calloc(bucketsize, sizeof(bnode_ptr_t));
     }
   }
+
+  parts_info = malloc(sizeof(parts_info[0]) * noparts);
 }
 
 uint64_t bench_run() {
@@ -133,10 +151,7 @@ uint64_t bench_run() {
 #endif
 
   selected_cell_t scell[1]; /* selected cell */
-  parts_info_t parts_info[noparts];
-
-  int msize; /* index to mcells */
-
+  int msize;                /* index to mcells */
   int gain_sum;
   int no_iter = 0;
   int glob_inx = 0;
@@ -193,7 +208,7 @@ uint64_t bench_run() {
   printf("pass_no = %d Final cutsize = %d Check cutsize = %d\n", no_iter, cutsize,
          find_cut_size(nonets, noparts, totnetsize, nets, &pop[0]));
 
-  return 0;
+  return ps->ref_time;
 }
 
 int bench_validate() {
@@ -240,5 +255,9 @@ int bench_validate() {
 
   free(mcells);
 
-  return (0);
+  uint32_t cs = bench_checksum(parts_info, parts_info + noparts);
+  printf("cs = 0x%x\n", cs);
+  int fail = (cutsize != ps->cutsize) || (cs != ps->cs);
+  free(parts_info);
+  return fail;
 }
