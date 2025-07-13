@@ -1,5 +1,16 @@
 #include <bench.h>
 
+static const struct {
+  int size;
+  uint32_t checksum;
+  uint64_t ref_time;
+} *ps, settings[BENCH_NR_SETTING] = {
+         {2, 0xbc4f9265, 0},
+         {40, 0x9321fb62, 22},
+         {1000, 0xfcf9d4ab, 466056},
+         {2500, 0x3e52d901, 7285748},
+};
+
 #define A_row(i, j) a[(i) * lda + (j)]
 #define B_row(i, j) b[(i) * ldb + (j)]
 #define C_row(i, j) c[(i) * ldc + (j)]
@@ -59,14 +70,14 @@ void matmul_row(int m, int n, int k, unsigned *a, int lda, unsigned *b, int ldb,
 
 static unsigned *A, *B, *C;
 static unsigned long long duration_row;
-static int m = 4;
-static int n = 4;
-static int k = 4;
+static int N = 1;
 
 void bench_init(int setting) {
-  A = (unsigned *)malloc(m * k * sizeof(unsigned)); //A = (m,k)
-  B = (unsigned *)malloc(k * n * sizeof(unsigned)); //B = (k,n)
-  C = (unsigned *)malloc(m * n * sizeof(unsigned)); //C = (m,n)
+  ps = &settings[setting];
+  N = ps->size;
+  A = (unsigned *)malloc(N * N * sizeof(unsigned));
+  B = (unsigned *)malloc(N * N * sizeof(unsigned));
+  C = (unsigned *)calloc(1, N * N * sizeof(unsigned));
 
   if (A == NULL || B == NULL || C == NULL) {
     printf("Out of Memory!\n");
@@ -74,26 +85,30 @@ void bench_init(int setting) {
   }
 
   bench_srand(1);
-  random_init(m, k, A, m, 0);
-  random_init(k, n, B, k, 0);
+  random_init(N, N, A, N, 0);
+  random_init(N, N, B, N, 0);
 }
 
 uint64_t bench_run() {
   uint64_t t0 = bench_uptime();
-  matmul_row(m, n, k, A, m, B, k, C, m);
+  matmul_row(N, N, N, A, N, B, N, C, N);
   uint64_t t1 = bench_uptime();
   duration_row = (t1 - t0);
   if (duration_row == 0)
     duration_row = 1;
-  return 0;
+  return ps->ref_time;
 }
 
 int bench_validate() {
-  uint64_t op = 2ull * m * n * k;
+  uint64_t op = 2ull * N * N * N;
   printf("Dot product with row major order took %lld us, KOPS: %lld\n", duration_row, op * 1000 / duration_row);
+
+  uint32_t cs = bench_checksum(C, C + N * N);
 
   free(A);
   free(B);
   free(C);
-  return 0;
+
+  int fail = (cs != ps->checksum);
+  return fail;
 }
