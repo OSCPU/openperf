@@ -4,12 +4,25 @@
 
 #define MAX_IDLE_CYCLE 100
 #define PMEM_BASE      0x80000000
-#define PMEM_SIZE      256 * 1024
 
 typedef uint32_t word_t;
 typedef int32_t sword_t;
 
+static const struct {
+  const char *bin;
+  uint32_t pmem_size;
+  uint64_t cycles;
+  uint32_t cs;
+  uint64_t ref_time;
+} *ps, settings[BENCH_NR_SETTING] = {
+         {"input/test-putch-asm.bin", 64, 23, 0x917fb81e, 0},
+         {"input/train-hello-riscv32e-npc.bin", 36 * 1024, 702, 0x3baab934, 96},
+         {"input/ref-microbench-test-riscv32e-npc.bin", 100 * 1024, 1526121, 0x17a76ab4, 194814},
+         {"input/huge-microbench-train-riscv32e-npc.bin", 370 * 1024, 504772696, 0x1d858e6e, 68625476},
+};
+
 static uint8_t *pmem = NULL;
+static uint32_t pmem_size = 0;
 
 static void reset(int n) {
   set_reset(1);
@@ -19,22 +32,27 @@ static void reset(int n) {
   set_reset(0);
 }
 
-static size_t load_prog(char *bin) {
+static size_t load_prog(const char *bin) {
   FILE *fp = fopen(bin, "r");
   assert(fp);
-  int s = fread(pmem, 1, PMEM_SIZE, fp);
+  int s = fread(pmem, 1, pmem_size, fp);
   fclose(fp);
   printf("image size = %d\n", s);
   return s;
 }
 
 static uint32_t addr2idx(uint32_t addr, uint32_t base) {
-  return (addr - base) & ~0x3ul;
+  uint32_t idx = (addr - base) & ~0x3ul;
+  if (idx >= pmem_size) {
+    printf("Error: memory access out of bound!\n");
+    bench_exit(1);
+  }
+  return idx;
 }
 
 sword_t pmem_read(int32_t raddr) {
   uint32_t idx = addr2idx(raddr, PMEM_BASE);
-  return (idx < PMEM_SIZE ? *(sword_t *)(pmem + idx) : 0);
+  return *(sword_t *)(pmem + idx);
 }
 
 void pmem_write(int32_t waddr, sword_t wdata, uint8_t wmask) {
@@ -88,9 +106,11 @@ static unsigned long long cycles, insts;
 static int exit_code;
 
 void bench_init(int setting) {
-  pmem = (uint8_t *)malloc(PMEM_SIZE);
+  ps = &settings[setting];
+  pmem_size = ps->pmem_size;
+  pmem = (uint8_t *)calloc(1, pmem_size);
   assert(pmem != NULL);
-  load_prog("input/rtthread-riscv32e-npc.bin");
+  load_prog(ps->bin);
   exit_code = 0;
   cycles = 0;
   insts = 0;
@@ -126,11 +146,16 @@ uint64_t bench_run() {
     }
   }
   t = bench_uptime() - t;
-  return 0;
+  return ps->ref_time;
 }
 
 int bench_validate() {
   printf("finish after %lld cycles, %lld us, simulation freq = %lld Hz\n", cycles, t, cycles * 1000000 / t);
   printf("#inst = %lld, IPC = %lld * 10^{-3}\n", insts, insts * 1000 / cycles);
-  return exit_code;
+
+  uint32_t cs = bench_checksum(pmem, pmem + pmem_size);
+  free(pmem);
+
+  int fail = (exit_code != 0) || (ps->cycles != cycles) || (ps->cs != cs);
+  return fail;
 }

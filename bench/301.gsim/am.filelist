@@ -1,2 +1,4 @@
-input/microbench-riscv32e-npc.bin
-input/rtthread-riscv32e-npc.bin
+input/test-putch-asm.bin
+input/train-hello-riscv32e-npc.bin
+input/ref-microbench-test-riscv32e-npc.bin
+input/huge-microbench-train-riscv32e-npc.bin
