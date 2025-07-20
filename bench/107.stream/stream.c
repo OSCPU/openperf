@@ -41,9 +41,6 @@
 /*  5. Absolutely no warranty is expressed or implied.                   */
 /*-----------------------------------------------------------------------*/
 #include <bench.h>
-#include <float.h>
-#include <limits.h>
-#include <math.h>
 #include <unistd.h>
 
 /*-----------------------------------------------------------------------
@@ -89,9 +86,9 @@
  *          will override the default size of 10M with a new size of 100M elements
  *          per array.
  */
-#ifndef STREAM_ARRAY_SIZE
-#define STREAM_ARRAY_SIZE 10000000
-#endif
+//#ifndef STREAM_ARRAY_SIZE
+//#define STREAM_ARRAY_SIZE 10000000
+//#endif
 
 /*  2) STREAM runs each kernel "NTIMES" times and reports the *best* result
  *         for any iteration after the first, therefore the minimum value
@@ -104,11 +101,11 @@
  */
 #ifdef NTIMES
 #if NTIMES <= 1
-#define NTIMES 10
+#define NTIMES 100
 #endif
 #endif
 #ifndef NTIMES
-#define NTIMES 10
+#define NTIMES 100
 #endif
 
 /*  Users are allowed to modify the "OFFSET" variable, which *may* change the
@@ -175,16 +172,22 @@
 #define STREAM_TYPE unsigned
 #endif
 
-static STREAM_TYPE a[STREAM_ARRAY_SIZE + OFFSET], b[STREAM_ARRAY_SIZE + OFFSET], c[STREAM_ARRAY_SIZE + OFFSET];
+static const struct {
+  int size;
+  uint32_t cs_a, cs_b, cs_c;
+  uint64_t ref_time;
+} *ps, settings[BENCH_NR_SETTING] = {
+         {4, 0x707a8b17, 0xf7e16681, 0xad1d27be, 0},
+         {3000, 0xc21564df, 0x3e96caf9, 0x4c96496f, 270},
+         {4000000, 0x2050cd0a, 0x3d6ba970, 0xbfdfc1de, 469729},
+         {200000000, 0x7b8e1456, 0x4c83c711, 0x5408d901, 28553508},
+};
 
+static STREAM_TYPE *a, *b, *c;
 static unsigned long long avgtime[4] = {0}, maxtime[4] = {0},
                           mintime[4] = {UINT64_MAX, UINT64_MAX, UINT64_MAX, UINT64_MAX};
-
 static char *label[4] = {"Copy:      ", "Scale:     ", "Add:       ", "Triad:     "};
-
-static unsigned long long bytes[4] = {
-  2 * sizeof(STREAM_TYPE) * STREAM_ARRAY_SIZE, 2 * sizeof(STREAM_TYPE) * STREAM_ARRAY_SIZE,
-  3 * sizeof(STREAM_TYPE) * STREAM_ARRAY_SIZE, 3 * sizeof(STREAM_TYPE) * STREAM_ARRAY_SIZE};
+static int STREAM_ARRAY_SIZE;
 
 extern void checkSTREAMresults();
 #ifdef TUNED
@@ -198,12 +201,28 @@ extern int omp_get_num_threads();
 #endif
 
 static uint64_t times[4][NTIMES];
+static unsigned long long bytes[4];
 
 void bench_init(int setting) {
   int quantum, checktick();
   int BytesPerWord;
   int j;
   uint64_t t;
+
+  ps = &settings[setting];
+  STREAM_ARRAY_SIZE = ps->size;
+
+  a = malloc(sizeof(STREAM_TYPE) * (STREAM_ARRAY_SIZE + OFFSET));
+  b = malloc(sizeof(STREAM_TYPE) * (STREAM_ARRAY_SIZE + OFFSET));
+  c = malloc(sizeof(STREAM_TYPE) * (STREAM_ARRAY_SIZE + OFFSET));
+  assert(a != NULL);
+  assert(b != NULL);
+  assert(c != NULL);
+
+  bytes[0] = 2 * sizeof(STREAM_TYPE) * STREAM_ARRAY_SIZE;
+  bytes[1] = 2 * sizeof(STREAM_TYPE) * STREAM_ARRAY_SIZE;
+  bytes[2] = 3 * sizeof(STREAM_TYPE) * STREAM_ARRAY_SIZE;
+  bytes[3] = 3 * sizeof(STREAM_TYPE) * STREAM_ARRAY_SIZE;
 
   /* --- SETUP --- determine precision and check timing --- */
 
@@ -335,7 +354,7 @@ uint64_t bench_run() {
 #endif
     times[3][k] = bench_uptime() - times[3][k];
   }
-  return 0;
+  return ps->ref_time;
 }
 
 int bench_validate() {
@@ -346,16 +365,17 @@ int bench_validate() {
   {
     for (j = 0; j < 4; j++) {
       avgtime[j] = avgtime[j] + times[j][k];
-      mintime[j] = MIN(mintime[j], times[j][k]);
+      mintime[j] = MAX(MIN(mintime[j], times[j][k]), 1);
       maxtime[j] = MAX(maxtime[j], times[j][k]);
     }
   }
 
-  printf("Function    Best Rate MB/s  Avg time(us) Min time(us) Max time(us)\n");
+  printf("Function    Best Rate KB/s  Avg time(us) Min time(us) Max time(us)\n");
   for (j = 0; j < 4; j++) {
     avgtime[j] = avgtime[j] / (NTIMES - 1);
 
-    printf("%s%12lld  %11lld  %11lld  %11lld\n", label[j], bytes[j] / mintime[j], avgtime[j], mintime[j], maxtime[j]);
+    printf("%s%12lld  %11lld  %11lld  %11lld\n", label[j], bytes[j] * 1024 / mintime[j], avgtime[j], mintime[j],
+           maxtime[j]);
   }
   printf(HLINE);
 
@@ -363,7 +383,11 @@ int bench_validate() {
   checkSTREAMresults();
   printf(HLINE);
 
-  return 0;
+  uint32_t cs_a = bench_checksum(a, a + STREAM_ARRAY_SIZE);
+  uint32_t cs_b = bench_checksum(b, b + STREAM_ARRAY_SIZE);
+  uint32_t cs_c = bench_checksum(c, c + STREAM_ARRAY_SIZE);
+  int fail = (cs_a != ps->cs_a) || (cs_b != ps->cs_b) || (cs_c != ps->cs_c);
+  return fail;
 }
 
 #define M 20
