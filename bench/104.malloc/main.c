@@ -2,6 +2,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+static const struct {
+  char *data;
+  uint32_t cs;
+  uint64_t ref_time;
+} *ps, settings[BENCH_NR_SETTING] = {
+         {"input/test.trace", 0x35000200, 0},
+         {"input/train.trace", 0x1f07f9f2, 647},
+         {"input/ref.trace", 0x0f80dc53, 311050},
+         {"input/huge.trace", 0x8df3116f, 45297530},
+};
+
 enum {
   FUNC_malloc,
   FUNC_calloc,
@@ -22,11 +33,14 @@ void *my_calloc(size_t nmemb, size_t size);
 void *my_realloc(void *ptr, size_t size);
 
 static int nr_op;
-static char **addr;
+static uint8_t **addr;
 static OP *ops;
+static uint32_t cs;
 
 void bench_init(int setting) {
-  FILE *fp = fopen("input/test.trace", "rb");
+  ps = &settings[setting];
+  cs = 0;
+  FILE *fp = fopen(ps->data, "rb");
   assert(fp != NULL);
 
   int nr_addr = 0;
@@ -52,10 +66,12 @@ uint64_t bench_run() {
       case FUNC_malloc:
         addr[op->idx] = my_malloc(op->size);
         *addr[op->idx] = 1;
+        cs ^= (i & 0xff) << 0;
         break;
       case FUNC_calloc:
         addr[op->idx] = my_calloc(op->arg3, op->size);
         *addr[op->idx] = 1;
+        cs ^= (i & 0xff) << 8;
         break;
       case FUNC_realloc:
         if (op->idx == -1)
@@ -65,8 +81,12 @@ uint64_t bench_run() {
           addr[op->idx] = my_realloc(ptr, op->size);
           *addr[op->idx] = 1;
         }
+        cs ^= (i & 0xff) << 16;
         break;
-      case FUNC_free: my_free(op->idx == -1 ? NULL : addr[op->idx]); break;
+      case FUNC_free:
+        my_free(op->idx == -1 ? NULL : addr[op->idx]);
+        cs ^= (i & 0xff) << 24;
+        break;
       default: assert(0);
     }
 
@@ -75,13 +95,13 @@ uint64_t bench_run() {
       printf("already handle %d/%d operations\n", i, nr_op);
     }
   }
-
-  return 0;
+  return ps->ref_time;
 }
 
 int bench_validate() {
   my_free(addr);
   my_free(ops);
   printf("Test end\n");
-  return 0;
+  int fail = (cs != ps->cs);
+  return fail;
 }

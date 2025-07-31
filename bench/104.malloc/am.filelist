@@ -1,1 +1,4 @@
-data/test.trace
+input/test.trace
+input/train.trace
+input/ref.trace
+input/huge.trace
