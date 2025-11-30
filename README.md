@@ -9,6 +9,7 @@
 |      | [103.dinic][dinic]           | 求解二分图最大流     |                 |
 |      | [104.malloc][malloc]         | 动态内存分配         |                 |
 |      | [105.bf][bf]                 | brainf\*ck语言解释器 |                 |
+|      | [106.qsort][qsort]           | 快速排序             |                 |
 
 
 [blockchain]: https://github.com/aproxp/blockchain
@@ -17,3 +18,4 @@
 [dinic]: https://github.com/lab104yifan/ACM/blob/93daae9b997aa4df1af96d3140ad81b3506cee49/UVA10779.cpp
 [malloc]: https://github.com/mit-pdos/xv6-riscv/blob/riscv/user/umalloc.c
 [bf]: http://github.com/kgabis/brainfuck-c
+[qsort]: https://github.com/NJU-ProjectN/am-kernels/tree/master/benchmarks/microbench
