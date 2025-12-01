@@ -1,6 +1,5 @@
 #include "stb.h"
-#include <am.h>
-#include <klib.h>
+#include <bench.h>
 #include <stdio.h>
 
 typedef struct {
@@ -10,23 +9,26 @@ typedef struct {
   int format; // 3: RGB, 4: RGBA
 } STBIMG__image;
 
-int main() {
-  ioe_init();
+static size_t length;
+static uint8_t *buffer;
+static STBIMG__image img;
 
+void bench_init(int setting) {
   const char *filename = "input/a.jpg";
 
   FILE *fp = fopen(filename, "r");
   assert(fp);
   fseek(fp, 0, SEEK_END);
-  size_t length = ftell(fp);
+  length = ftell(fp);
   fseek(fp, 0, SEEK_SET);
-  uint8_t *buffer = malloc(length);
+  buffer = malloc(length);
   assert(buffer);
   int ret = fread(buffer, length, 1, fp);
   assert(ret == 1);
   fclose(fp);
+}
 
-  STBIMG__image img = {0};
+uint64_t bench_run() {
   int bppToUse = 0;
   int inforet = 0;
   //int origin_has_alpha;
@@ -47,7 +49,10 @@ int main() {
     assert(0);
   }
   img.format = bppToUse;
+  return 0;
+}
 
+int bench_validate() {
   free(buffer);
 
   io_write(AM_GPU_FBDRAW, 0, 0, img.data, img.w, img.h, true);
