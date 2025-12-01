@@ -1128,14 +1128,27 @@ stbi_inline static stbi_uc stbi__clamp(int x) {
 #define stbi__f2f(x) ((int)(((x) * 4096 + 0.5)))
 #define stbi__fsh(x) ((x) * 4096)
 
+#define stbi__f2f_0p5411961    ((int)0x000008a9)
+#define stbi__f2f_n1p847759065 ((int)0xffffe271)
+#define stbi__f2f_0p765366865  ((int)0x00000c3f)
+#define stbi__f2f_1p175875602  ((int)0x000012d0)
+#define stbi__f2f_0p298631336  ((int)0x000004c7)
+#define stbi__f2f_2p053119869  ((int)0x000020da)
+#define stbi__f2f_3p072711026  ((int)0x0000312a)
+#define stbi__f2f_1p501321110  ((int)0x00001805)
+#define stbi__f2f_n0p899976223 ((int)0xfffff19b)
+#define stbi__f2f_n2p562915447 ((int)0xffffd6ff)
+#define stbi__f2f_n1p961570560 ((int)0xffffe09e)
+#define stbi__f2f_n0p390180644 ((int)0xfffff9c3)
+
 // derived from jidctint -- DCT_ISLOW
 #define STBI__IDCT_1D(s0, s1, s2, s3, s4, s5, s6, s7)     \
   int t0, t1, t2, t3, p1, p2, p3, p4, p5, x0, x1, x2, x3; \
   p2 = s2;                                                \
   p3 = s6;                                                \
-  p1 = (p2 + p3) * stbi__f2f(0.5411961f);                 \
-  t2 = p1 + p3 * stbi__f2f(-1.847759065f);                \
-  t3 = p1 + p2 * stbi__f2f(0.765366865f);                 \
+  p1 = (p2 + p3) * stbi__f2f_0p5411961;                   \
+  t2 = p1 + p3 * stbi__f2f_n1p847759065;                  \
+  t3 = p1 + p2 * stbi__f2f_0p765366865;                   \
   p2 = s0;                                                \
   p3 = s4;                                                \
   t0 = stbi__fsh(p2 + p3);                                \
@@ -1152,15 +1165,15 @@ stbi_inline static stbi_uc stbi__clamp(int x) {
   p4 = t1 + t3;                                           \
   p1 = t0 + t3;                                           \
   p2 = t1 + t2;                                           \
-  p5 = (p3 + p4) * stbi__f2f(1.175875602f);               \
-  t0 = t0 * stbi__f2f(0.298631336f);                      \
-  t1 = t1 * stbi__f2f(2.053119869f);                      \
-  t2 = t2 * stbi__f2f(3.072711026f);                      \
-  t3 = t3 * stbi__f2f(1.501321110f);                      \
-  p1 = p5 + p1 * stbi__f2f(-0.899976223f);                \
-  p2 = p5 + p2 * stbi__f2f(-2.562915447f);                \
-  p3 = p3 * stbi__f2f(-1.961570560f);                     \
-  p4 = p4 * stbi__f2f(-0.390180644f);                     \
+  p5 = (p3 + p4) * stbi__f2f_1p175875602;                 \
+  t0 = t0 * stbi__f2f_0p298631336;                        \
+  t1 = t1 * stbi__f2f_2p053119869;                        \
+  t2 = t2 * stbi__f2f_3p072711026;                        \
+  t3 = t3 * stbi__f2f_1p501321110;                        \
+  p1 = p5 + p1 * stbi__f2f_n0p899976223;                  \
+  p2 = p5 + p2 * stbi__f2f_n2p562915447;                  \
+  p3 = p3 * stbi__f2f_n1p961570560;                       \
+  p4 = p4 * stbi__f2f_n0p390180644;                       \
   t3 += p1 + p4;                                          \
   t2 += p2 + p3;                                          \
   t1 += p2 + p4;                                          \
@@ -1887,6 +1900,11 @@ static stbi_uc *stbi__resample_row_generic(stbi_uc *out, stbi_uc *in_near, stbi_
 // this is a reduced-precision calculation of YCbCr-to-RGB introduced
 // to make sure the code produces the same results in both SIMD and scalar
 #define stbi__float2fixed(x) (((int)((x) * 4096.0f + 0.5f)) << 8)
+
+#define stbi__float2fixed_1p40200 ((int)0x00166f00)
+#define stbi__float2fixed_0p71414 ((int)0x000b6d00)
+#define stbi__float2fixed_0p34414 ((int)0x00058200)
+#define stbi__float2fixed_1p77200 ((int)0x001c5a00)
 static void stbi__YCbCr_to_RGB_row(stbi_uc *out, const stbi_uc *y, const stbi_uc *pcb, const stbi_uc *pcr, int count,
                                    int step) {
   int i;
@@ -1895,9 +1913,9 @@ static void stbi__YCbCr_to_RGB_row(stbi_uc *out, const stbi_uc *y, const stbi_uc
     int r, g, b;
     int cr = pcr[i] - 128;
     int cb = pcb[i] - 128;
-    r = y_fixed + cr * stbi__float2fixed(1.40200f);
-    g = y_fixed + (cr * -stbi__float2fixed(0.71414f)) + ((cb * -stbi__float2fixed(0.34414f)) & 0xffff0000);
-    b = y_fixed + cb * stbi__float2fixed(1.77200f);
+    r = y_fixed + cr * stbi__float2fixed_1p40200;
+    g = y_fixed + (cr * -stbi__float2fixed_0p71414) + ((cb * -stbi__float2fixed_0p34414) & 0xffff0000);
+    b = y_fixed + cb * stbi__float2fixed_1p77200;
     r >>= 20;
     g >>= 20;
     b >>= 20;
