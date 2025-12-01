@@ -512,18 +512,6 @@ static void *stbi__malloc_mad3(int a, int b, int c, int add) {
 #define stbi__errpf(x, y)  ((float *)(size_t)(stbi__err(x, y) ? NULL : NULL))
 #define stbi__errpuc(x, y) ((unsigned char *)(size_t)(stbi__err(x, y) ? NULL : NULL))
 
-STBIDEF void stbi_image_free(void *retval_from_stbi_load) {
-  STBI_FREE(retval_from_stbi_load);
-}
-
-static int stbi__vertically_flip_on_load_global = 0;
-
-STBIDEF void stbi_set_flip_vertically_on_load(int flag_true_if_should_flip) {
-  stbi__vertically_flip_on_load_global = flag_true_if_should_flip;
-}
-
-#define stbi__vertically_flip_on_load stbi__vertically_flip_on_load_global
-
 static void *stbi__load_main(stbi__context *s, int *x, int *y, int *comp, int req_comp, stbi__result_info *ri,
                              int bpc) {
   memset(ri, 0, sizeof(*ri));         // make sure it's initialized if we add new fields
@@ -554,45 +542,6 @@ static stbi_uc *stbi__convert_16_to_8(stbi__uint16 *orig, int w, int h, int chan
   return reduced;
 }
 
-static stbi__uint16 *stbi__convert_8_to_16(stbi_uc *orig, int w, int h, int channels) {
-  int i;
-  int img_len = w * h * channels;
-  stbi__uint16 *enlarged;
-
-  enlarged = (stbi__uint16 *)stbi__malloc(img_len * 2);
-  if (enlarged == NULL)
-    return (stbi__uint16 *)stbi__errpuc("outofmem", "Out of memory");
-
-  for (i = 0; i < img_len; ++i)
-    enlarged[i] = (stbi__uint16)((orig[i] << 8) + orig[i]); // replicate to high and low byte, maps 0->0, 255->0xffff
-
-  STBI_FREE(orig);
-  return enlarged;
-}
-
-static void stbi__vertical_flip(void *image, int w, int h, int bytes_per_pixel) {
-  int row;
-  size_t bytes_per_row = (size_t)w * bytes_per_pixel;
-  stbi_uc temp[2048];
-  stbi_uc *bytes = (stbi_uc *)image;
-
-  for (row = 0; row < (h >> 1); row++) {
-    stbi_uc *row0 = bytes + row * bytes_per_row;
-    stbi_uc *row1 = bytes + (h - row - 1) * bytes_per_row;
-    // swap row0 with row1
-    size_t bytes_left = bytes_per_row;
-    while (bytes_left) {
-      size_t bytes_copy = (bytes_left < sizeof(temp)) ? bytes_left : sizeof(temp);
-      memcpy(temp, row0, bytes_copy);
-      memcpy(row0, row1, bytes_copy);
-      memcpy(row1, temp, bytes_copy);
-      row0 += bytes_copy;
-      row1 += bytes_copy;
-      bytes_left -= bytes_copy;
-    }
-  }
-}
-
 static unsigned char *stbi__load_and_postprocess_8bit(stbi__context *s, int *x, int *y, int *comp, int req_comp) {
   stbi__result_info ri;
   void *result = stbi__load_main(s, x, y, comp, req_comp, &ri, 8);
@@ -610,70 +559,13 @@ static unsigned char *stbi__load_and_postprocess_8bit(stbi__context *s, int *x, 
 
   // @TODO: move stbi__convert_format to here
 
-  if (stbi__vertically_flip_on_load) {
-    int channels = req_comp ? req_comp : *comp;
-    stbi__vertical_flip(result, *x, *y, channels * sizeof(stbi_uc));
-  }
-
   return (unsigned char *)result;
-}
-
-static stbi__uint16 *stbi__load_and_postprocess_16bit(stbi__context *s, int *x, int *y, int *comp, int req_comp) {
-  stbi__result_info ri;
-  void *result = stbi__load_main(s, x, y, comp, req_comp, &ri, 16);
-
-  if (result == NULL)
-    return NULL;
-
-  // it is the responsibility of the loaders to make sure we get either 8 or 16 bit.
-  STBI_ASSERT(ri.bits_per_channel == 8 || ri.bits_per_channel == 16);
-
-  if (ri.bits_per_channel != 16) {
-    result = stbi__convert_8_to_16((stbi_uc *)result, *x, *y, req_comp == 0 ? *comp : req_comp);
-    ri.bits_per_channel = 16;
-  }
-
-  // @TODO: move stbi__convert_format16 to here
-  // @TODO: special case RGB-to-Y (and RGBA-to-YA) for 8-bit-to-16-bit case to keep more precision
-
-  if (stbi__vertically_flip_on_load) {
-    int channels = req_comp ? req_comp : *comp;
-    stbi__vertical_flip(result, *x, *y, channels * sizeof(stbi__uint16));
-  }
-
-  return (stbi__uint16 *)result;
-}
-
-STBIDEF stbi_us *stbi_load_16_from_memory(stbi_uc const *buffer, int len, int *x, int *y, int *channels_in_file,
-                                          int desired_channels) {
-  stbi__context s;
-  stbi__start_mem(&s, buffer, len);
-  return stbi__load_and_postprocess_16bit(&s, x, y, channels_in_file, desired_channels);
 }
 
 STBIDEF stbi_uc *stbi_load_from_memory(stbi_uc const *buffer, int len, int *x, int *y, int *comp, int req_comp) {
   stbi__context s;
   stbi__start_mem(&s, buffer, len);
   return stbi__load_and_postprocess_8bit(&s, x, y, comp, req_comp);
-}
-
-// these is-hdr-or-not is defined independent of whether STBI_NO_LINEAR is
-// defined, for API simplicity; if STBI_NO_LINEAR is defined, it always
-// reports false!
-
-STBIDEF int stbi_is_hdr_from_memory(stbi_uc const *buffer, int len) {
-  STBI_NOTUSED(buffer);
-  STBI_NOTUSED(len);
-  return 0;
-}
-
-static float stbi__h2l_gamma_i = 1.0f / 2.2f, stbi__h2l_scale_i = 1.0f;
-
-STBIDEF void stbi_hdr_to_ldr_gamma(float gamma) {
-  stbi__h2l_gamma_i = 1 / gamma;
-}
-STBIDEF void stbi_hdr_to_ldr_scale(float scale) {
-  stbi__h2l_scale_i = 1 / scale;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -2282,20 +2174,10 @@ static int stbi__info_main(stbi__context *s, int *x, int *y, int *comp) {
   return stbi__err("unknown image type", "Image not of any known type, or corrupt");
 }
 
-static int stbi__is_16_main(stbi__context *s) {
-  return 0;
-}
-
 STBIDEF int stbi_info_from_memory(stbi_uc const *buffer, int len, int *x, int *y, int *comp) {
   stbi__context s;
   stbi__start_mem(&s, buffer, len);
   return stbi__info_main(&s, x, y, comp);
-}
-
-STBIDEF int stbi_is_16_bit_from_memory(stbi_uc const *buffer, int len) {
-  stbi__context s;
-  stbi__start_mem(&s, buffer, len);
-  return stbi__is_16_main(&s);
 }
 
 /*
