@@ -12,6 +12,7 @@
 |      | [106.qsort][qsort]           | 快速排序             |                 |
 |      | [107.stream][stream]         | 内存带宽测量         |                 |
 | 中型 | [200.genann][genann]         | 神经网络             | 仅含整数操作    |
+|      | [201.jpeg][jpeg]             | JPEG解码             |                 |
 
 
 [blockchain]: https://github.com/aproxp/blockchain
@@ -23,3 +24,4 @@
 [qsort]: https://github.com/NJU-ProjectN/am-kernels/tree/master/benchmarks/microbench
 [stream]: https://github.com/jeffhammond/STREAM
 [genann]: https://github.com/codeplea/genann
+[jpeg]: https://github.com/nothings/stb/blob/master/stb_image.h
