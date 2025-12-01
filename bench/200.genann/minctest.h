@@ -62,6 +62,7 @@
 
 /* How far apart can floats be before we consider them unequal. */
 #define LTEST_FLOAT_TOLERANCE 0.001
+#define LTEST_SCALE_TOLERANCE (SCALE / 1000)
 
 /* Track the number of passes, fails. */
 /* NB this is made for all tests to be in one file. */
@@ -114,7 +115,7 @@ static int lfails = 0;
   do {                                                                         \
     ++ltests;                                                                  \
     int _a = a, _b = b;                                                        \
-    if (abs((_a) - (_b)) > SCALE_UP(LTEST_FLOAT_TOLERANCE)) {                  \
+    if (abs((_a) - (_b)) > LTEST_SCALE_TOLERANCE) {                            \
       ++lfails;                                                                \
       printf("%s:%d (%d(scaled != %d(scaled))\n", __FILE__, __LINE__, _a, _b); \
     }                                                                          \

@@ -131,7 +131,7 @@ void train_and() {
 
   for (i = 0; i < 20; ++i) {
     for (j = 0; j < 4; ++j) {
-      genann_train(ann, input[j], output + j, SCALE_UP(.8));
+      genann_train(ann, input[j], output + j, SCALE * 4 / 5);
     }
   }
 
@@ -155,7 +155,7 @@ void train_or() {
 
   for (i = 0; i < 25; ++i) {
     for (j = 0; j < 4; ++j) {
-      genann_train(ann, input[j], output + j, SCALE_UP(.8));
+      genann_train(ann, input[j], output + j, SCALE * 4 / 5);
     }
   }
 

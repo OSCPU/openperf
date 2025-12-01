@@ -46,8 +46,8 @@ int genann_act_output_indirect(const struct genann *ann, int a) {
   return ann->activation_output(ann, a);
 }
 
-const int sigmoid_dom_min = -16;
-const int sigmoid_dom_max = 16;
+#define sigmoid_dom_min -16
+#define sigmoid_dom_max 16
 const int interval = LOOKUP_SIZE / (sigmoid_dom_max - sigmoid_dom_min);
 int lookup[LOOKUP_SIZE] = {
 // scaled
