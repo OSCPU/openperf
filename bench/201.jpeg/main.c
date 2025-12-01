@@ -13,13 +13,13 @@ typedef struct {
 int main() {
   ioe_init();
 
-  const char *filename = "a.jpg";
+  const char *filename = "input/a.jpg";
 
   FILE *fp = fopen(filename, "r");
   assert(fp);
   fseek(fp, 0, SEEK_END);
   size_t length = ftell(fp);
-  rewind(fp);
+  fseek(fp, 0, SEEK_SET);
   uint8_t *buffer = malloc(length);
   assert(buffer);
   int ret = fread(buffer, length, 1, fp);

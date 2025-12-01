@@ -344,7 +344,7 @@ RECENT REVISION HISTORY:
 #include <string.h>
 
 #ifndef STBI_ASSERT
-#include <assert.h>
+#include <klib.h>
 #define STBI_ASSERT(x) assert(x)
 #endif
 
