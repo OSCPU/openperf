@@ -47,12 +47,13 @@ static Header *morecore(size_t nu) {
 
   if (nu < 4096)
     nu = 4096;
+  size_t inc = nu * sizeof(Header);
 #ifdef __ARCH__
   static void *brk = 0;
   if (brk == 0) {
     brk = heap.start;
   }
-  void *new_brk = brk + nu * sizeof(Header);
+  void *new_brk = brk + inc;
   if (new_brk < heap.end) {
     p = brk;
     brk = new_brk;
@@ -61,10 +62,11 @@ static Header *morecore(size_t nu) {
   }
 #else
   void *sbrk(intptr_t increment);
-  p = sbrk(nu * sizeof(Header));
+  p = sbrk(inc);
 #endif
   if (p == (char *)-1)
     return 0;
+  memset(p, 0xcc, inc);
   hp = (Header *)p;
   hp->s.size = nu;
   my_free((void *)(hp + 1));
