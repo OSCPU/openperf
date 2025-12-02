@@ -781,7 +781,7 @@ static void stbi__build_fast_ac(stbi__int16 *fast_ac, stbi__huffman *h) {
 
 static void stbi__grow_buffer_unsafe(stbi__jpeg *j) {
   do {
-    unsigned int b = j->more & stbi__peep8(j->s);
+    unsigned int b = j->more ? stbi__peep8(j->s) : 0;
     j->s->img_buffer -= j->more;
     if (b == 0xff) {
       int c = stbi__get8(j->s);
