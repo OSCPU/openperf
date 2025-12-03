@@ -1,1 +1,4 @@
-data/a.jpg
+input/test.jpg
+input/train.jpg
+input/ref.jpg
+input/huge.jpg
