@@ -204,7 +204,12 @@ void rmsnorm(fixedpt *o, fixedpt *x, fixedpt *weight, int size) {
     ss += fixedpt_mul(x[j], x[j]);
   }
   ss /= size;
+#ifdef NO_FLOAT
+#define fixedpt_rconst_1en5 ((fixedpt)0x00000003)
+  ss += fixedpt_rconst_1en5;
+#else
   ss += fixedpt_rconst(1e-5f);
+#endif
   ss = fixedpt_div(FIXEDPT_ONE, fixedpt_sqrt(ss));
   // normalize and scale
   for (int j = 0; j < size; j++) {

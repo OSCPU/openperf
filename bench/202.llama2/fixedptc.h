@@ -114,10 +114,20 @@ typedef __uint128_t fixedptud;
 #define FIXEDPT_ONE      ((fixedpt)((fixedpt)1 << FIXEDPT_FBITS))
 #define FIXEDPT_ONE_HALF (FIXEDPT_ONE >> 1)
 #define FIXEDPT_TWO      (FIXEDPT_ONE + FIXEDPT_ONE)
-#define FIXEDPT_PI       fixedpt_rconst(3.14159265358979323846)
-#define FIXEDPT_TWO_PI   fixedpt_rconst(2 * 3.14159265358979323846)
-#define FIXEDPT_HALF_PI  fixedpt_rconst(3.14159265358979323846 / 2)
-#define FIXEDPT_E        fixedpt_rconst(2.7182818284590452354)
+#ifdef NO_FLOAT
+#if FIXEDPT_BITS != 32 && FIXEDPT_WBITS != 14
+#error unexpected FIXEDPT_BITS
+#endif
+#define FIXEDPT_PI      ((fixedpt)0x000c90fe)
+#define FIXEDPT_TWO_PI  ((fixedpt)0x001921fb)
+#define FIXEDPT_HALF_PI ((fixedpt)0x0006487f)
+#define FIXEDPT_E       ((fixedpt)0x000adf85)
+#else
+#define FIXEDPT_PI      fixedpt_rconst(3.14159265358979323846)
+#define FIXEDPT_TWO_PI  fixedpt_rconst(2 * 3.14159265358979323846)
+#define FIXEDPT_HALF_PI fixedpt_rconst(3.14159265358979323846 / 2)
+#define FIXEDPT_E       fixedpt_rconst(2.7182818284590452354)
+#endif
 
 /* fixedpt is meant to be usable in environments without floating point support
  * (e.g. microcontrollers, kernels), so we can't use floating point types directly.

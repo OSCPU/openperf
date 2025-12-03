@@ -98,7 +98,13 @@ fixedpt fixedpt_sqrt(fixedpt A) {
 fixedpt fixedpt_sin(fixedpt fp) {
   int sign = 1;
   fixedpt sqr, result;
+#ifdef NO_FLOAT
+#define fixedpt_rconst_7p61en03   ((fixedpt)0x000007cb)
+#define fixedpt_rconst_1p6605en01 ((fixedpt)0x0000aa09)
+  const fixedpt SK[2] = {fixedpt_rconst_7p61en03, fixedpt_rconst_1p6605en01};
+#else
   const fixedpt SK[2] = {fixedpt_rconst(7.61e-03), fixedpt_rconst(1.6605e-01)};
+#endif
 
   fp %= 2 * FIXEDPT_PI;
   if (fp < 0)
@@ -129,6 +135,22 @@ fixedpt fixedpt_exp(fixedpt fp) {
   }
 
   fixedpt xabs, k, z, R, xp;
+#ifdef NO_FLOAT
+#define fixedpt_rconst_0p69314718055994530942      ((fixedpt)0x0002c5c8)
+#define fixedpt_rconst_1p4426950408889634074       ((fixedpt)0x0005c552)
+#define fixedpt_rconst_1p66666666666666019037en01  ((fixedpt)0x0000aaab)
+#define fixedpt_rconst_n2p77777777770155933842en03 ((fixedpt)0xfffffd28)
+#define fixedpt_rconst_6p61375632143793436117en05  ((fixedpt)0x00000011)
+#define fixedpt_rconst_n1p65339022054652515390en06 ((fixedpt)0x0)
+#define fixedpt_rconst_4p13813679705723846039en08  ((fixedpt)0x0)
+  const fixedpt LN2 = fixedpt_rconst_0p69314718055994530942;
+  const fixedpt LN2_INV = fixedpt_rconst_1p4426950408889634074;
+  const fixedpt EXP_P[5] = {
+    fixedpt_rconst_1p66666666666666019037en01, fixedpt_rconst_n2p77777777770155933842en03,
+    fixedpt_rconst_6p61375632143793436117en05, fixedpt_rconst_n1p65339022054652515390en06,
+    fixedpt_rconst_4p13813679705723846039en08,
+  };
+#else
   const fixedpt LN2 = fixedpt_rconst(0.69314718055994530942);
   const fixedpt LN2_INV = fixedpt_rconst(1.4426950408889634074);
   const fixedpt EXP_P[5] = {
@@ -136,6 +158,7 @@ fixedpt fixedpt_exp(fixedpt fp) {
     fixedpt_rconst(6.61375632143793436117e-05), fixedpt_rconst(-1.65339022054652515390e-06),
     fixedpt_rconst(4.13813679705723846039e-08),
   };
+#endif
 
   if (fp == 0)
     return (FIXEDPT_ONE);
@@ -167,11 +190,27 @@ fixedpt fixedpt_exp(fixedpt fp) {
 fixedpt fixedpt_ln(fixedpt x) {
   fixedpt log2, xi;
   fixedpt f, s, z, w, R;
+#ifdef NO_FLOAT
+#define fixedpt_rconst_0p69314718055994530942   ((fixedpt)0x0002c5c8)
+#define fixedpt_rconst_6p666666666666735130en01 ((fixedpt)0x0002aaab)
+#define fixedpt_rconst_3p999999999940941908en01 ((fixedpt)0x0001999a)
+#define fixedpt_rconst_2p857142874366239149en01 ((fixedpt)0x00012492)
+#define fixedpt_rconst_2p222219843214978396en01 ((fixedpt)0x0000e38e)
+#define fixedpt_rconst_1p818357216161805012en01 ((fixedpt)0x0000ba33)
+#define fixedpt_rconst_1p531383769920937332en01 ((fixedpt)0x00009cd0)
+#define fixedpt_rconst_1p479819860511658591en01 ((fixedpt)0x00009789)
+  const fixedpt LN2 = fixedpt_rconst_0p69314718055994530942;
+  const fixedpt LG[7] = {fixedpt_rconst_6p666666666666735130en01, fixedpt_rconst_3p999999999940941908en01,
+                         fixedpt_rconst_2p857142874366239149en01, fixedpt_rconst_2p222219843214978396en01,
+                         fixedpt_rconst_1p818357216161805012en01, fixedpt_rconst_1p531383769920937332en01,
+                         fixedpt_rconst_1p479819860511658591en01};
+#else
   const fixedpt LN2 = fixedpt_rconst(0.69314718055994530942);
   const fixedpt LG[7] = {fixedpt_rconst(6.666666666666735130e-01), fixedpt_rconst(3.999999999940941908e-01),
                          fixedpt_rconst(2.857142874366239149e-01), fixedpt_rconst(2.222219843214978396e-01),
                          fixedpt_rconst(1.818357216161805012e-01), fixedpt_rconst(1.531383769920937332e-01),
                          fixedpt_rconst(1.479819860511658591e-01)};
+#endif
 
   if (x < 0)
     return (0);
