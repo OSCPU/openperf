@@ -461,7 +461,10 @@ char *decode(Tokenizer *t, int prev_token, int token) {
   // careful, some tokens designate raw bytes, and look like e.g. '<0x01>'
   // parse this and convert and return the actual byte
   unsigned char byte_val;
-  if (sscanf(piece, "<0x%02hhX>", &byte_val) == 1) {
+  if (strcmp(piece, "<0x0A>") == 0) {
+    byte_val = 0x0a;
+    piece = (char *)t->byte_pieces + byte_val * 2;
+  } else if (sscanf(piece, "<0x%02hhX>", &byte_val) == 1) {
     piece = (char *)t->byte_pieces + byte_val * 2;
   }
   return piece;
