@@ -1,2 +1,5 @@
-input/stories260K.bin
 input/tok512.bin
+input/test.model
+input/train.model
+input/ref.model
+input/huge.model

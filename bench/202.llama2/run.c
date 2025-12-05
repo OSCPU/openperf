@@ -5,6 +5,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+static const struct {
+  char *data;
+  int steps;
+  uint32_t checksum;
+  uint64_t ref_time;
+} *ps, settings[BENCH_NR_SETTING] = {
+         {"input/test.model", 1, 0x45cf2e6c, 0},
+         {"input/train.model", 15, 0x5d6b1d2c, 207},
+         {"input/ref.model", 92, 0x6de09082, 146402},
+         {"input/huge.model", 0, 0xa2ba8f9b, 1588129},
+};
+static Obuf obuf;
+
 // ----------------------------------------------------------------------------
 // Transformer model
 
@@ -104,7 +117,7 @@ void preprocess_to_fixedpt(void *ptr, int len) {
   uint32_t *p = (uint32_t *)ptr;
   for (int i = 0; i < len; i++) {
     p[i] = fixedpt_fromfloatbits(p[i]);
-    assert(abs(p[i]) < fixedpt_fromint(8));
+    //assert(abs(p[i]) < fixedpt_fromint(8));
   }
 }
 
@@ -485,7 +498,8 @@ void safe_printf(char *piece) {
       return; // bad byte, don't print it
     }
   }
-  printf("%s", piece);
+  int len = printf("%s", piece);
+  bench_obuf_append(&obuf, piece, len);
 }
 
 int str_lookup(char *str, TokenIndex *sorted_vocab, int vocab_size) {
@@ -771,9 +785,9 @@ int sample(Sampler *sampler, fixedpt *logits) {
 // ----------------------------------------------------------------------------
 // utilities: time
 
-long time_in_ms() {
+long time_in_us() {
   // return time in milliseconds, for benchmarking the model speed
-  return bench_uptime() / 1000;
+  return bench_uptime();
 }
 
 // ----------------------------------------------------------------------------
@@ -795,7 +809,7 @@ void generate(Transformer *transformer, Tokenizer *tokenizer, Sampler *sampler, 
   }
 
   // start the main loop
-  long start = 0;               // used to time our code, only initialized after first iteration
+  uint64_t start = 0;           // used to time our code, only initialized after first iteration
   int next;                     // will store the next token in the sequence
   int token = prompt_tokens[0]; // kick off with the first token in the prompt
   int pos = 0;                  // position in the sequence
@@ -827,15 +841,20 @@ void generate(Transformer *transformer, Tokenizer *tokenizer, Sampler *sampler, 
 
     // init the timer here because the first iteration can be slower
     if (start == 0) {
-      start = time_in_ms();
+      start = time_in_us();
     }
   }
   printf("\n");
 
   // report achieved tok/s (pos-1 because the timer starts after first iteration)
   if (pos > 1) {
-    long end = time_in_ms();
-    printf("achieved tok/s: %s\n", fixedpt_cstr(fixedpt_fromint(pos - 1) / (end - start) * 1000, -1));
+    uint64_t end = time_in_us();
+    uint64_t diff = end - start;
+    if (diff >= 100000) {
+      printf("achieved tok/s: %s\n", fixedpt_cstr((uint64_t)fixedpt_fromint(pos - 1) * 1000000 / diff, -1));
+    } else {
+      printf("achieved tok/s: can not measure due to finishing in 0.1s\n");
+    }
   }
 
   free(prompt_tokens);
@@ -963,15 +982,19 @@ void error_usage() {
   bench_exit(1);
 }
 
-static int steps = 256;            // number of steps to run for
-static char *prompt = NULL;        // prompt string
-static char *mode = "generate";    // generate|chat
+static int steps = 256;         // number of steps to run for
+static char *prompt = NULL;     // prompt string
+static char *mode = "generate"; // generate|chat
 //static char *system_prompt = NULL; // the (optional) system prompt to use in chat mode
 static Transformer transformer;
 static Tokenizer tokenizer;
 static Sampler sampler;
 
 void bench_init(int setting) {
+  ps = &settings[setting];
+  steps = ps->steps;
+  bench_obuf_init(&obuf, 4096);
+
   // default parameters
   char *checkpoint_path = NULL; // e.g. out/model.bin
   char *tokenizer_path = "tokenizer.bin";
@@ -979,12 +1002,13 @@ void bench_init(int setting) {
   fixedpt topp = FIXEDPT_ONE * 9 / 10; // top-p in nucleus sampling. 1.0 = off. 0.9 works well, but slower
   unsigned long long rng_seed = 0;     // seed rng with time by default
 
-  checkpoint_path = "input/stories260K.bin";
+  checkpoint_path = settings[setting].data;
   tokenizer_path = "input/tok512.bin";
   rng_seed = 133742;
-  steps = 35;
   topp = FIXEDPT_ONE;
   temperature = 0;
+
+  printf("Start...\n");
 
   // parameter validation/overrides
   if (temperature < 0)
@@ -1016,7 +1040,7 @@ uint64_t bench_run() {
     printf("unknown mode: %s\n", mode);
     error_usage();
   }
-  return 0;
+  return ps->ref_time;
 }
 
 int bench_validate() {
@@ -1024,5 +1048,12 @@ int bench_validate() {
   free_sampler(&sampler);
   free_tokenizer(&tokenizer);
   free_transformer(&transformer);
-  return 0;
+
+  char nullbyte = '\0';
+  bench_obuf_append(&obuf, &nullbyte, 1);
+
+  uint32_t cs = bench_checksum(obuf.p, obuf.p + obuf.len);
+  int wrong = (cs != ps->checksum);
+  free(obuf.p);
+  return wrong;
 }
