@@ -14,6 +14,7 @@
 | 中型 | [200.genann][genann]         | 神经网络             | 仅含整数操作    |
 |      | [201.jpeg][jpeg]             | JPEG解码             |                 |
 |      | [202.llama2][llama2]         | 大语言模型           | 仅含整数操作    |
+|      | [203.rsa][rsa]               | RSA加解密            |                 |
 
 
 [blockchain]: https://github.com/aproxp/blockchain
@@ -27,3 +28,4 @@
 [genann]: https://github.com/codeplea/genann
 [jpeg]: https://github.com/nothings/stb/blob/master/stb_image.h
 [llama2]: https://github.com/karpathy/llama2.c
+[rsa]: https://github.com/pantaloons/RSA
