@@ -1,10 +1,9 @@
 // ported from https://github.com/pantaloons/RSA/blob/0055a474bf0d11a52f2232813fedfaa4173cb5a1/multiple.c
 
+#include <bench.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <time.h>
 
 /* Accuracy with which we test for prime numbers using Solovay-Strassen algorithm.
  * 20 Tests should be sufficient for most largish primes */
@@ -753,10 +752,10 @@ int probablePrime(bignum *n, int k) {
     return 0;
   while (k-- > 0) {
     if (n->length <= 1) { /* Prevent a > n */
-      if (!solovayPrime(rand() % (n->data[0] - 2) + 2, n))
+      if (!solovayPrime(bench_rand() % (n->data[0] - 2) + 2, n))
         return 0;
     } else {
-      int wit = rand() % (RAND_MAX - 2) + 2;
+      int wit = bench_rand() % (RAND_MAX - 2) + 2;
       if (!solovayPrime(wit, n))
         return 0;
     }
@@ -772,10 +771,10 @@ int probablePrime(bignum *n, int k) {
 void randPrime(int numDigits, bignum *result) {
   char *string = malloc((numDigits + 1) * sizeof(char));
   int i;
-  string[0] = (rand() % 9) + '1';                 /* No leading zeros */
-  string[numDigits - 1] = (rand() % 5) * 2 + '1'; /* Last digit is odd */
+  string[0] = (bench_rand() % 9) + '1';                 /* No leading zeros */
+  string[numDigits - 1] = (bench_rand() % 5) * 2 + '1'; /* Last digit is odd */
   for (i = 1; i < numDigits - 1; i++)
-    string[i] = (rand() % 10) + '0';
+    string[i] = (bench_rand() % 10) + '0';
   string[numDigits] = '\0';
   bignum_fromstring(result, string);
   while (1) {
@@ -793,7 +792,7 @@ void randPrime(int numDigits, bignum *result) {
  */
 void randExponent(bignum *phi, int n, bignum *result) {
   bignum *gcd = bignum_init();
-  int e = rand() % n;
+  int e = bench_rand() % n;
   while (1) {
     bignum_fromint(result, e);
     bignum_gcd(result, phi, gcd);
@@ -913,45 +912,48 @@ int *decodeMessage(int len, int bytes, bignum *cryptogram, bignum *exponent, big
  * Main method to demostrate the system. Sets up primes p, q, and proceeds to encode and
  * decode the message given in "text.txt"
  */
-int main(void) {
-  int i, bytes, len;
-  bignum *p = bignum_init(), *q = bignum_init(), *n = bignum_init();
-  bignum *phi = bignum_init(), *e = bignum_init(), *d = bignum_init();
-  bignum *bbytes = bignum_init(), *shift = bignum_init();
-  bignum *temp1 = bignum_init(), *temp2 = bignum_init();
 
-  bignum *encoded;
-  int *decoded;
-  char *buffer;
-  FILE *f;
+static bignum *p, *q, *n;
+static bignum *phi, *e, *d;
+static bignum *bbytes, *shift;
+static bignum *temp1, *temp2;
+static bignum *encoded;
+static int *decoded;
+static char *buffer;
+static int bytes;
+static int len;
 
-  srand(time(NULL));
+void bench_init(int setting) {
+  p = bignum_init(), q = bignum_init(), n = bignum_init();
+  phi = bignum_init(), e = bignum_init(), d = bignum_init();
+  bbytes = bignum_init(), shift = bignum_init();
+  temp1 = bignum_init(), temp2 = bignum_init();
 
+  bench_srand(1);
+}
+
+uint64_t bench_run() {
   randPrime(FACTOR_DIGITS, p);
   printf("Got first prime factor, p = ");
   bignum_print(p);
-  printf(" ... ");
-  getchar();
+  printf("\n");
 
   randPrime(FACTOR_DIGITS, q);
   printf("Got second prime factor, q = ");
   bignum_print(q);
-  printf(" ... ");
-  getchar();
+  printf("\n");
 
   bignum_multiply(n, p, q);
   printf("Got modulus, n = pq = ");
   bignum_print(n);
-  printf(" ... ");
-  getchar();
+  printf("\n");
 
   bignum_subtract(temp1, p, &NUMS[1]);
   bignum_subtract(temp2, q, &NUMS[1]);
   bignum_multiply(phi, temp1, temp2); /* phi = (p - 1) * (q - 1) */
   printf("Got totient, phi = ");
   bignum_print(phi);
-  printf(" ... ");
-  getchar();
+  printf("\n");
 
   randExponent(phi, EXPONENT_MAX, e);
   printf("Chose public exponent, e = ");
@@ -960,8 +962,7 @@ int main(void) {
   bignum_print(e);
   printf(", ");
   bignum_print(n);
-  printf(") ... ");
-  getchar();
+  printf(")\n");
 
   bignum_inverse(e, phi, d);
   printf("Calculated private exponent, d = ");
@@ -970,8 +971,7 @@ int main(void) {
   bignum_print(d);
   printf(", ");
   bignum_print(n);
-  printf(") ... ");
-  getchar();
+  printf(")\n");
 
   /* Compute maximum number of bytes that can be encoded in one encryption */
   bytes = -1;
@@ -984,29 +984,29 @@ int main(void) {
   }
 
   printf("Opening file \"text.txt\" for reading\n");
-  f = fopen("text.txt", "r");
+  FILE *f = fopen("text.txt", "r");
   if (f == NULL) {
     printf("Failed to open file \"text.txt\". Does it exist?\n");
-    return EXIT_FAILURE;
+    bench_exit(1);
   }
   len = readFile(f, &buffer, bytes); /* len will be a multiple of bytes, to send whole chunks */
+  fclose(f);
 
-  printf("File \"text.txt\" read successfully, %d bytes read. Encoding byte stream in chunks of %d bytes ... ", len,
+  printf("File \"text.txt\" read successfully, %d bytes read. Encoding byte stream in chunks of %d bytes\n", len,
          bytes);
-  getchar();
-  printf("\n");
   encoded = encodeMessage(len, bytes, buffer, e, n);
-  printf("\n\nEncoding finished successfully ... ");
-  getchar();
+  printf("\n\nEncoding finished successfully\n");
 
-  printf("Decoding encoded message ... ");
-  getchar();
-  printf("\n");
+  printf("Decoding encoded message\n");
   decoded = decodeMessage(len / bytes, bytes, encoded, d, n);
-  printf("\n\nFinished RSA demonstration!");
+  printf("\n\nFinished RSA demonstration!\n");
 
+  return 0;
+}
+
+int bench_validate() {
   /* Eek! This is why we shouldn't of calloc'd those! */
-  for (i = 0; i < len / bytes; i++)
+  for (int i = 0; i < len / bytes; i++)
     free(encoded[i].data);
   free(encoded);
   free(decoded);
@@ -1021,7 +1021,6 @@ int main(void) {
   bignum_deinit(shift);
   bignum_deinit(temp1);
   bignum_deinit(temp2);
-  fclose(f);
 
-  return EXIT_SUCCESS;
+  return 0;
 }
