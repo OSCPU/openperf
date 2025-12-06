@@ -1,0 +1,39 @@
+# RISC-V: An Open Standard - Backed by a Global Community - to Enable Open Computing for All
+
+The entire tech ecosystem benefits from standards being open, whether it's RISC-V or other popular standards such Ethernet, HTTPS, JPEG, or USB. 
+
+Three key reasons RISC-V is strategically important
+
+1. Open Standards have been critical to technology innovation, adoption, and growth for decades
+2. Open Standards create access to opportunities and spur growth for a wide range of stakeholders (jobs, consumers, research, academia, industry, etc)
+3. RISC-V is the defined open standard Instruction Set Architecture for computing
+
+## Open Standards have been critical to technology innovation, adoption, and growth for decades
+
+Throughout history, interoperable standards provide incentives for more customers to buy new types of products, creating additional opportunities for more vendors to provide them, competing on value-added features and services. Compatibility based on such standards is essential for innovation on a global basis within the larger tech ecosystem. Competition is not based on shared standards, but rather on the unique value that each vendor adds on top of the standardized layer. 
+
+Engaging in the cultivation of global standards has long been a hallmark of technical leaders in the US as well as around the world, who have not only participated across the spectrum of traditional standards organizations but led the way in forming more than a thousand consortia, alliances, and fora that have brought some of the most important information and communications technology standards to the marketplace.
+
+## Open Standards create access to opportunities and spur growth for a wide range of stakeholders (jobs, consumers, research, academia, industry, etc)
+
+Engagement in open standards has opened up and created new opportunities to engage in global supply chains, development partnerships, and markets for all sorts of products and services. Engagement and leadership in global standards is a proven, successful, and necessary model for companies around the world to thrive in global markets. 
+
+The ability to participate and benefit is much more inclusive in open standards - as diverse communities can be composed of everything from large, multinational companies to fledgling start-ups, students and academia, to government, researchers and even individuals.
+
+Contemplated actions by governments for an unprecedented restriction in open standards will have the consequence of diminished access to the global marketplace of products, solutions, and talent.  Bifurcating on the standards level would lead to a world of incompatible solutions that duplicate effort and close off markets.
+
+## RISC-V is the defined open standard Instruction Set Architecture for computing
+
+RISC-V is here to stay. It has already grown tremendously in global adoption and influence as the open standard for compute. RISC-V is an open standard and has incorporated meaningful contributions from all over the world. As a global standard, RISC-V is not controlled by any single company or country.
+
+Development of RISC-V specifications is based on contributions that have been made available on a non-proprietary basis or cultivated in the open from RISC-V members evenly distributed in North America, Europe and Asia. RISC-V International does not provide chip design, open source cores, proprietary IP, or implementations, but rather publishes a set of commonly used global open standards. These published standards contain no more information than what is already published by proprietary architectures. The only difference is that the marketplace is allowed to use these standards without proprietary licenses from a controlling company. Competition does not happen at the standards level, but rather competition is at the implementation level. 
+
+RISC-V has ushered in tremendous potential for companies from all over the world to participate in the rapidly growing semiconductor space. Curtailing adoption of RISC-V for companies, foundries, government, and research institutions would deprive them of the ability to benefit from open standards they have helped fund and create, while allowing global competitors to race ahead with their own implementations.
+
+Having access to open standards allows companies to innovate faster and spend their time creating differentiated products, rather than trying to reinvent the wheel. Just as companies everywhere have adopted Ethernet, HTTPS, JPEG, and USB standards, we're seeing a similar trend for RISC-V as an open standard. The flexibility, extensibility, and scalability of RISC-V give developers unparalleled design freedom.
+
+We invite you to join us at RISC-V Summit in Santa Clara CA Nov 7-8, 2023 to hear firsthand on the innovations, progress, and adoption of RISC-V.
+
+To learn more about the history of RISC-V as an open standard, please visit: https://riscv.org/about/history/
+
+To learn more about adoption of open standards, please see the 2023 State of Open Standards report: https://www.linuxfoundation.org/research/state-of-open-standards-2023?hsLang=en

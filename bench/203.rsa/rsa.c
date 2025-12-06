@@ -5,17 +5,28 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define NOPRINT
 #define DEF_STATIC_BIGNUM(name) \
   static bignum name##_obj;     \
   bignum *name = &name##_obj
+
+static const struct {
+  const char *text;
+  int digits;
+  uint64_t ref_time;
+} *ps, settings[BENCH_NR_SETTING] = {
+         {"input/test.txt", 2, 0},
+         {"input/train.txt", 6, 217},
+         {"input/ref.txt", 100, 516106},
+         {"input/ref.txt", 512, 118110931},
+};
 
 /* Accuracy with which we test for prime numbers using Solovay-Strassen algorithm.
  * 20 Tests should be sufficient for most largish primes */
 #define ACCURACY 20
 
-#define FACTOR_DIGITS 100
-#define EXPONENT_MAX  RAND_MAX
-#define BUF_SIZE      1024
+#define EXPONENT_MAX RAND_MAX
+#define BUF_SIZE     1024
 
 /* Initial capacity for a bignum structure. They will flexibly expand but this
  * should be reasonably high to avoid frequent early reallocs */
@@ -858,8 +869,11 @@ bignum *encodeMessage(int len, int bytes, char *message, bignum *exponent, bignu
 #ifndef NOPRINT
     bignum_print(&encoded[i / bytes]);
     printf(" ");
+#else
+    printf(".");
 #endif
   }
+  printf("\n");
   return encoded;
 }
 
@@ -882,17 +896,16 @@ char *decodeMessage(int len, int bytes, bignum *cryptogram, bignum *exponent, bi
         decoded[i * bytes + j] = (char)0;
       else
         decoded[i * bytes + j] = (char)(remainder->data[0]);
-#ifndef NOPRINT
       printf("%c", (char)(decoded[i * bytes + j]));
-#endif
     }
   }
+  printf("\n");
   return decoded;
 }
 
 /**
  * Main method to demostrate the system. Sets up primes p, q, and proceeds to encode and
- * decode the message given in "text.txt"
+ * decode the message
  */
 
 static bignum *p, *q, *n;
@@ -906,21 +919,22 @@ static int bytes;
 static int len;
 
 void bench_init(int setting) {
+  ps = &settings[setting];
+  bench_srand(1);
+
   p = bignum_init(), q = bignum_init(), n = bignum_init();
   phi = bignum_init(), e = bignum_init(), d = bignum_init();
   bbytes = bignum_init(), shift = bignum_init();
   temp1 = bignum_init(), temp2 = bignum_init();
-
-  bench_srand(1);
 }
 
 uint64_t bench_run() {
-  randPrime(FACTOR_DIGITS, p);
+  randPrime(ps->digits, p);
   printf("Got first prime factor, p = ");
   bignum_print(p);
   printf("\n");
 
-  randPrime(FACTOR_DIGITS, q);
+  randPrime(ps->digits, q);
   printf("Got second prime factor, q = ");
   bignum_print(q);
   printf("\n");
@@ -965,16 +979,16 @@ uint64_t bench_run() {
     bytes++;
   }
 
-  printf("Opening file \"text.txt\" for reading\n");
-  FILE *f = fopen("text.txt", "r");
+  printf("Opening file \"%s\" for reading\n", ps->text);
+  FILE *f = fopen(ps->text, "r");
   if (f == NULL) {
-    printf("Failed to open file \"text.txt\". Does it exist?\n");
+    printf("Failed to open file \"%s\". Does it exist?\n", ps->text);
     bench_exit(1);
   }
   len = readFile(f, &buffer, bytes); /* len will be a multiple of bytes, to send whole chunks */
   fclose(f);
 
-  printf("File \"text.txt\" read successfully, %d bytes read. Encoding byte stream in chunks of %d bytes\n", len,
+  printf("File \"%s\" read successfully, %d bytes read. Encoding byte stream in chunks of %d bytes\n", ps->text, len,
          bytes);
   encoded = encodeMessage(len, bytes, buffer, e, n);
   printf("\n\nEncoding finished successfully\n");
@@ -983,11 +997,18 @@ uint64_t bench_run() {
   decoded = decodeMessage(len / bytes, bytes, encoded, d, n);
   printf("\n\nFinished RSA demonstration!\n");
 
-  return 0;
+  return ps->ref_time;
 }
 
 int bench_validate() {
   int same = (memcmp(buffer, decoded, len) == 0);
+  if (same == 0) {
+    for (int i = 0; i < len; i++) {
+      if (buffer[i] != decoded[i]) {
+        printf("bytes %d different: expect %02x, get %02x\n", i, buffer[i], decoded[i]);
+      }
+    }
+  }
 
   /* Eek! This is why we shouldn't of calloc'd those! */
   for (int i = 0; i < len / bytes; i++)
