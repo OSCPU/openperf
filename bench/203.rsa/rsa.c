@@ -5,6 +5,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define DEF_STATIC_BIGNUM(name) \
+  static bignum name##_obj;     \
+  bignum *name = &name##_obj
+
 /* Accuracy with which we test for prime numbers using Solovay-Strassen algorithm.
  * 20 Tests should be sufficient for most largish primes */
 #define ACCURACY 20
@@ -160,7 +164,8 @@ void bignum_fromint(bignum *b, unsigned int num) {
 void bignum_print(bignum *b) {
   int cap = 100, len = 0, i;
   char *buffer = malloc(cap * sizeof(char));
-  bignum *copy = bignum_init(), *remainder = bignum_init();
+  DEF_STATIC_BIGNUM(copy);
+  DEF_STATIC_BIGNUM(remainder);
   if (b->length == 0 || bignum_iszero(b))
     printf("0");
   else {
@@ -176,8 +181,6 @@ void bignum_print(bignum *b) {
     for (i = len - 1; i >= 0; i--)
       printf("%d", buffer[i]);
   }
-  bignum_deinit(copy);
-  bignum_deinit(remainder);
   free(buffer);
 }
 
@@ -259,10 +262,9 @@ int bignum_leq(bignum *b1, bignum *b2) {
  * Perform an in place add into the source bignum. That is source += add
  */
 void bignum_iadd(bignum *source, bignum *add) {
-  bignum *temp = bignum_init();
+  DEF_STATIC_BIGNUM(temp);
   bignum_add(temp, source, add);
   bignum_copy(temp, source);
-  bignum_deinit(temp);
 }
 
 /**
@@ -307,10 +309,9 @@ void bignum_add(bignum *result, bignum *b1, bignum *b2) {
  * Perform an in place subtract from the source bignum. That is, source -= sub
  */
 void bignum_isubtract(bignum *source, bignum *sub) {
-  bignum *temp = bignum_init();
+  DEF_STATIC_BIGNUM(temp);
   bignum_subtract(temp, source, sub);
   bignum_copy(temp, source);
-  bignum_deinit(temp);
 }
 
 /**
@@ -349,10 +350,9 @@ void bignum_subtract(bignum *result, bignum *b1, bignum *b2) {
  * Perform an in place multiplication into the source bignum. That is source *= mult
  */
 void bignum_imultiply(bignum *source, bignum *mult) {
-  bignum *temp = bignum_init();
+  DEF_STATIC_BIGNUM(temp);
   bignum_multiply(temp, source, mult);
   bignum_copy(temp, source);
-  bignum_deinit(temp);
 }
 
 /**
@@ -406,11 +406,10 @@ void bignum_multiply(bignum *result, bignum *b1, bignum *b2) {
  * Perform an in place divide of source. source = source/div.
  */
 void bignum_idivide(bignum *source, bignum *div) {
-  bignum *q = bignum_init(), *r = bignum_init();
+  DEF_STATIC_BIGNUM(q);
+  DEF_STATIC_BIGNUM(r);
   bignum_divide(q, r, source, div);
   bignum_copy(q, source);
-  bignum_deinit(q);
-  bignum_deinit(r);
 }
 
 /**
@@ -418,32 +417,29 @@ void bignum_idivide(bignum *source, bignum *div) {
  * source = source/div and remainder = source - source/div.
  */
 void bignum_idivider(bignum *source, bignum *div, bignum *remainder) {
-  bignum *q = bignum_init(), *r = bignum_init();
+  DEF_STATIC_BIGNUM(q);
+  DEF_STATIC_BIGNUM(r);
   bignum_divide(q, r, source, div);
   bignum_copy(q, source);
   bignum_copy(r, remainder);
-  bignum_deinit(q);
-  bignum_deinit(r);
 }
 
 /**
  * Calculate the remainder when source is divided by div.
  */
 void bignum_remainder(bignum *source, bignum *div, bignum *remainder) {
-  bignum *q = bignum_init();
+  DEF_STATIC_BIGNUM(q);
   bignum_divide(q, remainder, source, div);
-  bignum_deinit(q);
 }
 
 /**
  * Modulate the source by the modulus. source = source % modulus
  */
 void bignum_imodulate(bignum *source, bignum *modulus) {
-  bignum *q = bignum_init(), *r = bignum_init();
+  DEF_STATIC_BIGNUM(q);
+  DEF_STATIC_BIGNUM(r);
   bignum_divide(q, r, source, modulus);
   bignum_copy(r, source);
-  bignum_deinit(q);
-  bignum_deinit(r);
 }
 
 /**
@@ -452,9 +448,16 @@ void bignum_imodulate(bignum *source, bignum *modulus) {
  * trivially 0 and remainder is b2. 
  */
 void bignum_divide(bignum *quotient, bignum *remainder, bignum *b1, bignum *b2) {
-  bignum *b2copy = bignum_init(), *b1copy = bignum_init();
-  bignum *temp = bignum_init(), *temp2 = bignum_init(), *temp3 = bignum_init();
-  bignum *quottemp = bignum_init();
+  DEF_STATIC_BIGNUM(b2copy);
+  DEF_STATIC_BIGNUM(b1copy);
+  DEF_STATIC_BIGNUM(temp);
+  DEF_STATIC_BIGNUM(temp2);
+  DEF_STATIC_BIGNUM(temp3);
+  DEF_STATIC_BIGNUM(quottemp);
+  if (quottemp->data == NULL) {
+    bignum_copy(&NUMS[0], quottemp);
+  }
+
   word carry = 0;
   int n, m, i, j, length = 0;
   unsigned long long factor = 1;
@@ -571,12 +574,6 @@ void bignum_divide(bignum *quotient, bignum *remainder, bignum *b1, bignum *b2) 
     b1copy->length = length;
     bignum_copy(b1copy, remainder);
   }
-  bignum_deinit(temp);
-  bignum_deinit(temp2);
-  bignum_deinit(temp3);
-  bignum_deinit(b1copy);
-  bignum_deinit(b2copy);
-  bignum_deinit(quottemp);
 }
 
 /**
@@ -584,8 +581,11 @@ void bignum_divide(bignum *quotient, bignum *remainder, bignum *b1, bignum *b2) 
  * result = base^exponent mod modulus
  */
 void bignum_modpow(bignum *base, bignum *exponent, bignum *modulus, bignum *result) {
-  bignum *a = bignum_init(), *b = bignum_init(), *c = bignum_init();
-  bignum *discard = bignum_init(), *remainder = bignum_init();
+  DEF_STATIC_BIGNUM(a);
+  DEF_STATIC_BIGNUM(b);
+  DEF_STATIC_BIGNUM(c);
+  DEF_STATIC_BIGNUM(discard);
+
   bignum_copy(base, a);
   bignum_copy(exponent, b);
   bignum_copy(modulus, c);
@@ -600,19 +600,15 @@ void bignum_modpow(bignum *base, bignum *exponent, bignum *modulus, bignum *resu
     bignum_imultiply(a, discard);
     bignum_imodulate(a, c);
   }
-  bignum_deinit(a);
-  bignum_deinit(b);
-  bignum_deinit(c);
-  bignum_deinit(discard);
-  bignum_deinit(remainder);
 }
 
 /**
  * Compute the gcd of two bignums. result = gcd(b1, b2)
  */
 void bignum_gcd(bignum *b1, bignum *b2, bignum *result) {
-  bignum *a = bignum_init(), *b = bignum_init(), *remainder = bignum_init();
-  bignum *temp = bignum_init(), *discard = bignum_init();
+  DEF_STATIC_BIGNUM(a);
+  DEF_STATIC_BIGNUM(b);
+  DEF_STATIC_BIGNUM(temp);
   bignum_copy(b1, a);
   bignum_copy(b2, b);
   while (!bignum_equal(b, &NUMS[0])) {
@@ -622,20 +618,19 @@ void bignum_gcd(bignum *b1, bignum *b2, bignum *result) {
     bignum_copy(temp, a);
   }
   bignum_copy(a, result);
-  bignum_deinit(a);
-  bignum_deinit(b);
-  bignum_deinit(remainder);
-  bignum_deinit(temp);
-  bignum_deinit(discard);
 }
 
 /**
  * Compute the inverse of a mod m. Or, result = a^-1 mod m.
  */
 void bignum_inverse(bignum *a, bignum *m, bignum *result) {
-  bignum *remprev = bignum_init(), *rem = bignum_init();
-  bignum *auxprev = bignum_init(), *aux = bignum_init();
-  bignum *rcur = bignum_init(), *qcur = bignum_init(), *acur = bignum_init();
+  DEF_STATIC_BIGNUM(remprev);
+  DEF_STATIC_BIGNUM(rem);
+  DEF_STATIC_BIGNUM(auxprev);
+  DEF_STATIC_BIGNUM(aux);
+  DEF_STATIC_BIGNUM(rcur);
+  DEF_STATIC_BIGNUM(qcur);
+  DEF_STATIC_BIGNUM(acur);
 
   bignum_copy(m, remprev);
   bignum_copy(a, rem);
@@ -657,22 +652,17 @@ void bignum_inverse(bignum *a, bignum *m, bignum *result) {
   }
 
   bignum_copy(acur, result);
-
-  bignum_deinit(remprev);
-  bignum_deinit(rem);
-  bignum_deinit(auxprev);
-  bignum_deinit(aux);
-  bignum_deinit(rcur);
-  bignum_deinit(qcur);
-  bignum_deinit(acur);
 }
 
 /**
  * Compute the jacobi symbol, J(ac, nc).
  */
 int bignum_jacobi(bignum *ac, bignum *nc) {
-  bignum *remainder = bignum_init(), *twos = bignum_init();
-  bignum *temp = bignum_init(), *a = bignum_init(), *n = bignum_init();
+  DEF_STATIC_BIGNUM(remainder);
+  DEF_STATIC_BIGNUM(twos);
+  DEF_STATIC_BIGNUM(temp);
+  DEF_STATIC_BIGNUM(a);
+  DEF_STATIC_BIGNUM(n);
   int mult = 1, result = 0;
   bignum_copy(ac, a);
   bignum_copy(nc, n);
@@ -707,11 +697,6 @@ int bignum_jacobi(bignum *ac, bignum *nc) {
     result = mult;
   else
     result = 0;
-  bignum_deinit(remainder);
-  bignum_deinit(twos);
-  bignum_deinit(temp);
-  bignum_deinit(a);
-  bignum_deinit(n);
   return result;
 }
 
@@ -719,8 +704,10 @@ int bignum_jacobi(bignum *ac, bignum *nc) {
  * Check whether a is a Euler witness for n. That is, if a^(n - 1)/2 != Ja(a, n) mod n
  */
 int solovayPrime(int a, bignum *n) {
-  bignum *ab = bignum_init(), *res = bignum_init(), *pow = bignum_init();
-  bignum *modpow = bignum_init();
+  DEF_STATIC_BIGNUM(ab);
+  DEF_STATIC_BIGNUM(res);
+  DEF_STATIC_BIGNUM(pow);
+  DEF_STATIC_BIGNUM(modpow);
   int x, result;
 
   bignum_fromint(ab, a);
@@ -735,10 +722,6 @@ int solovayPrime(int a, bignum *n) {
   bignum_modpow(ab, pow, n, modpow);
 
   result = !bignum_equal(res, &NUMS[0]) && bignum_equal(modpow, res);
-  bignum_deinit(ab);
-  bignum_deinit(res);
-  bignum_deinit(pow);
-  bignum_deinit(modpow);
   return result;
 }
 
@@ -791,13 +774,12 @@ void randPrime(int numDigits, bignum *result) {
  * be less than the modulus, n, and coprime to phi.
  */
 void randExponent(bignum *phi, int n, bignum *result) {
-  bignum *gcd = bignum_init();
+  DEF_STATIC_BIGNUM(gcd);
   int e = bench_rand() % n;
   while (1) {
     bignum_fromint(result, e);
     bignum_gcd(result, phi, gcd);
     if (bignum_equal(gcd, &NUMS[1])) {
-      bignum_deinit(gcd);
       return;
     }
     e = (e + 1) % n;
