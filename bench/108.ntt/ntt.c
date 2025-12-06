@@ -1,16 +1,20 @@
 // ported from https://github.com/Nedal-haltam/NTT/blob/abf0e919d689560443f626c7490e831d0aa00f5e/cmain.cpp
 
-#include <algorithm>
-#include <complex>
-#include <iostream>
-#include <vector>
-#define _USE_MATH_DEFINES
-#include <assert.h>
-#include <iomanip>
-#include <math.h>
-#include <time.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-using namespace std;
+typedef struct Vec {
+  int *a;
+  int len;
+} Vec;
+
+Vec newVec(int len) {
+  Vec v = {.len = len};
+  v.a = calloc(1, len * sizeof(int));
+  return v;
+}
 
 int mod_pow(int base, int exp, int mod) {
   int result = 1;
@@ -24,70 +28,17 @@ int mod_pow(int base, int exp, int mod) {
   return result;
 }
 
-template <class T> void DisplayVector(vector<T> vec) {
-  cout << "[";
-  for (size_t i = 0; i < vec.size() - 1; i++) {
-    cout << vec[i] << ", ";
+void DisplayVector(Vec a) {
+  printf("[");
+  for (int i = 0; i < a.len - 1; i++) {
+    printf("%d, ", a.a[i]);
   }
-  cout << vec[vec.size() - 1];
-  cout << "]\n";
+  printf("%d]\n", a.a[a.len - 1]);
 }
 
-template <class T> void FillVectorRandom(vector<T> &vec, T a, T b, T (*GetRandomT)(T, T)) {
-  for (size_t i = 0; i < vec.size(); i++)
-    vec[i] = GetRandomT(a, b);
-}
-
-template <class T> bool CompareVectors(vector<T> &c, vector<T> &cother) {
-  assert(c.size() == cother.size());
-  for (size_t i = 0; i < c.size(); i++) {
-    if (c[i] != cother[i]) {
-      cout << "difference found\n";
-      return false;
-    }
-  }
-  return true;
-}
-
-clock_t clocker;
-void StartClock() {
-  clocker = clock();
-}
-void EvaluateClock(string Message) {
-  clock_t t = clock() - clocker;
-  cout << Message << "\n";
-  cout << std::fixed << std::setprecision(3) << "Time taken: " << (double)(t) / CLOCKS_PER_SEC << "s\n";
-}
-
-int GetRandomInt(int a, int b) {
-  return a + (rand() % (b - a + 1));
-}
-
-complex<double> GetRandomComplex(complex<double> a, complex<double> b) {
-  complex<double> t(b - a + complex<double>(1, 1));
-  return complex<double>(a.real() + rand() % (int)t.real(), a.imag() + rand() % (int)t.imag());
-}
-
-void bit_reverse_permutation(std::vector<int> &data) {
-  int n = data.size();
-  int bits = std::log2(n);
-
-  for (int i = 0; i < n; ++i) {
-    int rev = 0;
-    int x = i;
-    for (int j = 0; j < bits; ++j) {
-      rev = (rev << 1) | (x & 1);
-      x >>= 1;
-    }
-    if (i < rev) {
-      std::swap(data[i], data[rev]);
-    }
-  }
-}
-
-vector<int> ntt_naive(vector<int> &a, int pr, int mod, bool invert = false) {
-  int n = a.size();
-  vector<int> A(n, 0);
+Vec ntt_naive(Vec a, int pr, int mod, bool invert) {
+  int n = a.len;
+  Vec A = newVec(n);
   int root = mod_pow(pr, (mod - 1) / n, mod);
   if (invert)
     root = mod_pow(root, mod - 2, mod);
@@ -95,86 +46,96 @@ vector<int> ntt_naive(vector<int> &a, int pr, int mod, bool invert = false) {
     for (int j = 0; j < n; ++j) {
       int power = ((1LL * j * k) % n);
       int omega = mod_pow(root, power, mod);
-      A[k] = (A[k] + 1LL * a[j] * omega % mod) % mod;
+      A.a[k] = (A.a[k] + 1LL * a.a[j] * omega % mod) % mod;
     }
   }
   if (invert) {
     int n_inv = mod_pow(n, mod - 2, mod);
-    for (size_t i = 0; i < A.size(); i++) {
-      A[i] = (1LL * A[i] * n_inv) % mod;
+    for (int i = 0; i < A.len; i++) {
+      A.a[i] = (1LL * A.a[i] * n_inv) % mod;
     }
   }
   return A;
 }
 
-vector<int> NTTMultiply(vector<int> &a, vector<int> &b, int root, int mod) {
-  vector<int> fa(a), fb(b);
-  size_t n = 1;
-  while (n < a.size() + b.size())
+Vec NTTMultiply(Vec a, Vec b, int root, int mod) {
+  int n = 1;
+  while (n < a.len + b.len)
     n <<= 1;
-  fa.resize(n);
-  fb.resize(n);
-  fa = ntt_naive(fa, root, mod, false);
-  fb = ntt_naive(fb, root, mod, false);
-  for (size_t i = 0; i < n; i++) {
-    fa[i] = (1LL * fa[i] * fb[i]) % mod;
+
+  Vec fa = newVec(n), fb = newVec(n);
+  memcpy(fa.a, a.a, a.len * sizeof(int));
+  memcpy(fb.a, b.a, b.len * sizeof(int));
+
+  Vec tmp = ntt_naive(fa, root, mod, false);
+  free(fa.a);
+  fa = tmp;
+
+  tmp = ntt_naive(fb, root, mod, false);
+  free(fb.a);
+  fb = tmp;
+
+  for (int i = 0; i < n; i++) {
+    fa.a[i] = (1LL * fa.a[i] * fb.a[i]) % mod;
   }
-  return ntt_naive(fa, root, mod, true);
+
+  tmp = ntt_naive(fa, root, mod, true);
+  free(fa.a);
+  free(fb.a);
+  return tmp;
 }
 
-vector<int> NaivePolynomialMult(vector<int> &a, vector<int> &b) {
-  vector<int> c(a.size() + b.size() - 1, 0);
-  for (size_t i = 0; i < a.size(); i++) {
-    for (size_t j = 0; j < b.size(); j++) {
-      c[i + j] += a[i] * b[j];
+Vec NaivePolynomialMult(Vec a, Vec b) {
+  Vec c = newVec(a.len + b.len - 1);
+  for (int i = 0; i < a.len; i++) {
+    for (int j = 0; j < b.len; j++) {
+      c.a[i + j] += a.a[i] * b.a[j];
     }
   }
   return c;
 }
 
-void TestNTT(int n, int p, int pr) {
-  vector<int> a;
-  for (int i = 0; i < n; i++)
-    a.push_back(i + 1);
-  vector<int> ntt = ntt_naive(a, pr, p);
-  vector<int> intt = ntt_naive(ntt, pr, p, true);
-  cout << "The prime number is : " << p << "\n";
-  cout << "The primitive root is : " << pr << "\n";
-  cout << "The original vector is : \n";
-  DisplayVector(a);
-  cout << "The NTT of the vector is : \n";
-  DisplayVector(ntt);
-  cout << "The inverse NTT of the vector is : \n";
-  DisplayVector(intt);
-}
 int main() {
-  srand(time(0));
-  int n = 16;
   int p = 7681;
   int pr = 17;
-  vector<int> a = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-  vector<int> b = {1, 2, 3, 4, 5};
-  cout << "Naive NTT Polynomial Multiplication\n";
-  cout << "The prime number is : " << p << "\n";
-  cout << "The primitive root is : " << pr << "\n";
-  cout << "The first polynomial is : \n";
+  Vec a = newVec(10);
+  for (int i = 0; i < 10; i++) {
+    a.a[i] = i + 1;
+  }
+  Vec b = newVec(5);
+  for (int i = 0; i < 5; i++) {
+    b.a[i] = i + 1;
+  }
+  printf("The prime number is : %d\n", p);
+  printf("The primitive root is : %d\n", pr);
+  printf("The first polynomial is : \n");
   DisplayVector(a);
-  cout << "The second polynomial is : \n";
+  printf("The second polynomial is : \n");
   DisplayVector(b);
-  cout << "The result of polynomial multiplication is : \n";
-  vector<int> c = NTTMultiply(a, b, pr, p);
+  printf("The result of polynomial multiplication is : \n");
+  Vec c = NTTMultiply(a, b, pr, p);
   DisplayVector(c);
-  cout << "--------------------------------\n";
-  vector<int> ValidC = NaivePolynomialMult(a, b);
-  for (size_t i = 0; i < ValidC.size(); i++) {
-    if (c[i] != ValidC[i]) {
-      cout << "Error in NTT multiplication at index " << i << ": expected " << ValidC[i] << ", got " << c[i] << "\n";
-      cout << "The result of naive polynomial multiplication is : \n";
+
+  printf("Checking result...\n");
+  int wrong = 0;
+  Vec ValidC = NaivePolynomialMult(a, b);
+  for (int i = 0; i < ValidC.len; i++) {
+    if (c.a[i] != ValidC.a[i]) {
+      printf("Error in NTT multiplication at index %d: expected %d, got %d\n", i, ValidC.a[i], c.a[i]);
+      printf("The result of naive polynomial multiplication is : \n");
       DisplayVector(ValidC);
-      return 1;
+      wrong = 1;
+      break;
     }
   }
-  TestNTT(n, p, pr);
 
-  return 0;
+  if (wrong) {
+    printf("Wrong result!\n");
+  }
+
+  free(a.a);
+  free(b.a);
+  free(c.a);
+  free(ValidC.a);
+  return wrong;
 }
