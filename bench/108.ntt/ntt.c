@@ -3,6 +3,17 @@
 #include <bench.h>
 #include <stdbool.h>
 
+static const struct {
+  int alen, blen;
+  uint32_t cs;
+  uint64_t ref_time;
+} *ps, settings[BENCH_NR_SETTING] = {
+         {2, 2, 0xe052005f, 0},
+         {8, 8, 0x977ed4e2, 7},
+         {300, 300, 0xbb2f314d, 66168},
+         {5000, 5000, 0x7344b1bf, 24822314},
+};
+
 typedef uint32_t T;
 typedef struct Vec {
   T *a;
@@ -94,32 +105,31 @@ Vec NaivePolynomialMult(Vec a, Vec b) {
   return c;
 }
 
-static const T p = 7681;
-static const T pr = 17;
+static const T p = 998244353;
+static const T pr = 3;
 static Vec a, b, c;
 
 void bench_init(int setting) {
-  a = newVec(10);
-  for (int i = 0; i < 10; i++) {
-    a.a[i] = i + 1;
+  ps = &settings[setting];
+  bench_srand(1);
+  a = newVec(settings[setting].alen);
+  for (int i = 0; i < a.len; i++) {
+    a.a[i] = bench_rand() & 0xff;
   }
-  b = newVec(5);
-  for (int i = 0; i < 5; i++) {
-    b.a[i] = i + 1;
+  b = newVec(settings[setting].blen);
+  for (int i = 0; i < b.len; i++) {
+    b.a[i] = bench_rand() & 0xff;
   }
   printf("The prime number is : %u\n", p);
   printf("The primitive root is : %u\n", pr);
-  printf("The first polynomial is : \n");
-  DisplayVector(a);
-  printf("The second polynomial is : \n");
-  DisplayVector(b);
+  printf("The length of the 1st polynomial is : %d\n", a.len);
+  printf("The length of the 2nd polynomial is : %d\n", b.len);
 }
 
 uint64_t bench_run() {
-  printf("The result of polynomial multiplication is : \n");
+  printf("Computing the result of polynomial multiplication...\n");
   c = NTTMultiply(a, b, pr, p);
-  DisplayVector(c);
-  return 0;
+  return ps->ref_time;
 }
 
 int bench_validate() {
@@ -129,11 +139,19 @@ int bench_validate() {
   for (int i = 0; i < ValidC.len; i++) {
     if (c.a[i] != ValidC.a[i]) {
       printf("Error in NTT multiplication at index %d: expected %u, got %u\n", i, ValidC.a[i], c.a[i]);
+      printf("The result of polynomial multiplication is : \n");
+      DisplayVector(c);
       printf("The result of naive polynomial multiplication is : \n");
       DisplayVector(ValidC);
       wrong = 1;
       break;
     }
+  }
+
+  uint32_t checksum = bench_checksum(c.a, c.a + c.len);
+  printf("cs = 0x%08x\n", checksum);
+  if (ps->cs != checksum) {
+    wrong = 1;
   }
 
   if (wrong) {
