@@ -868,8 +868,8 @@ bignum *encodeMessage(int len, int bytes, char *message, bignum *exponent, bignu
  * Each encrypted packet should represent "bytes" characters as per encodeMessage.
  * The returned message will be of size len * bytes.
  */
-int *decodeMessage(int len, int bytes, bignum *cryptogram, bignum *exponent, bignum *modulus) {
-  int *decoded = malloc(len * bytes * sizeof(int));
+char *decodeMessage(int len, int bytes, bignum *cryptogram, bignum *exponent, bignum *modulus) {
+  char *decoded = malloc(len * bytes * sizeof(char));
   int i, j;
   bignum *x = bignum_init(), *remainder = bignum_init();
   bignum *num128 = bignum_init();
@@ -900,7 +900,7 @@ static bignum *phi, *e, *d;
 static bignum *bbytes, *shift;
 static bignum *temp1, *temp2;
 static bignum *encoded;
-static int *decoded;
+static char *decoded;
 static char *buffer;
 static int bytes;
 static int len;
@@ -987,6 +987,8 @@ uint64_t bench_run() {
 }
 
 int bench_validate() {
+  int same = (memcmp(buffer, decoded, len) == 0);
+
   /* Eek! This is why we shouldn't of calloc'd those! */
   for (int i = 0; i < len / bytes; i++)
     free(encoded[i].data);
@@ -1004,5 +1006,5 @@ int bench_validate() {
   bignum_deinit(temp1);
   bignum_deinit(temp2);
 
-  return 0;
+  return !same;
 }
