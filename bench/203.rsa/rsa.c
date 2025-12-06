@@ -333,7 +333,7 @@ void bignum_subtract(bignum *result, bignum *b1, bignum *b2) {
     if (temp > b1->data[i])
       carry = 1;
     else {
-      if (temp == 0 && b2->data[i] == 0xffffffff) {
+      if (temp == 0 && b2->data != NULL && b2->data[i] == 0xffffffff) {
         carry = 1;
       } else {
         carry = 0;
