@@ -1,10 +1,7 @@
 // ported from https://github.com/Nedal-haltam/NTT/blob/abf0e919d689560443f626c7490e831d0aa00f5e/cmain.cpp
 
+#include <bench.h>
 #include <stdbool.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 typedef uint32_t T;
 typedef struct Vec {
@@ -97,14 +94,16 @@ Vec NaivePolynomialMult(Vec a, Vec b) {
   return c;
 }
 
-int main() {
-  T p = 7681;
-  T pr = 17;
-  Vec a = newVec(10);
+static const T p = 7681;
+static const T pr = 17;
+static Vec a, b, c;
+
+void bench_init(int setting) {
+  a = newVec(10);
   for (int i = 0; i < 10; i++) {
     a.a[i] = i + 1;
   }
-  Vec b = newVec(5);
+  b = newVec(5);
   for (int i = 0; i < 5; i++) {
     b.a[i] = i + 1;
   }
@@ -114,10 +113,16 @@ int main() {
   DisplayVector(a);
   printf("The second polynomial is : \n");
   DisplayVector(b);
-  printf("The result of polynomial multiplication is : \n");
-  Vec c = NTTMultiply(a, b, pr, p);
-  DisplayVector(c);
+}
 
+uint64_t bench_run() {
+  printf("The result of polynomial multiplication is : \n");
+  c = NTTMultiply(a, b, pr, p);
+  DisplayVector(c);
+  return 0;
+}
+
+int bench_validate() {
   printf("Checking result...\n");
   int wrong = 0;
   Vec ValidC = NaivePolynomialMult(a, b);
