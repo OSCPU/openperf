@@ -33,6 +33,18 @@
 #define MODE_TEST    2
 #define MODE_RECOVER 3
 
+static const struct {
+  char *data;
+  uint32_t block_size;
+  size_t len;
+  uint32_t checksum;
+  uint64_t ref_time;
+} *ps, settings[BENCH_NR_SETTING] = {
+         {"input/hello.txt", KiB(65), 39, 0xca9643e5, 0},
+         {"input/queen.c", KiB(384), 564, 0x47ff882e, 560},
+         {"input/universe.jpg", MiB(1), 4984391, 0x8b27c89d, 886563},
+         {"input/huge.model", MiB(511), 50431625, 0x5672cbf2, 6211844},
+};
 static Obuf obuf;
 
 static void version() {
@@ -547,14 +559,16 @@ static FILE *open_input(char *input) {
 }
 
 static int mode = MODE_ENCODE;
-static u32 block_size = MiB(16); // the block size
+static u32 block_size; // the block size
 FILE *input_des, *output_des;
 static int r;
-static int workers = 0, verbose = 0, remove_input_file = 0;
+static int workers = 0, verbose = 1, remove_input_file = 0;
 static char *input; // input file name
 
 void bench_init(int setting) {
-  char *argv[] = {"./a.out", "input/hello.txt", NULL};
+  ps = &settings[setting];
+
+  char *argv[] = {"./a.out", ps->data, NULL};
   int argc = sizeof(argv) / sizeof(argv[0]) - 1;
 
   bench_obuf_init(&obuf, 1024);
@@ -566,6 +580,9 @@ void bench_init(int setting) {
 
   // command line arguments
   int force_stdstreams = 0, batch = 0;
+
+  // the block size
+  block_size = ps->block_size;
 
   enum {
     RM_OPTION = CHAR_MAX + 1
@@ -589,11 +606,11 @@ void bench_init(int setting) {
                         {'j', required_argument, "jobs"},
 #endif
                         {0, no_argument, NULL}};
-  yarg_settings settings = {
+  yarg_settings settings0 = {
     .dash_dash = true,
     .style = YARG_STYLE_UNIX,
   };
-  yarg_result *res = yarg_parse(argc, argv, opt, settings);
+  yarg_result *res = yarg_parse(argc, argv, opt, settings0);
   if (!res) {
     fprintf(stderr, "bzip3: out of memory.\n");
     bench_exit(1);
@@ -727,7 +744,7 @@ void bench_init(int setting) {
 
 uint64_t bench_run() {
   r = process(input_des, output_des, mode, block_size, workers, verbose, input);
-  return 0;
+  return ps->ref_time;
 }
 
 int bench_validate() {
@@ -735,6 +752,11 @@ int bench_validate() {
   close_out_file(output_des);
   if (remove_input_file) {
     remove_in_file(input, output_des);
+  }
+
+  uint32_t cs = bench_checksum(obuf.p, obuf.p + obuf.len);
+  if (obuf.len != ps->len || (cs != ps->checksum)) {
+    r = 1;
   }
 
   free(obuf.p);
