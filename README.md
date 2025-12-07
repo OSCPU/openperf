@@ -17,6 +17,7 @@
 |      | [202.llama2][llama2]         | 大语言模型           | 仅含整数操作    |
 |      | [203.rsa][rsa]               | RSA加解密            |                 |
 |      | [204.hypergraph][hypergraph] | 超图划分             |                 |
+| 大型 | [300.bzip3][bzip3]           | 数据压缩             |                 |
 
 
 [blockchain]: https://github.com/aproxp/blockchain
@@ -33,3 +34,4 @@
 [llama2]: https://github.com/karpathy/llama2.c
 [rsa]: https://github.com/pantaloons/RSA
 [hypergraph]: https://github.com/alidasdan/hypergraph-partitioning-algorithms
+[bzip3]: https://github.com/iczelia/bzip3
