@@ -33,6 +33,8 @@
 #define MODE_TEST    2
 #define MODE_RECOVER 3
 
+static Obuf obuf;
+
 static void version() {
   fprintf(stdout, "bzip3 " VERSION
                   "\n"
@@ -69,10 +71,14 @@ static void help() {
 static void xwrite(const void *data, size_t size, size_t len, FILE *des) {
   if (len == 0 || size == 0)
     return;
+
+  bench_obuf_append(&obuf, data, size * len);
+#if 0
   if (fwrite(data, size, len, des) != len) {
     fprintf(stderr, "Write error\n");
     exit(1);
   }
+#endif
 }
 
 /* Read any amount of items (from 0 to len) as long as there is no error */
@@ -489,6 +495,8 @@ static int is_numeric(const char *str) {
 }
 
 static FILE *open_output(char *output, int force) {
+  return stdout;
+#if 0
   FILE *output_des = NULL;
 
   if (output != NULL) {
@@ -497,14 +505,12 @@ static FILE *open_output(char *output, int force) {
       exit(1);
     }
 
-#if 0
     if (access(output, F_OK) == 0) {
       if (!force) {
         fprintf(stderr, "Error: output file `%s' already exists. Use -f to force overwrite.\n", output);
         exit(1);
       }
     }
-#endif
 
     output_des = fopen(output, "wb");
     if (output_des == NULL) {
@@ -516,6 +522,7 @@ static FILE *open_output(char *output, int force) {
   }
 
   return output_des;
+#endif
 }
 
 static FILE *open_input(char *input) {
@@ -549,6 +556,8 @@ static char *input; // input file name
 void bench_init(int setting) {
   char *argv[] = {"./a.out", "input/hello.txt", NULL};
   int argc = sizeof(argv) / sizeof(argv[0]) - 1;
+
+  bench_obuf_init(&obuf, 1024);
 
   // output file name
   char *output = NULL;
@@ -727,5 +736,8 @@ int bench_validate() {
   if (remove_input_file) {
     remove_in_file(input, output_des);
   }
+
+  free(obuf.p);
+
   return r;
 }
