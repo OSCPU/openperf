@@ -465,14 +465,14 @@ static int process(FILE *input_des, FILE *output_des, int mode, int block_size, 
     if (file_name)
       fprintf(stderr, " %s:", file_name);
     if (mode == MODE_ENCODE)
-      fprintf(stderr, "\t%" PRIu64 " -> %" PRIu64 " bytes, %.2f%%, %.2f bpb\n", bytes_read, bytes_written,
-              (double)bytes_written * 100.0 / bytes_read, (double)bytes_written * 8.0 / bytes_read);
+      fprintf(stderr, "\t%" PRIu64 " -> %" PRIu64 " bytes, %" PRIu64 "%%, %" PRIu64 " bpb\n", bytes_read, bytes_written,
+              bytes_written * 100 / bytes_read, bytes_written * 8 / bytes_read);
     else if (mode == MODE_DECODE)
-      fprintf(stderr, "\t%" PRIu64 " -> %" PRIu64 " bytes, %.2f%%, %.2f bpb\n", bytes_read, bytes_written,
-              (double)bytes_read * 100.0 / bytes_written, (double)bytes_read * 8.0 / bytes_written);
+      fprintf(stderr, "\t%" PRIu64 " -> %" PRIu64 " bytes, %" PRIu64 "%%, %" PRIu64 " bpb\n", bytes_read, bytes_written,
+              bytes_read * 100 / bytes_written, bytes_read * 8 / bytes_written);
     else
-      fprintf(stderr, "\tOK, %" PRIu64 " -> %" PRIu64 " bytes, %.2f%%, %.2f bpb\n", bytes_read, bytes_written,
-              (double)bytes_read * 100.0 / bytes_written, (double)bytes_read * 8.0 / bytes_written);
+      fprintf(stderr, "\tOK, %" PRIu64 " -> %" PRIu64 " bytes, %" PRIu64 "%%, %" PRIu64 " bpb\n", bytes_read,
+              bytes_written, bytes_read * 100 / bytes_written, bytes_read * 8 / bytes_written);
   }
 
   return 0;
