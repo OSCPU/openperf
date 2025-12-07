@@ -17,15 +17,7 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <ctype.h>
-#include <errno.h>
-#include <inttypes.h>
-#include <limits.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <unistd.h>
+#include <bench.h>
 
 #if defined __MSVCRT__
 #include <fcntl.h>
@@ -78,7 +70,7 @@ static void xwrite(const void *data, size_t size, size_t len, FILE *des) {
   if (len == 0 || size == 0)
     return;
   if (fwrite(data, size, len, des) != len) {
-    fprintf(stderr, "Write error: %s\n", strerror(errno));
+    fprintf(stderr, "Write error\n");
     exit(1);
   }
 }
@@ -87,7 +79,7 @@ static void xwrite(const void *data, size_t size, size_t len, FILE *des) {
 static size_t xread(void *data, size_t size, size_t len, FILE *des) {
   size_t written = fread(data, size, len, des);
   if (ferror(des)) {
-    fprintf(stderr, "Read error: %s\n", strerror(errno));
+    fprintf(stderr, "Read error\n");
     exit(1);
   }
   return written;
@@ -116,30 +108,13 @@ static void xread_noeof(void *data, size_t size, size_t len, FILE *des) {
 
 static void close_out_file(FILE *des) {
   if (des) {
-    int outfd = fileno(des);
-
     if (fflush(des)) {
-      fprintf(stderr, "Error: Failed on fflush: %s\n", strerror(errno));
+      fprintf(stderr, "Error: Failed on fflush\n");
       exit(1);
     }
 
-#ifdef __linux__
-    while (1) {
-      int status = fsync(outfd);
-      if (status == -1) {
-        if (errno == EINVAL)
-          break;
-        if (errno == EINTR)
-          continue;
-        fprintf(stderr, "Error: Failed on fsync: %s\n", strerror(errno));
-        exit(1);
-      }
-      break;
-    }
-#endif
-
     if (des != stdout && fclose(des)) {
-      fprintf(stderr, "Error: Failed on fclose: %s\n", strerror(errno));
+      fprintf(stderr, "Error: Failed on fclose\n");
       exit(1);
     }
   }
@@ -152,16 +127,19 @@ static void remove_in_file(char *file_name, FILE *output_des) {
   if (output_des == stdout) {
     return;
   }
+#if 0
   if (remove(file_name)) {
     fprintf(stderr, "Error: failed to remove input file `%s': %s\n", file_name, strerror(errno));
     exit(1);
   }
+#endif
 }
 
 static int process(FILE *input_des, FILE *output_des, int mode, int block_size, int workers, int verbose,
                    char *file_name) {
   uint64_t bytes_read = 0, bytes_written = 0;
 
+#if 0
   if ((mode == MODE_ENCODE && isatty(fileno(output_des))) ||
       ((mode == MODE_DECODE || mode == MODE_TEST || mode == MODE_RECOVER) && isatty(fileno(input_des)))) {
     fprintf(stderr, "Refusing to read/write binary data from/to the terminal.\n");
@@ -170,6 +148,7 @@ static int process(FILE *input_des, FILE *output_des, int mode, int block_size, 
 
   // Reset errno after the isatty() call.
   errno = 0;
+#endif
 
   u8 byteswap_buf[4];
 
@@ -494,9 +473,11 @@ static int process(FILE *input_des, FILE *output_des, int mode, int block_size, 
 }
 
 static int is_dir(const char *path) {
+#if 0
   struct stat sb;
   if (stat(path, &sb) == 0 && S_ISDIR(sb.st_mode))
     return 1;
+#endif
   return 0;
 }
 
@@ -516,16 +497,18 @@ static FILE *open_output(char *output, int force) {
       exit(1);
     }
 
+#if 0
     if (access(output, F_OK) == 0) {
       if (!force) {
         fprintf(stderr, "Error: output file `%s' already exists. Use -f to force overwrite.\n", output);
         exit(1);
       }
     }
+#endif
 
     output_des = fopen(output, "wb");
     if (output_des == NULL) {
-      fprintf(stderr, "Error: failed to open output file `%s': %s\n", output, strerror(errno));
+      fprintf(stderr, "Error: failed to open output file `%s'\n", output);
       exit(1);
     }
   } else {
@@ -546,7 +529,7 @@ static FILE *open_input(char *input) {
 
     input_des = fopen(input, "rb");
     if (input_des == NULL) {
-      fprintf(stderr, "Error: failed to open input file `%s': %s\n", input, strerror(errno));
+      fprintf(stderr, "Error: failed to open input file `%s'\n", input);
       exit(1);
     }
   } else {
@@ -556,19 +539,24 @@ static FILE *open_input(char *input) {
   return input_des;
 }
 
-int main(int argc, char *argv[]) {
-  int mode = MODE_ENCODE;
+static int mode = MODE_ENCODE;
+static u32 block_size = MiB(16); // the block size
+FILE *input_des, *output_des;
+static int r;
+static int workers = 0, verbose = 0, remove_input_file = 0;
+static char *input; // input file name
 
-  // input and output file names
-  char *input = NULL, *output = NULL;
+void bench_init(int setting) {
+  char *argv[] = {"./a.out", "input/hello.txt", NULL};
+  int argc = sizeof(argv) / sizeof(argv[0]) - 1;
+
+  // output file name
+  char *output = NULL;
   char *f1 = NULL, *f2 = NULL;
   int force = 0;
 
   // command line arguments
-  int force_stdstreams = 0, workers = 0, batch = 0, verbose = 0, remove_input_file = 0;
-
-  // the block size
-  u32 block_size = MiB(16);
+  int force_stdstreams = 0, batch = 0;
 
   enum {
     RM_OPTION = CHAR_MAX + 1
@@ -599,12 +587,12 @@ int main(int argc, char *argv[]) {
   yarg_result *res = yarg_parse(argc, argv, opt, settings);
   if (!res) {
     fprintf(stderr, "bzip3: out of memory.\n");
-    return 1;
+    bench_exit(1);
   }
   if (res->error) {
     fputs(res->error, stderr);
     fputs("Try 'bzip3 --help' for more information.\n", stderr);
-    return 1;
+    bench_exit(1);
   }
   // `res' is not freed later on as it has the approximate lifetime
   // equal to the lifetime of the program overall.
@@ -619,14 +607,14 @@ int main(int argc, char *argv[]) {
       case 'f': force = 1; break;
       case RM_OPTION: remove_input_file = 1; break;
       case 'k': break;
-      case 'h': help(); return 0;
-      case 'V': version(); return 0;
+      case 'h': help(); bench_exit(0);
+      case 'V': version(); bench_exit(0);
       case 'B': batch = 1; break;
       case 'v': verbose = 1; break;
       case 'b':
         if (!is_numeric(res->args[i].arg)) {
           fprintf(stderr, "bzip3: invalid block size: %s\n", res->args[i].arg);
-          return 1;
+          bench_exit(1);
         }
         block_size = MiB(atoi(res->args[i].arg));
         break;
@@ -634,7 +622,7 @@ int main(int argc, char *argv[]) {
       case 'j':
         if (!is_numeric(res->args[i].arg)) {
           fprintf(stderr, "bzip3: invalid amount of jobs: %s\n", res->args[i].arg);
-          return 1;
+          bench_exit(1);
         }
         workers = atoi(res->args[i].arg);
         break;
@@ -649,105 +637,17 @@ int main(int argc, char *argv[]) {
 
   if (block_size < KiB(65) || block_size > MiB(511)) {
     fprintf(stderr, "Block size must be between 65 KiB and 511 MiB.\n");
-    return 1;
+    bench_exit(1);
   }
 
-  if (batch && res->pos_argc) {
-    switch (mode) {
-      case MODE_ENCODE:
-        /* Encode each of the files. */
-        for (int i = 0; i < res->pos_argc; i++) {
-          char *arg = res->pos_args[i];
-
-          FILE *input_des = open_input(arg);
-          char *output_name;
-          if (force_stdstreams)
-            output_name = NULL;
-          else {
-            output_name = malloc(strlen(arg) + 5);
-            if (!output_name) {
-              fprintf(stderr, "Failed to allocate memory.\n");
-              return 1;
-            }
-            strcpy(output_name, arg);
-            strcat(output_name, ".bz3");
-          }
-
-          FILE *output_des = open_output(output_name, force);
-          process(input_des, output_des, mode, block_size, workers, verbose, arg);
-
-          fclose(input_des);
-          close_out_file(output_des);
-          if (!force_stdstreams)
-            free(output_name);
-          if (remove_input_file) {
-            remove_in_file(arg, output_des);
-          }
-        }
-        break;
-      case MODE_RECOVER:
-      case MODE_DECODE:
-        /* Decode each of the files. */
-        for (int i = 0; i < res->pos_argc; i++) {
-          char *arg = res->pos_args[i];
-
-          FILE *input_des = open_input(arg);
-          char *output_name;
-          if (force_stdstreams)
-            output_name = NULL;
-          else {
-            output_name = malloc(strlen(arg) + 1);
-            if (!output_name) {
-              fprintf(stderr, "Failed to allocate memory.\n");
-              return 1;
-            }
-            strcpy(output_name, arg);
-            if (strlen(output_name) > 4 && !strcmp(output_name + strlen(output_name) - 4, ".bz3"))
-              output_name[strlen(output_name) - 4] = 0;
-            else {
-              fprintf(stderr, "Warning: file %s has an unknown extension, skipping.\n", arg);
-              return 1;
-            }
-          }
-
-          FILE *output_des = open_output(output_name, force);
-          process(input_des, output_des, mode, block_size, workers, verbose, arg);
-
-          fclose(input_des);
-          close_out_file(output_des);
-          if (!force_stdstreams)
-            free(output_name);
-          if (remove_input_file) {
-            remove_in_file(arg, output_des);
-          }
-        }
-        break;
-      case MODE_TEST:
-        /* Test each of the files. */
-        for (int i = 0; i < res->pos_argc; i++) {
-          char *arg = res->pos_args[i];
-
-          FILE *input_des = open_input(arg);
-          process(input_des, NULL, mode, block_size, workers, verbose, arg);
-          fclose(input_des);
-        }
-        break;
-    }
-
-    if (fclose(stdout)) {
-      fprintf(stderr, "Error: Failed on fclose(stdout): %s\n", strerror(errno));
-      return 1;
-    }
-
-    return 0;
-  }
+  assert(batch == 0);
 
   for (int i = 0; i < res->pos_argc; i++) {
     char *arg = res->pos_args[i];
 
     if (f1 != NULL && f2 != NULL) {
       fprintf(stderr, "Error: too many files specified.\n");
-      return 1;
+      bench_exit(1);
     }
 
     if (f1 == NULL)
@@ -771,7 +671,7 @@ int main(int argc, char *argv[]) {
           output = malloc(strlen(f1) + 5);
           if (!output) {
             fprintf(stderr, "Failed to allocate memory.\n");
-            return 1;
+            bench_exit(1);
           }
           strcpy(output, f1);
           strcat(output, ".bz3");
@@ -791,14 +691,14 @@ int main(int argc, char *argv[]) {
           output = malloc(strlen(f1) + 1);
           if (!output) {
             fprintf(stderr, "Failed to allocate memory.\n");
-            return 1;
+            bench_exit(1);
           }
           strcpy(output, f1);
           if (strlen(output) > 4 && !strcmp(output + strlen(output) - 4, ".bz3"))
             output[strlen(output) - 4] = 0;
           else {
             fprintf(stderr, "Warning: file %s has an unknown extension, skipping.\n", f1);
-            return 1;
+            bench_exit(1);
           }
         }
       } else {
@@ -809,22 +709,21 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  FILE *input_des = NULL, *output_des = NULL;
-
   input_des = open_input(input);
   output_des = mode != MODE_TEST ? open_output(output, force) : NULL;
 
   if (output != f2)
     free(output);
+}
 
-  int r = process(input_des, output_des, mode, block_size, workers, verbose, input);
+uint64_t bench_run() {
+  r = process(input_des, output_des, mode, block_size, workers, verbose, input);
+  return 0;
+}
 
+int bench_validate() {
   fclose(input_des);
   close_out_file(output_des);
-  if (fclose(stdout)) {
-    fprintf(stderr, "Error: Failed on fclose(stdout): %s\n", strerror(errno));
-    return 1;
-  }
   if (remove_input_file) {
     remove_in_file(input, output_des);
   }
