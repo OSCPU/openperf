@@ -23,6 +23,17 @@ uint64_t bench_uptime() { // unit: us
 }
 #endif
 
+static uint64_t seed = 1;
+
+void bench_srand(uint32_t _seed) {
+  seed = _seed;
+}
+
+uint32_t bench_rand() {
+  seed = seed * 6364136223846793005LL + 1;
+  return (seed >> 32);
+}
+
 static int str2setting(const char *args) {
   if (args == NULL || strcmp(args, "") == 0) {
     printf("Empty mainargs. Use \"test\" by default\n");

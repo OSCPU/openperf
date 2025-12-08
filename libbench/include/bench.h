@@ -19,6 +19,8 @@ enum {
   BENCH_NR_SETTING,
 };
 
+void bench_srand(uint32_t _seed);
+uint32_t bench_rand();
 uint64_t bench_uptime(); // unit: us
 void bench_exit(int status);
 
