@@ -24,6 +24,29 @@
 #define MiB(x)       ((x) * 1024 * 1024)
 #define BWT_BOUND(x) (bz3_bound(x) + 128)
 
+#define PACKAGE_NAME              "bzip3"
+#define PACKAGE_TARNAME           "bzip3"
+#define PACKAGE_VERSION           "1.5.3.r3-gfe3b43d"
+#define PACKAGE_STRING            "bzip3 1.5.3.r3-gfe3b43d"
+#define PACKAGE_BUGREPORT         "https://github.com/iczelia/bzip3"
+#define PACKAGE_URL               ""
+#define PACKAGE                   "bzip3"
+#define VERSION                   "1.5.3.r3-gfe3b43d"
+#define HAVE_STDIO_H              1
+#define HAVE_STDLIB_H             1
+#define HAVE_STRING_H             1
+#define HAVE_INTTYPES_H           1
+#define HAVE_STDINT_H             1
+#define HAVE_STRINGS_H            1
+#define HAVE_SYS_STAT_H           1
+#define HAVE_SYS_TYPES_H          1
+#define HAVE_UNISTD_H             1
+#define STDC_HEADERS              1
+#define HAVE_DLFCN_H              1
+#define LT_OBJDIR                 ".libs/"
+#define restrict                  __restrict__
+#define HAVE_PTHREAD_PRIO_INHERIT 1
+
 #include <inttypes.h>
 #include <stdint.h>
 
@@ -53,7 +76,7 @@ static void write_neutral_s32(u8 *data, s32 value) {
 #define RESTRICT __restrict
 #else
 #define RESTRICT restrict
-#warning Your compiler, configuration or platform might not be supported.
+//#warning Your compiler, configuration or platform might not be supported.
 #endif
 
 #if defined(__has_builtin)
@@ -73,6 +96,7 @@ static void write_neutral_s32(u8 *data, s32 value) {
 #endif
 
 #if defined(HAS_BUILTIN_PREFETCH)
+extern void __builtin_prefetch(const void *, ...);
 #define prefetch(address)  __builtin_prefetch((const void *)(address), 0, 0)
 #define prefetchw(address) __builtin_prefetch((const void *)(address), 1, 0)
 #elif defined(_M_IX86) || defined(_M_AMD64) || defined(__x86_64__) || defined(i386) || defined(__i386__) || \
@@ -111,6 +135,7 @@ static void write_neutral_s32(u8 *data, s32 value) {
 
 #if defined(__LITTLE_ENDIAN__) && !defined(__BIG_ENDIAN__)
 #if defined(HAS_BUILTIN_BSWAP16)
+extern u16 __builtin_bswap16(u16);
 #define bswap16(x) (__builtin_bswap16(x))
 #elif defined(_MSC_VER) && !defined(__INTEL_COMPILER)
 #define bswap16(x) (_byteswap_ushort(x))

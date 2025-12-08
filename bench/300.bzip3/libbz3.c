@@ -19,8 +19,6 @@
 
 #include "libbz3.h"
 #include "libsais.h"
-#include <stdlib.h>
-#include <string.h>
 
 #if defined(__GNUC__) || defined(__clang__)
 #define LIKELY(x)   __builtin_expect(!!(x), 1)

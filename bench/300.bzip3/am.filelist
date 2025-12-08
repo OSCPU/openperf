@@ -1,4 +1,4 @@
-input/hello.txt
-input/queen.c
-input/universe.jpg
+input/test-hello.txt
+input/train-queen.c
+input/ref-universe.jpg
 input/huge.model

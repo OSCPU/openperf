@@ -35,8 +35,6 @@ The stability patches that fix undefined behaviour in unbwt routines:
 /* libsais source code amalgamate. */
 
 #include <limits.h>
-#include <stddef.h>
-#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 

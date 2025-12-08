@@ -40,9 +40,9 @@ static const struct {
   uint32_t checksum;
   uint64_t ref_time;
 } *ps, settings[BENCH_NR_SETTING] = {
-         {"input/hello.txt", KiB(65), 39, 0xca9643e5, 0},
-         {"input/queen.c", KiB(384), 564, 0x47ff882e, 560},
-         {"input/universe.jpg", MiB(1), 4984391, 0x8b27c89d, 886563},
+         {"input/test-hello.txt", KiB(65), 39, 0xca9643e5, 0},
+         {"input/train-queen.c", KiB(384), 564, 0x47ff882e, 560},
+         {"input/ref-universe.jpg", MiB(1), 4984391, 0x8b27c89d, 886563},
          {"input/huge.model", MiB(511), 50431625, 0x5672cbf2, 6211844},
 };
 static Obuf obuf;
