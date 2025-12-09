@@ -5,7 +5,6 @@
 #include "Block.h"
 #include "sha256.h"
 #include <bench.h>
-#include <stdio.h>
 
 static void _CalculateHash(Block *this) {
   static char str[1024];

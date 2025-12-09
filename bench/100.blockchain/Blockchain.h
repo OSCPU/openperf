@@ -13,7 +13,7 @@ typedef struct Blockchain {
   int nrBlock;
 } Blockchain;
 
-void initBlockchain(Blockchain *this);
-void AddBlock(Blockchain *this, uint32_t nIndexIn, const char *sDataIn);
+void initBlockchain(Blockchain *this, int difficulty);
+const char *AddBlock(Blockchain *this, uint32_t nIndexIn, const char *sDataIn);
 
 #endif //BLOCKCHAIN_BLOCKCHAIN_H

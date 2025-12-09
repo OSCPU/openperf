@@ -8,17 +8,18 @@ static Block *_GetLastBlock(Blockchain *this) {
   return &(this->_vChain[this->nrBlock - 1]);
 }
 
-void initBlockchain(Blockchain *this) {
+void initBlockchain(Blockchain *this, int difficulty) {
   initBlock(&this->_vChain[0], 0, "Genesis Block");
   this->nrBlock = 1;
-  this->_nDifficulty = 4;
+  this->_nDifficulty = difficulty;
 }
 
-void AddBlock(Blockchain *this, uint32_t nIndexIn, const char *sDataIn) {
+const char *AddBlock(Blockchain *this, uint32_t nIndexIn, const char *sDataIn) {
   Block *bLast = _GetLastBlock(this);
   Block *bNew = &this->_vChain[this->nrBlock];
   initBlock(bNew, nIndexIn, sDataIn);
   bNew->sPrevHash = GetHash(bLast);
   MineBlock(bNew, this->_nDifficulty);
   this->nrBlock++;
+  return GetHash(bNew);
 }
