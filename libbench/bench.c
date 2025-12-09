@@ -34,6 +34,24 @@ uint32_t bench_rand() {
   return (seed >> 32);
 }
 
+// FNV hash
+uint32_t bench_checksum(const void *start, const void *end) {
+  const uint32_t x = 16777619;
+  uint32_t h1 = 2166136261u;
+  for (const uint8_t *p = start; p + 4 <= (const uint8_t *)end; p += 4) {
+    for (int i = 0; i < 4; i++) {
+      h1 = (h1 ^ p[i]) * x;
+    }
+  }
+  int32_t hash = (uint32_t)h1;
+  hash += hash << 13;
+  hash ^= hash >> 7;
+  hash += hash << 3;
+  hash ^= hash >> 17;
+  hash += hash << 5;
+  return hash;
+}
+
 static int str2setting(const char *args) {
   if (args == NULL || strcmp(args, "") == 0) {
     printf("Empty mainargs. Use \"test\" by default\n");
