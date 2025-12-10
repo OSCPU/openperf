@@ -19,6 +19,7 @@
 |      | [204.hypergraph][hypergraph] | 超图划分             |                 |
 | 大型 | [300.bzip3][bzip3]           | 数据压缩             |                 |
 |      | [301.gsim][gsim]             | RTL仿真              |                 |
+|      | [302.lua][lua]               | 脚本解释器           |                 |
 
 
 [blockchain]: https://github.com/aproxp/blockchain
@@ -37,3 +38,4 @@
 [hypergraph]: https://github.com/alidasdan/hypergraph-partitioning-algorithms
 [bzip3]: https://github.com/iczelia/bzip3
 [gsim]: https://github.com/OpenXiangShan/gsim
+[lua]: https://github.com/lua/lua/tree/v5.3
