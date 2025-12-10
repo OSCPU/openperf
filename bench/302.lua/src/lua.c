@@ -560,7 +560,10 @@ static int pmain(lua_State *L) {
   return 1;
 }
 
-int main(int argc, char **argv) {
+int main() {
+  int argc = 2;
+  char *argv[] = {"lua", "input/hello.lua", NULL};
+
   int status, result;
   lua_State *L = luaL_newstate(); /* create state */
   if (L == NULL) {
