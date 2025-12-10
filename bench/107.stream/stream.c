@@ -400,8 +400,14 @@ int checktick() {
 
   for (i = 0; i < M; i++) {
     t1 = bench_uptime();
-    while (((t2 = bench_uptime()) - t1) < 1)
-      ;
+    int j = 0;
+    while (((t2 = bench_uptime()) - t1) < 1) {
+      j++;
+      if (j == 10) {
+        t2 = t1 + 1;
+        break;
+      }
+    }
     timesfound[i] = t1 = t2;
   }
 
