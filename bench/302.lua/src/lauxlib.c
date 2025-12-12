@@ -8,7 +8,6 @@
 #define LUA_LIB
 
 #include "lprefix.h"
-#include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -211,7 +210,7 @@ LUALIB_API int luaL_error(lua_State *L, const char *fmt, ...) {
   return lua_error(L);
 }
 
-#include <klib.h>
+#include <bench.h>
 
 LUALIB_API int luaL_fileresult(lua_State *L, int stat, const char *fname) {
 #if 1

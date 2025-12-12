@@ -1,1 +1,4 @@
 input/hello.lua
+input/sort.lua
+input/perm.lua
+input/qsort.lua

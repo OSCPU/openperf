@@ -1,4 +1,4 @@
-#include <klib.h>
+#include <bench.h>
 #include <luaconf.h>
 #include <setjmp.h>
 #include <stdio.h>
@@ -82,8 +82,8 @@ FILE *tmpfile() {
   assert(0);
 }
 
-size_t strspn() {
-  assert(0);
+size_t strspn(const char *, const char *) {
+  return 0;
 }
 
 int ungetc(int c, FILE *fp) {
@@ -100,7 +100,7 @@ sighandler_t signal(int signum, sighandler_t handler) {
 }
 
 char *fgets(char *s, int size, FILE *fp) {
-  assert(0);
+  return NULL;
 }
 
 void *memchr(const void *s, int c, size_t n) {
@@ -138,11 +138,11 @@ FILE *freopen64(const char *pathname, const char *mode, FILE *fp) {
 }
 
 char *strstr(const char *haystack, const char *needle) {
-  assert(0);
+  return NULL;
 }
 
 char *setlocale(int category, const char *locale) {
-  assert(0);
+  return "";
 }
 
 int rename(const char *oldpath, const char *newpath) {
@@ -170,7 +170,7 @@ time_t mktime(struct tm *tm) {
 }
 
 time_t time(time_t *tloc) {
-  assert(0);
+  return 0;
 }
 
 struct tm *localtime(const time_t *timep) {

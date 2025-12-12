@@ -10,10 +10,9 @@
 #include "lauxlib.h"
 #include "lprefix.h"
 #include "lualib.h"
+#include <bench.h>
 #include <signal.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 #if !defined(LUA_PROMPT)
 #define LUA_PROMPT  "> "
@@ -561,15 +560,17 @@ static int pmain(lua_State *L) {
   return 1;
 }
 
-int main(char *args) {
+static int status, result;
+
+void bench_init(int setting) {}
+
+uint64_t bench_run() {
   int argc = 2;
   char *argv[] = {"lua", "input/hello.lua", NULL};
-
-  int status, result;
   lua_State *L = luaL_newstate(); /* create state */
   if (L == NULL) {
     l_message(argv[0], "cannot create state: not enough memory");
-    return EXIT_FAILURE;
+    bench_exit(1);
   }
   lua_pushcfunction(L, &pmain);   /* to call 'pmain' in protected mode */
   lua_pushinteger(L, argc);       /* 1st argument */
@@ -578,5 +579,9 @@ int main(char *args) {
   result = lua_toboolean(L, -1);  /* get result */
   report(L, status);
   lua_close(L);
-  return (result && status == LUA_OK) ? EXIT_SUCCESS : EXIT_FAILURE;
+  return 0;
+}
+
+int bench_validate() {
+  return (result && status == LUA_OK) ? 0 : 1;
 }

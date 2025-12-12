@@ -14,6 +14,7 @@
 #include <limits.h>
 #include <stddef.h>
 #include <string.h>
+#include <time.h>
 
 /*
 ** Operations that an object must define to mimic a table

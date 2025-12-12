@@ -11,8 +11,7 @@
 #include "lprefix.h"
 #include "lua.h"
 #include "lualib.h"
-#include <errno.h>
-#include <klib.h>
+#include <bench.h>
 #include <locale.h>
 #include <stdlib.h>
 #include <string.h>

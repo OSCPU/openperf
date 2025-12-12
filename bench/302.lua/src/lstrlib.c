@@ -12,8 +12,8 @@
 #include "lua.h"
 #include "lualib.h"
 //#include <ctype.h>
+#include <bench.h>
 #include <float.h>
-#include <klib.h>
 #include <limits.h>
 #include <locale.h>
 #include <stddef.h>
