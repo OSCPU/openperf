@@ -211,7 +211,12 @@ LUALIB_API int luaL_error(lua_State *L, const char *fmt, ...) {
   return lua_error(L);
 }
 
+#include <klib.h>
+
 LUALIB_API int luaL_fileresult(lua_State *L, int stat, const char *fname) {
+#if 1
+  assert(0);
+#else
   int en = errno; /* calls to Lua API may change this value */
   if (stat) {
     lua_pushboolean(L, 1);
@@ -225,6 +230,7 @@ LUALIB_API int luaL_fileresult(lua_State *L, int stat, const char *fname) {
     lua_pushinteger(L, en);
     return 3;
   }
+#endif
 }
 
 #if !defined(l_inspectstat) /* { */
@@ -601,7 +607,7 @@ static const char *getF(lua_State *L, void *ud, size_t *size) {
 }
 
 static int errfile(lua_State *L, const char *what, int fnameindex) {
-  const char *serr = strerror(errno);
+  const char *serr = ""; //strerror(errno);
   const char *filename = lua_tostring(L, fnameindex) + 1;
   lua_pushfstring(L, "cannot %s %s: %s", what, filename, serr);
   lua_remove(L, fnameindex);
@@ -929,7 +935,7 @@ static void *l_alloc(void *ud, void *ptr, size_t osize, size_t nsize) {
     return realloc(ptr, nsize);
 }
 
-static int panic(lua_State *L) {
+static int lua_panic(lua_State *L) {
   lua_writestringerror("PANIC: unprotected error in call to Lua API (%s)\n", lua_tostring(L, -1));
   return 0; /* return to Lua to abort */
 }
@@ -937,7 +943,7 @@ static int panic(lua_State *L) {
 LUALIB_API lua_State *luaL_newstate(void) {
   lua_State *L = lua_newstate(l_alloc, NULL);
   if (L)
-    lua_atpanic(L, &panic);
+    lua_atpanic(L, &lua_panic);
   return L;
 }
 

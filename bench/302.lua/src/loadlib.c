@@ -259,6 +259,9 @@ static int noenv(lua_State *L) {
 ** Set a path
 */
 static void setpath(lua_State *L, const char *fieldname, const char *envname, const char *dft) {
+#if 1
+  return;
+#endif
   const char *nver = lua_pushfstring(L, "%s%s", envname, LUA_VERSUFFIX);
   const char *path = getenv(nver); /* use versioned name */
   if (path == NULL)                /* no environment variable? */

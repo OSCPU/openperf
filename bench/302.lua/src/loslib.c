@@ -12,6 +12,7 @@
 #include "lua.h"
 #include "lualib.h"
 #include <errno.h>
+#include <klib.h>
 #include <locale.h>
 #include <stdlib.h>
 #include <string.h>
@@ -169,6 +170,9 @@ static int os_tmpname(lua_State *L) {
 }
 
 static int os_getenv(lua_State *L) {
+#if 1
+  assert(0);
+#endif
   lua_pushstring(L, getenv(luaL_checkstring(L, 1))); /* if NULL push nil */
   return 1;
 }
@@ -326,6 +330,9 @@ static int os_time(lua_State *L) {
 }
 
 static int os_difftime(lua_State *L) {
+#if 1
+  assert(0);
+#endif
   time_t t1 = l_checktime(L, 1);
   time_t t2 = l_checktime(L, 2);
   lua_pushnumber(L, (lua_Number)difftime(t1, t2));

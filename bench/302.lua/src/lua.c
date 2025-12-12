@@ -500,6 +500,7 @@ static int runargs(lua_State *L, char **argv, int n) {
 }
 
 static int handle_luainit(lua_State *L) {
+  return LUA_OK;
   const char *name = "=" LUA_INITVARVERSION;
   const char *init = getenv(name + 1);
   if (init == NULL) {
@@ -560,7 +561,7 @@ static int pmain(lua_State *L) {
   return 1;
 }
 
-int main() {
+int main(char *args) {
   int argc = 2;
   char *argv[] = {"lua", "input/hello.lua", NULL};
 

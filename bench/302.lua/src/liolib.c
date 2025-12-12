@@ -11,9 +11,10 @@
 #include "lprefix.h"
 #include "lua.h"
 #include "lualib.h"
-#include <ctype.h>
+//#include <ctype.h>
 #include <errno.h>
-#include <locale.h>
+#include <klib.h>
+//#include <locale.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -218,7 +219,7 @@ static void opencheck(lua_State *L, const char *fname, const char *mode) {
   LStream *p = newfile(L);
   p->f = fopen(fname, mode);
   if (p->f == NULL)
-    luaL_error(L, "cannot open file '%s' (%s)", fname, strerror(errno));
+    luaL_error(L, "cannot open file '%s'", fname);
 }
 
 static int io_open(lua_State *L) {
@@ -517,7 +518,7 @@ static int g_read(lua_State *L, FILE *f, int first) {
   return n - first;
 }
 
-static int io_read(lua_State *L) {
+static int lua_io_read(lua_State *L) {
   return g_read(L, getiofile(L, IO_INPUT), 1);
 }
 
@@ -555,6 +556,7 @@ static int io_readline(lua_State *L) {
 
 /* }====================================================== */
 
+#include <assert.h>
 static int g_write(lua_State *L, FILE *f, int arg) {
   int nargs = lua_gettop(L) - arg;
   int status = 1;
@@ -576,7 +578,7 @@ static int g_write(lua_State *L, FILE *f, int arg) {
     return luaL_fileresult(L, status, NULL);
 }
 
-static int io_write(lua_State *L) {
+static int lua_io_write(lua_State *L) {
   return g_write(L, getiofile(L, IO_OUTPUT), 1);
 }
 
@@ -624,10 +626,10 @@ static int f_flush(lua_State *L) {
 /*
 ** functions for 'io' library
 */
-static const luaL_Reg iolib[] = {{"close", io_close}, {"flush", io_flush}, {"input", io_input},
-                                 {"lines", io_lines}, {"open", io_open},   {"output", io_output},
-                                 {"popen", io_popen}, {"read", io_read},   {"tmpfile", io_tmpfile},
-                                 {"type", io_type},   {"write", io_write}, {NULL, NULL}};
+static const luaL_Reg iolib[] = {{"close", io_close}, {"flush", io_flush},     {"input", io_input},
+                                 {"lines", io_lines}, {"open", io_open},       {"output", io_output},
+                                 {"popen", io_popen}, {"read", lua_io_read},   {"tmpfile", io_tmpfile},
+                                 {"type", io_type},   {"write", lua_io_write}, {NULL, NULL}};
 
 /*
 ** methods for file handles

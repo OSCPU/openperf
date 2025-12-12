@@ -11,8 +11,9 @@
 #include "lprefix.h"
 #include "lua.h"
 #include "lualib.h"
-#include <ctype.h>
+//#include <ctype.h>
 #include <float.h>
+#include <klib.h>
 #include <limits.h>
 #include <locale.h>
 #include <stddef.h>
@@ -904,7 +905,12 @@ static void addliteral(lua_State *L, luaL_Buffer *b, int arg) {
       int nb;
       if (!lua_isinteger(L, arg)) {          /* float? */
         lua_Number n = lua_tonumber(L, arg); /* write as hexa ('%a') */
-        nb = lua_number2strx(L, buff, MAX_ITEM, "%" LUA_NUMBER_FRMLEN "a", n);
+#if LUA_FLOAT_TYPE == LUA_FLOAT_INT
+#define _FMT "ld"
+#else
+#define _FMT "a"
+#endif
+        nb = lua_number2strx(L, buff, MAX_ITEM, "%" LUA_NUMBER_FRMLEN _FMT, n);
         checkdp(buff, nb); /* ensure it uses a dot */
       } else {             /* integers */
         lua_Integer n = lua_tointeger(L, arg);
@@ -1309,12 +1315,16 @@ static int str_pack(lua_State *L) {
         volatile Ftypes u;
         char *buff = luaL_prepbuffsize(&b, size);
         lua_Number n = luaL_checknumber(L, arg); /* get argument */
+#if 1
+        assert(0);
+#else
         if (size == sizeof(u.f))
           u.f = (float)n; /* copy it into 'u' */
         else if (size == sizeof(u.d))
           u.d = (double)n;
         else
-          u.n = n;
+#endif
+        u.n = n;
         /* move 'u' to final result, correcting endianness if needed */
         copywithendian(buff, u.buff, size, h.islittle);
         luaL_addsize(&b, size);
@@ -1442,12 +1452,16 @@ static int str_unpack(lua_State *L) {
         volatile Ftypes u;
         lua_Number num;
         copywithendian(u.buff, data + pos, size, h.islittle);
+#if 1
+        assert(0);
+#else
         if (size == sizeof(u.f))
           num = (lua_Number)u.f;
         else if (size == sizeof(u.d))
           num = (lua_Number)u.d;
         else
-          num = u.n;
+#endif
+        num = u.n;
         lua_pushnumber(L, num);
         break;
       }
