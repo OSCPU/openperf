@@ -1,4 +1,4 @@
-input/hello.lua
-input/sort.lua
-input/perm.lua
-input/qsort.lua
+input/test-hello.lua
+input/train-sort.lua
+input/ref-perm.lua
+input/huge-qsort.lua

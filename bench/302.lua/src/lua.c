@@ -14,6 +14,16 @@
 #include <signal.h>
 #include <stdlib.h>
 
+static const struct {
+  char *script;
+  uint64_t ref_time;
+} *ps, settings[BENCH_NR_SETTING] = {
+         {"input/test-hello.lua", 0},
+         {"input/train-sort.lua", 69},
+         {"input/ref-perm.lua", 316318},
+         {"input/huge-qsort.lua", 33976145},
+};
+
 #if !defined(LUA_PROMPT)
 #define LUA_PROMPT  "> "
 #define LUA_PROMPT2 ">> "
@@ -562,11 +572,13 @@ static int pmain(lua_State *L) {
 
 static int status, result;
 
-void bench_init(int setting) {}
+void bench_init(int setting) {
+  ps = &settings[setting];
+}
 
 uint64_t bench_run() {
   int argc = 2;
-  char *argv[] = {"lua", "input/hello.lua", NULL};
+  char *argv[] = {"lua", ps->script, NULL};
   lua_State *L = luaL_newstate(); /* create state */
   if (L == NULL) {
     l_message(argv[0], "cannot create state: not enough memory");
@@ -579,7 +591,7 @@ uint64_t bench_run() {
   result = lua_toboolean(L, -1);  /* get result */
   report(L, status);
   lua_close(L);
-  return 0;
+  return ps->ref_time;
 }
 
 int bench_validate() {
