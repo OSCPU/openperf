@@ -12,6 +12,7 @@
 #include "lua.h"
 #include "lualib.h"
 #include "unused.h"
+#include <bench.h>
 #include <stdlib.h>
 
 #undef PI
@@ -140,7 +141,7 @@ static int math_modf(lua_State *L) {
     lua_Number ip = (n < 0) ? l_mathop(ceil)(n) : l_mathop(floor)(n);
     pushnumint(L, ip);
     /* fractional part (test needed for inf/-inf) */
-    lua_pushnumber(L, (n == ip) ? l_mathop(0.0) : (n - ip));
+    lua_pushnumber(L, (n == ip) ? l_mathop(0) : (n - ip));
   }
   return 2;
 }
@@ -165,11 +166,11 @@ static int math_log(lua_State *L) {
   else {
     lua_Number base = luaL_checknumber(L, 2);
 #if !defined(LUA_USE_C89)
-    if (base == l_mathop(2.0))
+    if (base == l_mathop(2))
       res = l_mathop(log2)(x);
     else
 #endif
-        if (base == l_mathop(10.0))
+        if (base == l_mathop(10))
       res = l_mathop(log10)(x);
     else
       res = l_mathop(log)(x) / l_mathop(log)(base);
@@ -184,12 +185,14 @@ static int math_exp(lua_State *L) {
 }
 
 static int math_deg(lua_State *L) {
-  lua_pushnumber(L, luaL_checknumber(L, 1) * (l_mathop(180.0) / PI));
+  assert(0);
+  //  lua_pushnumber(L, luaL_checknumber(L, 1) * (l_mathop(180.0) / PI));
   return 1;
 }
 
 static int math_rad(lua_State *L) {
-  lua_pushnumber(L, luaL_checknumber(L, 1) * (PI / l_mathop(180.0)));
+  assert(0);
+  //  lua_pushnumber(L, luaL_checknumber(L, 1) * (PI / l_mathop(180.0)));
   return 1;
 }
 

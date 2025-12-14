@@ -385,11 +385,11 @@ static int readable(const char *filename) {
 
 static const char *pushnexttemplate(lua_State *L, const char *path) {
   const char *l;
-  while (*path == *LUA_PATH_SEP)
+  while (*path == LUA_PATH_SEP[0])
     path++; /* skip separators */
   if (*path == '\0')
-    return NULL;                   /* no more templates */
-  l = strchr(path, *LUA_PATH_SEP); /* find next separator */
+    return NULL;                     /* no more templates */
+  l = strchr(path, LUA_PATH_SEP[0]); /* find next separator */
   if (l == NULL)
     l = path + strlen(path);
   lua_pushlstring(L, path, l - path); /* template */
@@ -465,7 +465,7 @@ static int loadfunc(lua_State *L, const char *filename, const char *modname) {
   const char *openfunc;
   const char *mark;
   modname = luaL_gsub(L, modname, ".", LUA_OFSEP);
-  mark = strchr(modname, *LUA_IGMARK);
+  mark = strchr(modname, LUA_IGMARK[0]);
   if (mark) {
     int stat;
     openfunc = lua_pushlstring(L, modname, mark - modname);

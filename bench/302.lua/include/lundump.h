@@ -15,7 +15,7 @@
 #define LUAC_DATA "\x19\x93\r\n\x1a\n"
 
 #define LUAC_INT 0x5678
-#define LUAC_NUM cast_num(370.5)
+#define LUAC_NUM cast_num(370)
 
 #define MYINT(s)     (s[0] - '0')
 #define LUAC_VERSION (MYINT(LUA_VERSION_MAJOR) * 16 + MYINT(LUA_VERSION_MINOR))
