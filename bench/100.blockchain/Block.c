@@ -25,10 +25,8 @@ const char *GetHash(Block *this) {
 }
 
 void MineBlock(Block *this, uint32_t nDifficulty) {
-  char cstr[nDifficulty + 1];
-  for (uint32_t i = 0; i < nDifficulty; ++i) {
-    cstr[i] = '0';
-  }
+  char *cstr = malloc(nDifficulty + 1);
+  memset(cstr, '0', nDifficulty);
   cstr[nDifficulty] = '\0';
 
   do {
@@ -37,4 +35,5 @@ void MineBlock(Block *this, uint32_t nDifficulty) {
   } while (memcmp(this->_sHash, cstr, nDifficulty) != 0);
 
   printf("Block mined: %s\n", this->_sHash);
+  free(cstr);
 }
