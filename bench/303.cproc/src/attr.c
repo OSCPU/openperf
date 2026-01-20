@@ -1,5 +1,4 @@
 #include "cc.h"
-#include "util.h"
 #include <limits.h>
 #include <stdbool.h>
 #include <string.h>

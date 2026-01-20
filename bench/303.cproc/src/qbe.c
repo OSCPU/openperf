@@ -1,7 +1,6 @@
 #include "cc.h"
 #include "stdio.h"
 #include "stdlib.h"
-#include "util.h"
 #include <assert.h>
 #include <ctype.h>
 #include <inttypes.h>
@@ -519,9 +518,9 @@ void funcasm(struct func *f, char *s, struct asm_operand *outputs, struct asm_op
 }
 
 static struct value *convert(struct func *f, struct type *dst, struct type *src, struct value *l) {
-  enum instkind op;
+  enum instkind op = INONE;
   struct value *r = NULL;
-  int class;
+  int class = 'w';
 
   if (src->kind == TYPEPOINTER)
     src = &typeulong;

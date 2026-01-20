@@ -10,9 +10,12 @@ static void usage(void) {
   exit(2);
 }
 
-int main(int argc, char *argv[]) {
+int main() {
   bool pponly = false;
   char *output = NULL, *target = NULL;
+  char *args[] = {"cproc-qbe", "input/dummy.c", NULL};
+  char **argv = args;
+  int argc = 2;
 
   argv0 = progname(argv[0], "cproc-qbe");
   ARGBEGIN {

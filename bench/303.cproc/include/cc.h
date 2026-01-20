@@ -1,4 +1,8 @@
+#ifndef __CC_H__
+#define __CC_H__
+
 #include "stdio.h"
+#include "util.h"
 
 struct func;
 
@@ -572,3 +576,5 @@ void funcinit(struct func *, struct decl *, struct init *, bool);
 void emitfunc(struct func *, bool);
 void emitdata(struct decl *, struct init *);
 void emitasm(char *);
+
+#endif
