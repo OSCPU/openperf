@@ -1,7 +1,6 @@
 #include "utf.h"
-#include <assert.h>
+#include <bench.h>
 #include <stddef.h>
-#include <stdint.h>
 
 size_t utf8enc(unsigned char *s, uint_least32_t c) {
   if (c < 0x80) {

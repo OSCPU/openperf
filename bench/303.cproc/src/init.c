@@ -1,7 +1,7 @@
 #include "cc.h"
 #include "stdlib.h"
 #include "util.h"
-#include <assert.h>
+#include <bench.h>
 #include <stdbool.h>
 #include <string.h>
 

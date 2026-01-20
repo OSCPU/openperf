@@ -1,6 +1,6 @@
 #include "cc.h"
 #include "util.h"
-#include <assert.h>
+#include <bench.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <string.h>

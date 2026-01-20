@@ -2,8 +2,7 @@
 #include "stdlib.h"
 #include "utf.h"
 #include "util.h"
-#include <assert.h>
-#include <ctype.h>
+#include <bench.h>
 #include <limits.h>
 #include <stdbool.h>
 #include <stdint.h>

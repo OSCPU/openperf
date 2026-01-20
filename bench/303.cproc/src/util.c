@@ -1,8 +1,7 @@
 #include "util.h"
 #include "stdio.h"
 #include "stdlib.h"
-#include <assert.h>
-#include <errno.h>
+#include <bench.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -15,7 +14,6 @@ static void vwarn(const char *fmt, va_list ap) {
   vfprintf(stderr, fmt, ap);
   if (fmt[0] && fmt[strlen(fmt) - 1] == ':') {
     fputc(' ', stderr);
-    perror(NULL);
   } else {
     fputc('\n', stderr);
   }
@@ -40,7 +38,6 @@ void fatal(const char *fmt, ...) {
 
 void *reallocarray(void *buf, size_t n, size_t m) {
   if (n > 0 && SIZE_MAX / n < m) {
-    errno = ENOMEM;
     return NULL;
   }
   return realloc(buf, n * m);

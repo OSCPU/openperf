@@ -2,8 +2,7 @@
 #include "stdio.h"
 #include "stdlib.h"
 #include "util.h"
-#include <assert.h>
-#include <ctype.h>
+#include <bench.h>
 #include <stdarg.h>
 #include <stdbool.h>
 
@@ -189,7 +188,7 @@ char *tokencheck(const struct token *t, enum tokenkind kind, const char *msg) {
 void error(const struct location *loc, const char *fmt, ...) {
   va_list ap;
 
-  fprintf(stderr, "%s:%zu:%zu: error: ", loc->file, loc->line, loc->col);
+  fprintf(stderr, "%s:%u:%u: error: ", loc->file, loc->line, loc->col);
   va_start(ap, fmt);
   vfprintf(stderr, fmt, ap);
   va_end(ap);

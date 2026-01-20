@@ -2,10 +2,13 @@
 #include "stdio.h"
 #include "stdlib.h"
 #include "util.h"
-#include <ctype.h>
+#include <bench.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <string.h>
+
+int my_getc(FILE *fp);
+int my_ungetc(int c, FILE *fp);
 
 struct buffer {
   unsigned char *str;
@@ -49,7 +52,7 @@ static void nextchar(struct scanner *s) {
   if (s->usebuf)
     bufadd(&s->buf, s->chr);
   for (;;) {
-    s->chr = getc(s->file);
+    s->chr = my_getc(s->file);
     if (s->chr == '\n') {
       ++s->loc.line, s->loc.col = 0;
       break;
@@ -57,9 +60,9 @@ static void nextchar(struct scanner *s) {
     ++s->loc.col;
     if (s->chr != '\\')
       break;
-    c = getc(s->file);
+    c = my_getc(s->file);
     if (c != '\n') {
-      ungetc(c, s->file);
+      my_ungetc(c, s->file);
       break;
     }
     ++s->loc.line, s->loc.col = 0;
@@ -284,7 +287,7 @@ again:
       oldloc = s->loc;
       nextchar(s);
       if (s->chr != '.') {
-        ungetc(s->chr, s->file);
+        my_ungetc(s->chr, s->file);
         s->loc = oldloc;
         s->chr = '.';
         return TPERIOD;

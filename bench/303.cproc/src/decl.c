@@ -2,7 +2,7 @@
 #include "stdio.h"
 #include "stdlib.h"
 #include "util.h"
-#include <assert.h>
+#include <bench.h>
 #include <limits.h>
 #include <stdbool.h>
 #include <stddef.h>
