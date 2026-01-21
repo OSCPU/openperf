@@ -10,9 +10,9 @@ static const struct {
   uint64_t ref_time;
 } *ps, settings[BENCH_NR_SETTING] = {
          {"input/test-dummy.c", 0x28963ccb, 0},
-         {"input/train-Block.i", 0x92a2f606, 0},
-         {"input/ref-quickjs.i", 0x5bfc4c0f, 0},
-         {"input/huge.c", 0x959014ac, 0},
+         {"input/train-Block.i", 0x92a2f606, 181},
+         {"input/ref-quickjs.i", 0x5bfc4c0f, 59464},
+         {"input/huge.c", 0x959014ac, 6196850},
 };
 
 void decl_init();
@@ -94,7 +94,7 @@ uint64_t bench_run() {
     }
   }
   emittentativedefns();
-  return 0;
+  return ps->ref_time;
 }
 
 int bench_validate() {
