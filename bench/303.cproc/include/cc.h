@@ -128,7 +128,7 @@ enum tokenkind {
 
 struct location {
   const char *file;
-  size_t line, col;
+  unsigned int line, col;
 };
 
 struct token {

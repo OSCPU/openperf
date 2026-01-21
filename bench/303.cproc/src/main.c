@@ -28,7 +28,7 @@ static void usage(void) {
 void bench_init(int setting) {
   ps = &settings[setting];
   //bool pponly = false;
-  char *output = NULL, *target = NULL;
+  char /**output = NULL,*/ *target = NULL;
   char *args[] = {"cproc-qbe", (char *)(ps->src), NULL};
   char **argv = args;
   int argc = 2;
@@ -44,8 +44,8 @@ void bench_init(int setting) {
 
   targinit(target);
 
-  if (output && !freopen(output, "w", stdout))
-    fatal("open %s:", output);
+  //if (output && !freopen(output, "w", stdout))
+  //  fatal("open %s:", output);
 
   if (argc) {
     while (argc--)

@@ -387,8 +387,8 @@ static int isodigit(int c) {
   return '0' <= c && c <= '8';
 }
 
-static size_t decodechar(const char *src, uint_least32_t *chr, bool *hexoct, const char *desc, struct location *loc) {
-  uint_least32_t c;
+static size_t decodechar(const char *src, uint32_t *chr, bool *hexoct, const char *desc, struct location *loc) {
+  uint32_t c;
   size_t n;
   int i;
   const unsigned char *s = (const unsigned char *)src;
@@ -461,23 +461,23 @@ static size_t decodechar(const char *src, uint_least32_t *chr, bool *hexoct, con
   return s - (const unsigned char *)src;
 }
 
-static size_t encodechar8(void *dst, uint_least32_t chr, bool hexoct) {
+static size_t encodechar8(void *dst, uint32_t chr, bool hexoct) {
   if (!hexoct)
     return utf8enc(dst, chr);
   *(unsigned char *)dst = chr;
   return 1;
 }
 
-static size_t encodechar16(void *dst, uint_least32_t chr, bool hexoct) {
+static size_t encodechar16(void *dst, uint32_t chr, bool hexoct) {
   if (!hexoct)
-    return utf16enc(dst, chr) * sizeof(uint_least16_t);
-  *(uint_least16_t *)dst = chr;
-  return sizeof(uint_least16_t);
+    return utf16enc(dst, chr) * sizeof(uint16_t);
+  *(uint16_t *)dst = chr;
+  return sizeof(uint16_t);
 }
 
-static size_t encodechar32(void *dst, uint_least32_t chr, bool hexoct) {
-  *(uint_least32_t *)dst = chr;
-  return sizeof(uint_least32_t);
+static size_t encodechar32(void *dst, uint32_t chr, bool hexoct) {
+  *(uint32_t *)dst = chr;
+  return sizeof(uint32_t);
 }
 
 struct type *stringconcat(struct stringlit *str, bool forceutf8) {
@@ -488,10 +488,10 @@ struct type *stringconcat(struct stringlit *str, bool forceutf8) {
   } *p;
   int kind, newkind;
   struct type *t;
-  size_t (*encodechar)(void *, uint_least32_t, bool);
+  size_t (*encodechar)(void *, uint32_t, bool);
   char *src;
   unsigned char *buf, *dst;
-  uint_least32_t chr;
+  uint32_t chr;
   bool hexoct;
   size_t len, width;
 
@@ -537,11 +537,11 @@ struct type *stringconcat(struct stringlit *str, bool forceutf8) {
       encodechar = encodechar8;
       break;
     case 2:
-      width = sizeof(uint_least16_t);
+      width = sizeof(uint16_t);
       encodechar = encodechar16;
       break;
     case 4:
-      width = sizeof(uint_least32_t);
+      width = sizeof(uint32_t);
       encodechar = encodechar32;
       break;
     default: assert(0);
@@ -618,7 +618,7 @@ static struct expr *primaryexpr(struct scope *s) {
   struct decl *d;
   struct type *t;
   char *src, *end;
-  uint_least32_t chr;
+  uint32_t chr;
   int base;
 
   switch (tok.kind) {

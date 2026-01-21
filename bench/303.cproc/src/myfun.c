@@ -1,4 +1,5 @@
 #include <bench.h>
+#include <stdarg.h>
 #include <stdio.h>
 
 static unsigned char char_buf;

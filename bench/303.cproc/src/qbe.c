@@ -1210,8 +1210,8 @@ void funcinit(struct func *func, struct decl *d, struct init *init, bool hasinit
         dst.addr = funcinst(func, IADD, ptrclass, d->value, v);
         switch (w) {
           case 1: v = mkintconst(((unsigned char *)init->expr->u.string.data)[i]); break;
-          case 2: v = mkintconst(((uint_least16_t *)init->expr->u.string.data)[i]); break;
-          case 4: v = mkintconst(((uint_least32_t *)init->expr->u.string.data)[i]); break;
+          case 2: v = mkintconst(((uint16_t *)init->expr->u.string.data)[i]); break;
+          case 4: v = mkintconst(((uint32_t *)init->expr->u.string.data)[i]); break;
         }
         funcstore(func, init->expr->type->base, QUALNONE, dst, v);
       }
@@ -1564,8 +1564,8 @@ static void dataitem(struct expr *expr, unsigned long long size) {
       } else {
         for (i = 0; i < expr->u.string.size && i * w < size; ++i) {
           switch (w) {
-            case 2: my_printf("%" PRIuLEAST16 " ", ((uint_least16_t *)expr->u.string.data)[i]); break;
-            case 4: my_printf("%" PRIuLEAST32 " ", ((uint_least32_t *)expr->u.string.data)[i]); break;
+            case 2: my_printf("%u ", ((uint16_t *)expr->u.string.data)[i]); break;
+            case 4: my_printf("%u ", ((uint32_t *)expr->u.string.data)[i]); break;
             default: assert(0);
           }
         }
@@ -1608,8 +1608,8 @@ void emitdata(struct decl *d, struct init *init) {
       i = (init->start - cur->start) / cur->expr->type->base->size;
       switch (cur->expr->type->base->size) {
         case 1: ((unsigned char *)cur->expr->u.string.data)[i] = init->expr->u.constant.u; break;
-        case 2: ((uint_least16_t *)cur->expr->u.string.data)[i] = init->expr->u.constant.u; break;
-        case 4: ((uint_least32_t *)cur->expr->u.string.data)[i] = init->expr->u.constant.u; break;
+        case 2: ((uint16_t *)cur->expr->u.string.data)[i] = init->expr->u.constant.u; break;
+        case 4: ((uint32_t *)cur->expr->u.string.data)[i] = init->expr->u.constant.u; break;
       }
     }
     start = cur->start + cur->bits.before / 8;

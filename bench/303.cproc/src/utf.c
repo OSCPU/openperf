@@ -2,7 +2,7 @@
 #include <bench.h>
 #include <stddef.h>
 
-size_t utf8enc(unsigned char *s, uint_least32_t c) {
+size_t utf8enc(unsigned char *s, uint32_t c) {
   if (c < 0x80) {
     s[0] = c;
     return 1;
@@ -29,10 +29,10 @@ size_t utf8enc(unsigned char *s, uint_least32_t c) {
   return 0;
 }
 
-size_t utf8dec(uint_least32_t *c, const unsigned char *s, size_t n) {
+size_t utf8dec(uint32_t *c, const unsigned char *s, size_t n) {
   size_t i, l;
   unsigned char b;
-  uint_least32_t x;
+  uint32_t x;
 
   b = s[0];
   if (b < 0x80) {
@@ -65,7 +65,7 @@ size_t utf8dec(uint_least32_t *c, const unsigned char *s, size_t n) {
   return l;
 }
 
-size_t utf16enc(uint_least16_t *s, uint_least32_t c) {
+size_t utf16enc(uint16_t *s, uint32_t c) {
   if (c < 0xd800 || c - 0xe000 < 0x2000) {
     s[0] = c;
     return 1;
