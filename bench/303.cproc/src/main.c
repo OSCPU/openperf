@@ -4,6 +4,17 @@
 #include <bench.h>
 #include <stdbool.h>
 
+static const struct {
+  const char *src;
+  uint32_t cs;
+  uint64_t ref_time;
+} *ps, settings[BENCH_NR_SETTING] = {
+         {"input/test-dummy.c", 0x28963ccb, 0},
+         {"input/train-Block.i", 0x92a2f606, 0},
+         {"input/ref-quickjs.i", 0x5bfc4c0f, 0},
+         {"input/huge.c", 0x959014ac, 0},
+};
+
 void obuf_init();
 void obuf_display();
 uint32_t obuf_checksum();
@@ -15,9 +26,10 @@ static void usage(void) {
 }
 
 void bench_init(int setting) {
+  ps = &settings[setting];
   //bool pponly = false;
   char *output = NULL, *target = NULL;
-  char *args[] = {"cproc-qbe", "input/dummy.c", NULL};
+  char *args[] = {"cproc-qbe", (char *)(ps->src), NULL};
   char **argv = args;
   int argc = 2;
 
@@ -82,5 +94,7 @@ int bench_validate() {
   fflush(stdout);
   if (ferror(stdout))
     fatal("write failed");
-  return 0;
+
+  int wrong = (cs != ps->cs);
+  return wrong;
 }

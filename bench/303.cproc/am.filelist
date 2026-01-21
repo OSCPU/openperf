@@ -1,1 +1,4 @@
-input/dummy.c
+input/test-dummy.c
+input/train-Block.i
+input/ref-quickjs.i
+input/huge.c
