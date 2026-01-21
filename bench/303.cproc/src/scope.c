@@ -22,6 +22,8 @@ void scopeinit(void) {
   static struct decl valist;
   struct decl *d;
 
+  memset(&filescope, 0, sizeof(filescope));
+
   for (d = builtins; d < builtins + LEN(builtins); ++d)
     scopeputdecl(&filescope, d);
   valist.name = "__builtin_va_list";

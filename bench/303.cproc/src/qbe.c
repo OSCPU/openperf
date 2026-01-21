@@ -103,6 +103,9 @@ struct func {
 };
 
 static const int ptrclass = 'w';
+static unsigned mkblock_id;
+static unsigned mkglobal_id;
+static unsigned emittype_id;
 
 static char *strip_quotes(char *s);
 static const char *get_ret_reg(void);
@@ -122,13 +125,12 @@ void switchcase(struct switchcases *cases, unsigned long long i, struct block *b
 /* values */
 
 struct block *mkblock(char *name) {
-  static unsigned id;
   struct block *b;
 
   b = xmalloc(sizeof(*b));
   b->label.kind = VALUE_LABEL;
   b->label.u.name = name;
-  b->label.id = ++id;
+  b->label.id = ++mkblock_id;
   b->insts = (struct array){0};
   b->jump.kind = JUMP_NONE;
   b->phi.res.kind = VALUE_NONE;
@@ -138,7 +140,6 @@ struct block *mkblock(char *name) {
 }
 
 struct value *mkglobal(struct decl *d) {
-  static unsigned id;
   struct value *v;
 
   v = xmalloc(sizeof(*v));
@@ -150,7 +151,7 @@ struct value *mkglobal(struct decl *d) {
     v->id = 0;
   } else {
     v->u.name = d->name;
-    v->id = d->linkage == LINKNONE ? ++id : 0;
+    v->id = d->linkage == LINKNONE ? ++mkglobal_id : 0;
   }
 
   return v;
@@ -1331,7 +1332,6 @@ static void emitclass(int class, struct value *v) {
 
 /* XXX: need to consider _Alignas on struct members */
 static void emittype(struct type *t) {
-  static unsigned id;
   struct member *m, *other;
   struct type *sub;
   unsigned long long off;
@@ -1341,7 +1341,7 @@ static void emittype(struct type *t) {
   t->value = xmalloc(sizeof(*t->value));
   t->value->kind = VALUE_TYPE;
   t->value->u.name = t->u.structunion.tag;
-  t->value->id = ++id;
+  t->value->id = ++emittype_id;
   for (m = t->u.structunion.members; m; m = m->next) {
     for (sub = m->type; sub->kind == TYPEARRAY; sub = sub->base)
       ;
@@ -1669,4 +1669,10 @@ void emitasm(char *s) {
   if (asm_lines) {
     free(asm_lines);
   }
+}
+
+void qbe_init() {
+  mkblock_id = 0;
+  mkglobal_id = 0;
+  emittype_id = 0;
 }

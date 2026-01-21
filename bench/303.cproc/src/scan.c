@@ -359,7 +359,7 @@ void scansetloc(struct location loc) {
   scanner->loc = loc;
 }
 
-static void scanclose(void) {
+void scanclose(void) {
   fclose(scanner->file);
   free(scanner->buf.str);
   free(scanner);
@@ -383,4 +383,8 @@ void scan(struct token *t) {
   }
   t->space = scanner->sawspace;
   t->hide = false;
+}
+
+void scan_init() {
+  scanner = NULL;
 }

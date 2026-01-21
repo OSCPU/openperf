@@ -15,6 +15,12 @@ static const struct {
          {"input/huge.c", 0x959014ac, 0},
 };
 
+void decl_init();
+void qbe_init();
+void scan_init();
+void token_init();
+void scanclose();
+
 void obuf_init();
 void obuf_display();
 uint32_t obuf_checksum();
@@ -22,7 +28,7 @@ void obuf_exit();
 
 static void usage(void) {
   fprintf(stderr, "usage: %s [input]\n", argv0);
-  exit(2);
+  bench_exit(2);
 }
 
 void bench_init(int setting) {
@@ -42,11 +48,13 @@ void bench_init(int setting) {
   }
   ARGEND
 
+  obuf_init();
   targinit(target);
 
   //if (output && !freopen(output, "w", stdout))
   //  fatal("open %s:", output);
 
+  scan_init();
   if (argc) {
     while (argc--)
       scanfrom(argv[argc], NULL);
@@ -55,12 +63,16 @@ void bench_init(int setting) {
     scanfrom("<stdin>", stdin);
   }
 
-  obuf_init();
+  decl_init();
+  qbe_init();
+  token_init();
+
+  ppinit();
+  scopeinit();
 }
 
 uint64_t bench_run() {
-  ppinit();
-  scopeinit();
+  next();
   while (tok.kind != TEOF) {
     if (tok.kind == T__ASM__) {
       next();
@@ -90,6 +102,7 @@ int bench_validate() {
   uint32_t cs = obuf_checksum();
   printf("cs = 0x%08x\n", cs);
   obuf_exit();
+  scanclose();
 
   fflush(stdout);
   if (ferror(stdout))

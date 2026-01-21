@@ -53,10 +53,16 @@ static struct array ctx;
 static struct map macros;
 /* number of macros currently undergoing expansion */
 static size_t macrodepth;
+static bool newline;
 
 void ppinit(void) {
+  ppflags = 0;
+  memset(&ctx, 0, sizeof(ctx));
+  memset(&macros, 0, sizeof(macros));
+  macrodepth = 0;
+  newline = true;
+
   mapinit(&macros, 64);
-  next();
 }
 
 /* check if two macro definitions are equal, as in C11 6.10.3p2 */
@@ -339,8 +345,6 @@ static void directive(void) {
 
 /* get the next token without expanding it */
 static void nextinto(struct token *t) {
-  static bool newline = true;
-
   for (;;) {
     scan(t);
     if (newline && t->kind == THASH) {

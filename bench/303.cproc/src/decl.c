@@ -9,6 +9,7 @@
 #include <string.h>
 
 static struct decl *tentativedefns, **tentativedefnsend = &tentativedefns;
+static struct map strings;
 
 struct qualtype {
   struct type *type;
@@ -1066,7 +1067,6 @@ bool decl(struct scope *s, struct func *f) {
 }
 
 struct decl *stringdecl(struct expr *expr) {
-  static struct map strings;
   struct mapkey key;
   void **entry;
   struct decl *d;
@@ -1093,4 +1093,10 @@ void emittentativedefns(void) {
     if (!d->defined)
       defineobj(d, NULL, false, NULL);
   }
+}
+
+void decl_init() {
+  tentativedefns = NULL;
+  tentativedefnsend = &tentativedefns;
+  memset(&strings, 0, sizeof(strings));
 }

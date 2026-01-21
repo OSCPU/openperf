@@ -195,3 +195,7 @@ void error(const struct location *loc, const char *fmt, ...) {
   putc('\n', stderr);
   exit(1);
 }
+
+void token_init() {
+  memset(&tok, 0, sizeof(tok));
+}

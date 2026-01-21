@@ -64,6 +64,7 @@ void targinit(const char *name) {
   size_t i;
   enum typequal qual;
 
+  targ = NULL;
   if (!name) {
     /* TODO: provide a way to set this default */
     targ = &alltargs[0];
