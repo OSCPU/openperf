@@ -6,6 +6,12 @@
 #include <stdbool.h>
 #include <string.h>
 
+int my_putchar(int c);
+int my_fputc(int c, FILE *fp);
+int my_fputs(const char *s, FILE *fp);
+int my_puts(const char *s);
+int my_printf(const char *fmt, ...);
+
 struct value {
   enum {
     VALUE_NONE,
@@ -908,9 +914,9 @@ static struct lvalue funclval(struct func *f, struct expr *e) {
       if (d->kind != DECLOBJECT && d->kind != DECLFUNC)
         error(&tok.loc, "identifier '%s' is not an object or function", d->name);
       if (d == f->namedecl) {
-        fputs("data ", stdout);
+        my_fputs("data ", stdout);
         emitname(d->value);
-        printf(" = { b \"%s\", b 0 }\n", f->name);
+        my_printf(" = { b \"%s\", b 0 }\n", f->name);
         f->namedecl = NULL;
       }
       lval.addr = d->value;
@@ -1273,42 +1279,42 @@ static void emitname(struct value *v) {
   kind = v->kind & 0xf;
   if (kind >= LEN(sigil) || !sigil[kind])
     fatal("invalid value");
-  putchar(sigil[kind]);
+  my_putchar(sigil[kind]);
   if (kind == VALUE_GLOBAL && v->id)
-    fputs(".L", stdout);
+    my_fputs(".L", stdout);
   if (v->u.name)
-    fputs(v->u.name, stdout);
+    my_fputs(v->u.name, stdout);
   if (v->id)
-    printf(".%u", v->id);
+    my_printf(".%u", v->id);
 }
 
 static void emitvalue(struct value *v) {
   switch (v->kind & 0xf) {
-    case VALUE_INTCONST: printf("%llu", v->u.i); break;
+    case VALUE_INTCONST: my_printf("%llu", v->u.i); break;
     case VALUE_STRING:
-      fputc('"', stdout);
+      my_fputc('"', stdout);
       for (const char *p = v->u.name; *p; ++p) {
         unsigned char c = *p;
         switch (c) {
-          case '\n': fputs("\\n", stdout); break;
-          case '\t': fputs("\\t", stdout); break;
-          case '\r': fputs("\\r", stdout); break;
-          case '\\': fputs("\\\\", stdout); break;
-          case '"': fputs("\\\"", stdout); break;
+          case '\n': my_fputs("\\n", stdout); break;
+          case '\t': my_fputs("\\t", stdout); break;
+          case '\r': my_fputs("\\r", stdout); break;
+          case '\\': my_fputs("\\\\", stdout); break;
+          case '"': my_fputs("\\\"", stdout); break;
           default:
             if (isprint(c)) {
-              putchar(c);
+              my_putchar(c);
             } else {
-              printf("\\%03o", c);
+              my_printf("\\%03o", c);
             }
             break;
         }
       }
-      fputc('"', stdout);
+      my_fputc('"', stdout);
       break;
     case VALUE_GLOBAL:
       if (v->kind & VALUE_THREAD)
-        fputs("thread ", stdout);
+        my_fputs("thread ", stdout);
       /* fallthrough */
     default: emitname(v); break;
   }
@@ -1318,7 +1324,7 @@ static void emitclass(int class, struct value *v) {
   if (v && v->kind == VALUE_TYPE)
     emitname(v);
   else if (class)
-    putchar(class);
+    my_putchar(class);
   else
     fatal("type has no QBE representation");
 }
@@ -1341,13 +1347,13 @@ static void emittype(struct type *t) {
       ;
     emittype(sub);
   }
-  fputs("type ", stdout);
+  my_fputs("type ", stdout);
   emitname(t->value);
   if (t == targ->typevalist) {
-    printf(" = align %d { %llu }\n", t->align, t->size);
+    my_printf(" = align %d { %llu }\n", t->align, t->size);
     return;
   }
-  fputs(" = { ", stdout);
+  my_fputs(" = { ", stdout);
   for (m = t->u.structunion.members, off = 0; m;) {
     if (t->kind == TYPESTRUCT) {
       /* look for a subsequent member with a larger storage unit */
@@ -1359,52 +1365,52 @@ static void emittype(struct type *t) {
       }
       off = m->offset + m->type->size;
     } else {
-      fputs("{ ", stdout);
+      my_fputs("{ ", stdout);
     }
     for (sub = m->type; sub->kind == TYPEARRAY; sub = sub->base)
       ;
     emitclass(qbetype(sub).data, sub->value);
     if (m->type->size > sub->size)
-      printf(" %llu", m->type->size / sub->size);
+      my_printf(" %llu", m->type->size / sub->size);
     if (t->kind == TYPESTRUCT) {
-      fputs(", ", stdout);
+      my_fputs(", ", stdout);
       /* skip subsequent members contained within the same storage unit */
       do
         m = m->next;
       while (m && m->offset < off);
     } else {
-      fputs(" } ", stdout);
+      my_fputs(" } ", stdout);
       m = m->next;
     }
   }
-  puts("}");
+  my_puts("}");
 }
 
 static struct inst **emitinst(struct inst **instp, struct inst **instend) {
   int op, first;
   struct inst *inst = *instp;
 
-  putchar('\t');
+  my_putchar('\t');
   assert(inst->kind < LEN(instname));
   if (inst->res.kind) {
     emitvalue(&inst->res);
-    fputs(" =", stdout);
+    my_fputs(" =", stdout);
     emitclass(inst->class, inst->arg[1]);
-    putchar(' ');
+    my_putchar(' ');
   }
-  fputs(instname[inst->kind], stdout);
-  putchar(' ');
+  my_fputs(instname[inst->kind], stdout);
+  my_putchar(' ');
   emitvalue(inst->arg[0]);
   ++instp;
   op = inst->kind;
   switch (op) {
     case ICALL:
     case ICALLASM:
-      putchar('(');
+      my_putchar('(');
       for (first = 1; instp != instend; ++instp) {
         inst = *instp;
         if (inst->kind == IVARARG) {
-          fputs(", ...", stdout);
+          my_fputs(", ...", stdout);
           continue;
         }
         if (inst->kind != IARG)
@@ -1412,20 +1418,20 @@ static struct inst **emitinst(struct inst **instp, struct inst **instend) {
         if (first)
           first = 0;
         else
-          fputs(", ", stdout);
+          my_fputs(", ", stdout);
         emitclass(inst->class, inst->arg[1]);
-        putchar(' ');
+        my_putchar(' ');
         emitvalue(inst->arg[0]);
       }
-      putchar(')');
+      my_putchar(')');
       break;
     default:
       if (inst->arg[1]) {
-        fputs(", ", stdout);
+        my_fputs(", ", stdout);
         emitvalue(inst->arg[1]);
       }
   }
-  putchar('\n');
+  my_putchar('\n');
   return instp;
 }
 
@@ -1433,28 +1439,28 @@ static void emitjump(struct jump *j) {
   switch (j->kind) {
     case JUMP_NONE: break;
     case JUMP_RET:
-      fputs("\tret", stdout);
+      my_fputs("\tret", stdout);
       if (j->arg) {
-        fputc(' ', stdout);
+        my_fputc(' ', stdout);
         emitvalue(j->arg);
       }
-      putchar('\n');
+      my_putchar('\n');
       break;
     case JUMP_JMP:
-      fputs("\tjmp ", stdout);
+      my_fputs("\tjmp ", stdout);
       emitname(&j->blk[0]->label);
-      putchar('\n');
+      my_putchar('\n');
       break;
     case JUMP_JNZ:
-      fputs("\tjnz ", stdout);
+      my_fputs("\tjnz ", stdout);
       emitvalue(j->arg);
-      fputs(", ", stdout);
+      my_fputs(", ", stdout);
       emitname(&j->blk[0]->label);
-      fputs(", ", stdout);
+      my_fputs(", ", stdout);
       emitname(&j->blk[1]->label);
-      putchar('\n');
+      my_putchar('\n');
       break;
-    case JUMP_HLT: fputs("\thlt\n", stdout); break;
+    case JUMP_HLT: my_fputs("\thlt\n", stdout); break;
     default: assert(0);
   }
 }
@@ -1473,49 +1479,49 @@ void emitfunc(struct func *f, bool global) {
     funcret(f, v);
   }
   if (global)
-    puts("export");
-  fputs("function ", stdout);
+    my_puts("export");
+  my_fputs("function ", stdout);
   if (f->type->base != &typevoid) {
     emitclass(qbetype(f->type->base).base, f->type->base->value);
-    putchar(' ');
+    my_putchar(' ');
   }
   emitname(f->decl->value);
-  putchar('(');
+  my_putchar('(');
   for (p = f->type->u.func.params, v = f->paramtemps; p; p = p->next, ++v) {
     if (p != f->type->u.func.params)
-      fputs(", ", stdout);
+      my_fputs(", ", stdout);
     emitclass(qbetype(p->type).base, p->type->value);
-    putchar(' ');
+    my_putchar(' ');
     emitname(v);
   }
   if (f->type->u.func.isvararg) {
     if (f->type->u.func.params)
-      fputs(", ", stdout);
-    fputs("...", stdout);
+      my_fputs(", ", stdout);
+    my_fputs("...", stdout);
   }
-  puts(") {");
+  my_puts(") {");
   for (b = f->start; b; b = b->next) {
     emitname(&b->label);
-    putchar('\n');
+    my_putchar('\n');
     if (b->phi.res.kind) {
-      putchar('\t');
+      my_putchar('\t');
       emitvalue(&b->phi.res);
-      printf(" =%c phi ", b->phi.class);
+      my_printf(" =%c phi ", b->phi.class);
       emitname(&b->phi.blk[0]->label);
-      putchar(' ');
+      my_putchar(' ');
       emitvalue(b->phi.val[0]);
-      fputs(", ", stdout);
+      my_fputs(", ", stdout);
       emitname(&b->phi.blk[1]->label);
-      putchar(' ');
+      my_putchar(' ');
       emitvalue(b->phi.val[1]);
-      putchar('\n');
+      my_putchar('\n');
     }
     instend = (struct inst **)((char *)b->insts.val + b->insts.len);
     for (inst = b->insts.val; inst != instend;)
       inst = emitinst(inst, instend);
     emitjump(&b->jump);
   }
-  puts("}");
+  my_puts("}");
 }
 
 static void dataitem(struct expr *expr, unsigned long long size) {
@@ -1539,33 +1545,33 @@ static void dataitem(struct expr *expr, unsigned long long size) {
       if (expr->op != TADD || expr->u.binary.l->kind != EXPRUNARY || expr->u.binary.r->kind != EXPRCONST)
         error(&tok.loc, "initializer is not a constant expression");
       dataitem(expr->u.binary.l, 0);
-      fputs(" + ", stdout);
+      my_fputs(" + ", stdout);
       dataitem(expr->u.binary.r, 0);
       break;
-    case EXPRCONST: printf("%llu", expr->u.constant.u); break;
+    case EXPRCONST: my_printf("%llu", expr->u.constant.u); break;
     case EXPRSTRING:
       w = expr->type->base->size;
       if (w == 1) {
-        fputc('"', stdout);
+        my_fputc('"', stdout);
         for (i = 0; i < expr->u.string.size && i < size; ++i) {
           c = ((unsigned char *)expr->u.string.data)[i];
           if (isprint(c) && c != '"' && c != '\\')
-            putchar(c);
+            my_putchar(c);
           else
-            printf("\\%03o", c);
+            my_printf("\\%03o", c);
         }
-        fputc('"', stdout);
+        my_fputc('"', stdout);
       } else {
         for (i = 0; i < expr->u.string.size && i * w < size; ++i) {
           switch (w) {
-            case 2: printf("%" PRIuLEAST16 " ", ((uint_least16_t *)expr->u.string.data)[i]); break;
-            case 4: printf("%" PRIuLEAST32 " ", ((uint_least32_t *)expr->u.string.data)[i]); break;
+            case 2: my_printf("%" PRIuLEAST16 " ", ((uint_least16_t *)expr->u.string.data)[i]); break;
+            case 4: my_printf("%" PRIuLEAST32 " ", ((uint_least32_t *)expr->u.string.data)[i]); break;
             default: assert(0);
           }
         }
       }
       if (i * w < size)
-        printf(", z %llu", size - (unsigned long long)i * w);
+        my_printf(", z %llu", size - (unsigned long long)i * w);
       break;
     default: error(&tok.loc, "initializer is not a constant expression");
   }
@@ -1582,12 +1588,12 @@ void emitdata(struct decl *d, struct init *init) {
   for (cur = init; cur; cur = cur->next)
     cur->expr = eval(cur->expr);
   if (d->u.obj.storage == SDTHREAD)
-    fputs("thread ", stdout);
+    my_fputs("thread ", stdout);
   if (d->linkage == LINKEXTERN)
-    fputs("export ", stdout);
-  fputs("data ", stdout);
+    my_fputs("export ", stdout);
+  my_fputs("data ", stdout);
   emitname(d->value);
-  printf(" = align %d { ", align);
+  my_printf(" = align %d { ", align);
 
   while (init) {
     cur = init;
@@ -1609,19 +1615,19 @@ void emitdata(struct decl *d, struct init *init) {
     start = cur->start + cur->bits.before / 8;
     end = cur->end - (cur->bits.after + 7) / 8;
     if (offset < start && bits) {
-      printf("b %u, ", (unsigned)bits); /* unfinished byte from previous bit-field */
+      my_printf("b %u, ", (unsigned)bits); /* unfinished byte from previous bit-field */
       ++offset;
       bits = 0;
     }
     if (offset < start)
-      printf("z %llu, ", start - offset);
+      my_printf("z %llu, ", start - offset);
     if (cur->bits.before || cur->bits.after) {
       /* little-endian target specific */
       assert(cur->expr->type->prop & PROPINT);
       assert(cur->expr->kind == EXPRCONST);
       bits |= cur->expr->u.constant.u << cur->bits.before % 8;
       for (offset = start; offset < end; ++offset, bits >>= 8)
-        printf("b %u, ", (unsigned)bits & 0xff);
+        my_printf("b %u, ", (unsigned)bits & 0xff);
       /*
 			clear the upper `after` bits in the last byte,
 			or all bits when `after` is 0 (we ended on a
@@ -1632,33 +1638,33 @@ void emitdata(struct decl *d, struct init *init) {
       t = cur->expr->type;
       if (t->kind == TYPEARRAY)
         t = t->base;
-      printf("%c ", qbetype(t).data);
+      my_printf("%c ", qbetype(t).data);
       dataitem(cur->expr, cur->end - cur->start);
-      fputs(", ", stdout);
+      my_fputs(", ", stdout);
     }
     offset = end;
   }
   if (bits) {
-    printf("b %u, ", (unsigned)bits);
+    my_printf("b %u, ", (unsigned)bits);
     ++offset;
   }
   assert(offset <= d->type->size);
   if (offset < d->type->size)
-    printf("z %llu ", d->type->size - offset);
-  puts("}");
+    my_printf("z %llu ", d->type->size - offset);
+  my_puts("}");
 }
 
 void emitasm(char *s) {
   size_t num_lines;
   char **asm_lines = process_asm_string(s, &num_lines);
 
-  puts("#APP");
+  my_puts("#APP");
   for (size_t i = 0; i < num_lines; ++i) {
-    fputs("\t", stdout);
-    puts(asm_lines[i]);
+    my_fputs("\t", stdout);
+    my_puts(asm_lines[i]);
     free(asm_lines[i]);
   }
-  puts("#NO_APP");
+  my_puts("#NO_APP");
 
   if (asm_lines) {
     free(asm_lines);

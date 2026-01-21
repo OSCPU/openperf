@@ -4,6 +4,11 @@
 #include <bench.h>
 #include <stdbool.h>
 
+void obuf_init();
+void obuf_display();
+uint32_t obuf_checksum();
+void obuf_exit();
+
 static void usage(void) {
   fprintf(stderr, "usage: %s [input]\n", argv0);
   exit(2);
@@ -37,6 +42,8 @@ void bench_init(int setting) {
   } else {
     scanfrom("<stdin>", stdin);
   }
+
+  obuf_init();
 }
 
 uint64_t bench_run() {
@@ -67,6 +74,11 @@ uint64_t bench_run() {
 }
 
 int bench_validate() {
+  obuf_display();
+  uint32_t cs = obuf_checksum();
+  printf("cs = 0x%08x\n", cs);
+  obuf_exit();
+
   fflush(stdout);
   if (ferror(stdout))
     fatal("write failed");
