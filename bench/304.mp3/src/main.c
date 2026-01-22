@@ -42,14 +42,12 @@
  **************************************************************************************/
 
 #include "mp3dec.h"
-#include "timing.h"
+#include <bench.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#define READBUF_SIZE      (1024 * 16) /* feel free to change this, but keep big enough for >= one frame at high bitrates */
-#define MAX_ARM_FRAMES    100
-#define ARMULATE_MUL_FACT 1
+#define READBUF_SIZE (1024 * 16) /* feel free to change this, but keep big enough for >= one frame at high bitrates */
 
 static int FillReadBuffer(unsigned char *readBuf, unsigned char *readPtr, int bufSize, int bytesLeft, FILE *infile) {
   int nRead;
@@ -64,45 +62,38 @@ static int FillReadBuffer(unsigned char *readBuf, unsigned char *readPtr, int bu
   return nRead;
 }
 
-int main() {
-  char *argv[] = {"mp3", "input/test.mp3", "build/test.pcm", NULL};
-  int argc = 3;
-  int bytesLeft, nRead, err, offset, outOfData, eofReached;
-  unsigned char readBuf[READBUF_SIZE], *readPtr;
-  short outBuf[MAX_NCHAN * MAX_NGRAN * MAX_NSAMP];
-  FILE *infile, *outfile;
-  MP3FrameInfo mp3FrameInfo;
-  HMP3Decoder hMP3Decoder;
-  int startTime, endTime, diffTime, totalDecTime, nFrames;
-#ifdef ARM_ADS
-  float audioSecs;
-#endif
+static HMP3Decoder hMP3Decoder;
+static MP3FrameInfo mp3FrameInfo;
+static unsigned nFrames;
+static uint64_t totalDecTime;
+static FILE *infile, *outfile;
+static unsigned char readBuf[READBUF_SIZE];
+static short outBuf[MAX_NCHAN * MAX_NGRAN * MAX_NSAMP];
 
-  if (argc != 3) {
-    printf("usage: mp3dec infile.mp3 outfile.pcm\n");
-    return -1;
-  }
+void bench_init(int setting) {
+  char *argv[] = {"mp3", "input/test.mp3", "build/test.pcm", NULL};
+
   infile = fopen(argv[1], "rb");
   if (!infile) {
     printf("file open error\n");
-    return -1;
+    bench_exit(1);
   }
 
-  if (strcmp(argv[2], "nul")) {
-    outfile = fopen(argv[2], "wb");
-    if (!outfile) {
-      printf("file open error\n");
-      return -1;
-    }
-  } else {
-    outfile = 0; /* nul output */
+  outfile = fopen(argv[2], "wb");
+  if (!outfile) {
+    printf("file open error\n");
+    bench_exit(1);
   }
 
-  InitTimer();
+  if ((hMP3Decoder = MP3InitDecoder()) == 0) {
+    bench_exit(2);
+  }
+}
 
-  if ((hMP3Decoder = MP3InitDecoder()) == 0)
-    return -2;
-
+uint64_t bench_run() {
+  int bytesLeft, nRead, err, offset, outOfData, eofReached;
+  unsigned char *readPtr;
+  uint64_t startTime, endTime, diffTime;
   bytesLeft = 0;
   outOfData = 0;
   eofReached = 0;
@@ -130,18 +121,14 @@ int main() {
     bytesLeft -= offset;
 
     /* decode one MP3 frame - if offset < 0 then bytesLeft was less than a full frame */
-    startTime = ReadTimer();
+    startTime = bench_uptime();
     err = MP3Decode(hMP3Decoder, &readPtr, &bytesLeft, outBuf, 0);
     nFrames++;
 
-    endTime = ReadTimer();
-    diffTime = CalcTimeDifference(startTime, endTime);
+    endTime = bench_uptime();
+    diffTime = endTime - startTime;
     totalDecTime += diffTime;
-
-#if defined ARM_ADS && defined MAX_ARM_FRAMES
-    printf("frame %5d  start = %10d, end = %10d elapsed = %10d ticks\r", nFrames, startTime, endTime, diffTime);
-    fflush(stdout);
-#endif
+    //printf("frame %5d  start = %lld us, end = %lld us, elapsed = %lld us\n", nFrames, startTime, endTime, diffTime);
 
     if (err) {
       /* error occurred */
@@ -159,29 +146,26 @@ int main() {
       if (outfile)
         fwrite(outBuf, mp3FrameInfo.bitsPerSample / 8, mp3FrameInfo.outputSamps, outfile);
     }
-
-#if defined ARM_ADS && defined MAX_ARM_FRAMES
-    if (nFrames >= MAX_ARM_FRAMES)
-      break;
-#endif
   } while (!outOfData);
 
-#ifdef ARM_ADS
+  return 0;
+}
+
+int bench_validate() {
   MP3GetLastFrameInfo(hMP3Decoder, &mp3FrameInfo);
-  audioSecs = ((float)nFrames * mp3FrameInfo.outputSamps) / ((float)mp3FrameInfo.samprate * mp3FrameInfo.nChans);
-  printf("\nTotal clock ticks = %d, MHz usage = %.2f\n", totalDecTime,
-         ARMULATE_MUL_FACT * (1.0f / audioSecs) * totalDecTime * GetClockDivFactor() / 1e6f);
   printf("nFrames = %d, output samps = %d, sampRate = %d, nChans = %d\n", nFrames, mp3FrameInfo.outputSamps,
          mp3FrameInfo.samprate, mp3FrameInfo.nChans);
-#endif
+  uint64_t audioTime =
+      (nFrames * mp3FrameInfo.outputSamps) * 1000000ull / (mp3FrameInfo.samprate * mp3FrameInfo.nChans);
+  printf("Audio time = %lld us\n", audioTime * 1ull);
+  printf("Decode time = %lld us\n", totalDecTime * 1ull);
+  printf("Decode frequency = %d%%\n", (unsigned)(audioTime * 100ull / totalDecTime));
 
   MP3FreeDecoder(hMP3Decoder);
 
   fclose(infile);
   if (outfile)
     fclose(outfile);
-
-  FreeTimer();
 
   return 0;
 }
