@@ -41,7 +41,6 @@
  * main.c - command-line test app that uses C interface to MP3 decoder
  **************************************************************************************/
 
-#include "debug.h"
 #include "mp3dec.h"
 #include "timing.h"
 #include <stdio.h>
@@ -99,15 +98,10 @@ int main() {
     outfile = 0; /* nul output */
   }
 
-  DebugMemCheckInit();
   InitTimer();
-
-  DebugMemCheckStartPoint();
 
   if ((hMP3Decoder = MP3InitDecoder()) == 0)
     return -2;
-
-  DebugMemCheckEndPoint();
 
   bytesLeft = 0;
   outOfData = 0;
@@ -188,7 +182,6 @@ int main() {
     fclose(outfile);
 
   FreeTimer();
-  DebugMemCheckFree();
 
   return 0;
 }
