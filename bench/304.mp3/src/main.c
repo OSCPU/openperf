@@ -63,12 +63,14 @@ static int FillReadBuffer(unsigned char *readBuf, unsigned char *readPtr, int bu
 }
 
 static HMP3Decoder hMP3Decoder;
-static MP3FrameInfo mp3FrameInfo;
-static unsigned nFrames;
+static uint64_t audioTime;
 static uint64_t totalDecTime;
 static FILE *infile, *outfile;
 static unsigned char readBuf[READBUF_SIZE];
 static short outBuf[MAX_NCHAN * MAX_NGRAN * MAX_NSAMP];
+
+#define OBUF_INIT_SIZE (256 * 1024)
+static Obuf obuf;
 
 void bench_init(int setting) {
   char *argv[] = {"mp3", "input/test.mp3", "build/test.pcm", NULL};
@@ -80,25 +82,25 @@ void bench_init(int setting) {
   }
 
   outfile = fopen(argv[2], "wb");
-  if (!outfile) {
-    printf("file open error\n");
-    bench_exit(1);
-  }
 
   if ((hMP3Decoder = MP3InitDecoder()) == 0) {
     bench_exit(2);
   }
+
+  bench_obuf_init(&obuf, OBUF_INIT_SIZE);
 }
 
 uint64_t bench_run() {
   int bytesLeft, nRead, err, offset, outOfData, eofReached;
   unsigned char *readPtr;
+  unsigned nFrames;
   uint64_t startTime, endTime, diffTime;
   bytesLeft = 0;
   outOfData = 0;
   eofReached = 0;
   readPtr = readBuf;
   nRead = 0;
+  audioTime = 0;
   totalDecTime = 0;
   nFrames = 0;
   do {
@@ -142,9 +144,12 @@ uint64_t bench_run() {
       }
     } else {
       /* no error */
+      MP3FrameInfo mp3FrameInfo;
       MP3GetLastFrameInfo(hMP3Decoder, &mp3FrameInfo);
-      if (outfile)
-        fwrite(outBuf, mp3FrameInfo.bitsPerSample / 8, mp3FrameInfo.outputSamps, outfile);
+      bench_obuf_append(&obuf, outBuf, mp3FrameInfo.bitsPerSample / 8 * mp3FrameInfo.outputSamps);
+      audioTime += mp3FrameInfo.outputSamps * 1000000ull / (mp3FrameInfo.samprate * mp3FrameInfo.nChans);
+      //printf("nFrames = %d, output samps = %d, sampRate = %d, nChans = %d\n", nFrames, mp3FrameInfo.outputSamps,
+      //    mp3FrameInfo.samprate, mp3FrameInfo.nChans);
     }
   } while (!outOfData);
 
@@ -152,20 +157,24 @@ uint64_t bench_run() {
 }
 
 int bench_validate() {
-  MP3GetLastFrameInfo(hMP3Decoder, &mp3FrameInfo);
-  printf("nFrames = %d, output samps = %d, sampRate = %d, nChans = %d\n", nFrames, mp3FrameInfo.outputSamps,
-         mp3FrameInfo.samprate, mp3FrameInfo.nChans);
-  uint64_t audioTime =
-      (nFrames * mp3FrameInfo.outputSamps) * 1000000ull / (mp3FrameInfo.samprate * mp3FrameInfo.nChans);
+  MP3FreeDecoder(hMP3Decoder);
+
+  uint32_t mp3Size = ftell(infile);
+  printf("Encode MP3 size = %d bytes\n", mp3Size);
+  printf("Decode data size = %d bytes\n", obuf.len);
+  printf("MP3 compression rate = %d%%\n", (unsigned)(mp3Size * 100ull / obuf.len));
+
   printf("Audio time = %lld us\n", audioTime * 1ull);
   printf("Decode time = %lld us\n", totalDecTime * 1ull);
   printf("Decode frequency = %d%%\n", (unsigned)(audioTime * 100ull / totalDecTime));
 
-  MP3FreeDecoder(hMP3Decoder);
-
   fclose(infile);
-  if (outfile)
+  if (outfile) {
+    fwrite(obuf.p, obuf.len, 1, outfile);
     fclose(outfile);
+  }
+
+  free(obuf.p);
 
   return 0;
 }
