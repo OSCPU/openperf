@@ -49,7 +49,7 @@
  *     memory unless you adjust memory timings accordingly)
  * - other option for armulator is to simulate accurate hardware timers (see below)
  */
-#if (defined(_WIN32) && !defined(_WIN32_WCE)) || defined(ARM_ADS) || (defined(__GNUC__) && defined(ARM))
+#if 1 //(defined(_WIN32) && !defined(_WIN32_WCE)) || defined(ARM_ADS) || (defined(__GNUC__) && defined(ARM))
 
 #include <time.h>
 

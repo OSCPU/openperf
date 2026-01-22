@@ -336,14 +336,10 @@ static __inline int CLZ(int x) {
 
 #else
 
-#ifdef __riscv
-
 typedef long long Word64;
 
 static __inline int MULSHIFT32(int x, int y) {
-  unsigned int result = 0;
-  asm volatile("mulh %0, %1, %2" : "=r"(result) : "r"(x), "r"(y));
-  return result;
+  return ((Word64)x * (Word64)y) >> 32;
 }
 
 static __inline int FASTABS(int x) {
@@ -372,16 +368,7 @@ static __inline int CLZ(int x) {
 }
 
 static __inline Word64 MADD64(Word64 sum, int a, int b) {
-  unsigned int result_hi = 0;
-  unsigned int result_lo = 0;
-  asm volatile("mulh %0, %1, %2" : "=r"(result_hi) : "r"(a), "r"(b));
-  asm volatile("mul  %0, %1, %2" : "=r"(result_lo) : "r"(a), "r"(b));
-
-  Word64 result = result_hi;
-  result <<= 32;
-  result += result_lo;
-  result += sum;
-  return result;
+  return ((Word64)a * (Word64)b) + sum;
 }
 
 static __inline Word64 SHL64(Word64 x, int n) {
@@ -391,12 +378,6 @@ static __inline Word64 SHL64(Word64 x, int n) {
 static __inline Word64 SAR64(Word64 x, int n) {
   return (x >> n);
 }
-
-#else
-
-#error Unsupported platform in assembly.h
-
-#endif
 
 #endif /* platforms */
 

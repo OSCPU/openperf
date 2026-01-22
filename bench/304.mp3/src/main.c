@@ -65,7 +65,9 @@ static int FillReadBuffer(unsigned char *readBuf, unsigned char *readPtr, int bu
   return nRead;
 }
 
-int main(int argc, char **argv) {
+int main() {
+  char *argv[] = {"mp3", "input/test.mp3", "build/test.pcm", NULL};
+  int argc = 3;
   int bytesLeft, nRead, err, offset, outOfData, eofReached;
   unsigned char readBuf[READBUF_SIZE], *readPtr;
   short outBuf[MAX_NCHAN * MAX_NGRAN * MAX_NSAMP];
