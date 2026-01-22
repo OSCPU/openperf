@@ -21,6 +21,7 @@
 |      | [301.gsim][gsim]             | RTL仿真              |                 |
 |      | [302.lua][lua]               | 脚本解释器           |                 |
 |      | [303.cproc][cproc]           | C语言编译器          |                 |
+|      | [304.mp3][mp3]               | MP3解码器            | 仅含整数操作    |
 
 
 [blockchain]: https://github.com/aproxp/blockchain
@@ -41,3 +42,4 @@
 [gsim]: https://github.com/OpenXiangShan/gsim
 [lua]: https://github.com/lua/lua/tree/v5.3
 [cproc]: https://github.com/michaelforney/cproc
+[mp3]: https://github.com/ultraembedded/libhelix-mp3
