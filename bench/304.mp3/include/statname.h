@@ -48,7 +48,7 @@
  * all the C functions and global variables will be mangled by the preprocessor
  *   e.g. void FFT(int *fftbuf) becomes void cook_FFT(int *fftbuf)
  */
-#define STAT_PREFIX xmp3
+//#define STAT_PREFIX xmp3
 
 #define STATCC1(x, y, z) STATCC2(x, y, z)
 #define STATCC2(x, y, z) x##y##z
