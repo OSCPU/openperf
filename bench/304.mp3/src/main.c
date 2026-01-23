@@ -49,6 +49,18 @@
 
 #define READBUF_SIZE (1024 * 16) /* feel free to change this, but keep big enough for >= one frame at high bitrates */
 
+static const struct {
+  const char *input;
+  uint32_t olen;
+  uint32_t cs;
+  uint64_t ref_time;
+} *ps, settings[BENCH_NR_SETTING] = {
+         {"input/test.mp3", 1200, 0xd8b7e7d2, 0},
+         {"input/train.mp3", 5 * 1024, 0xe895f480, 16},
+         {"input/ref-bad-apple.mp3", 40 * 1024 * 1024, 0x37aa3f66, 194262},
+         {"input/huge-shamanic-meditations-176746.mp3", 280 * 1024 * 1024, 0xd5fae437, 1623898},
+};
+
 static int FillReadBuffer(unsigned char *readBuf, unsigned char *readPtr, int bufSize, int bytesLeft, FILE *infile) {
   int nRead;
 
@@ -74,7 +86,8 @@ static int err;
 static Obuf obuf;
 
 void bench_init(int setting) {
-  char *argv[] = {"mp3", "input/test.mp3", "build/test.pcm", NULL};
+  ps = &settings[setting];
+  const char *argv[] = {"mp3", ps->input, "build/output.pcm", NULL};
 
   infile = fopen(argv[1], "rb");
   if (!infile) {
@@ -88,7 +101,7 @@ void bench_init(int setting) {
     bench_exit(2);
   }
 
-  bench_obuf_init(&obuf, OBUF_INIT_SIZE);
+  bench_obuf_init(&obuf, ps->olen);
 }
 
 uint64_t bench_run() {
@@ -152,7 +165,7 @@ uint64_t bench_run() {
     }
   } while (!outOfData);
 
-  return 0;
+  return ps->ref_time;
 }
 
 int bench_validate() {
@@ -169,7 +182,8 @@ int bench_validate() {
     printf("Decode frequency = %d%%\n", (unsigned)(audioTime * 100ull / totalDecTime));
   }
 
-  int wrong = (err != ERR_MP3_NONE);
+  uint32_t cs = bench_checksum(obuf.p, obuf.p + obuf.len);
+  int wrong = (cs != ps->cs) || (err != ERR_MP3_NONE);
 
   fclose(infile);
   if (outfile) {
