@@ -68,6 +68,7 @@ static uint64_t totalDecTime;
 static FILE *infile, *outfile;
 static unsigned char readBuf[READBUF_SIZE];
 static short outBuf[MAX_NCHAN * MAX_NGRAN * MAX_NSAMP];
+static int err;
 
 #define OBUF_INIT_SIZE (256 * 1024)
 static Obuf obuf;
@@ -91,7 +92,7 @@ void bench_init(int setting) {
 }
 
 uint64_t bench_run() {
-  int bytesLeft, nRead, err, offset, outOfData, eofReached;
+  int bytesLeft, nRead, offset, outOfData, eofReached;
   unsigned char *readPtr;
   unsigned nFrames;
   uint64_t startTime, endTime, diffTime;
@@ -103,6 +104,7 @@ uint64_t bench_run() {
   audioTime = 0;
   totalDecTime = 0;
   nFrames = 0;
+  err = ERR_MP3_NONE;
   do {
     /* somewhat arbitrary trigger to refill buffer - should always be enough for a full frame */
     if (bytesLeft < 2 * MAINBUF_SIZE && !eofReached) {
@@ -134,14 +136,11 @@ uint64_t bench_run() {
 
     if (err) {
       /* error occurred */
-      switch (err) {
-        case ERR_MP3_INDATA_UNDERFLOW: outOfData = 1; break;
-        case ERR_MP3_MAINDATA_UNDERFLOW:
-          /* do nothing - next call to decode will provide more mainData */
-          break;
-        case ERR_MP3_FREE_BITRATE_SYNC:
-        default: outOfData = 1; break;
+      if (err != ERR_MP3_MAINDATA_UNDERFLOW) {
+        printf("err = %d\n", err);
+        return 0;
       }
+      /* else do nothing - next call to decode will provide more mainData */
     } else {
       /* no error */
       MP3FrameInfo mp3FrameInfo;
@@ -159,14 +158,18 @@ uint64_t bench_run() {
 int bench_validate() {
   MP3FreeDecoder(hMP3Decoder);
 
-  uint32_t mp3Size = ftell(infile);
-  printf("Encode MP3 size = %d bytes\n", mp3Size);
-  printf("Decode data size = %d bytes\n", obuf.len);
-  printf("MP3 compression rate = %d%%\n", (unsigned)(mp3Size * 100ull / obuf.len));
+  if (err == ERR_MP3_NONE) {
+    uint32_t mp3Size = ftell(infile);
+    printf("Encode MP3 size = %d bytes\n", mp3Size);
+    printf("Decode data size = %d bytes\n", obuf.len);
+    printf("MP3 compression rate = %d%%\n", (unsigned)(mp3Size * 100ull / obuf.len));
 
-  printf("Audio time = %lld us\n", audioTime * 1ull);
-  printf("Decode time = %lld us\n", totalDecTime * 1ull);
-  printf("Decode frequency = %d%%\n", (unsigned)(audioTime * 100ull / totalDecTime));
+    printf("Audio time = %lld us\n", audioTime * 1ull);
+    printf("Decode time = %lld us\n", totalDecTime * 1ull);
+    printf("Decode frequency = %d%%\n", (unsigned)(audioTime * 100ull / totalDecTime));
+  }
+
+  int wrong = (err != ERR_MP3_NONE);
 
   fclose(infile);
   if (outfile) {
@@ -176,5 +179,5 @@ int bench_validate() {
 
   free(obuf.p);
 
-  return 0;
+  return wrong;
 }
