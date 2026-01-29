@@ -1,1 +1,4 @@
-input/test.h264
+input/test-orbit-8x6.h264
+input/train-orbit-160x120.h264
+input/ref-light.h264
+input/huge-bad-apple.h264

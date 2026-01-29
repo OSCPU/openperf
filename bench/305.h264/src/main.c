@@ -5,6 +5,18 @@
 #include <bench.h>
 #include <stdio.h>
 
+static const struct {
+  const char *input;
+  uint32_t olen;
+  uint32_t cs;
+  uint64_t ref_time;
+} *ps, settings[BENCH_NR_SETTING] = {
+         {"input/test-orbit-8x6.h264", 72, 0x584c3439, 0},
+         {"input/train-orbit-160x120.h264", 86400, 0x0b28d695, 189},
+         {"input/ref-light.h264", 83980800, 0x02e1ab05, 205260},
+         {"input/huge-bad-apple.h264", 1938751488, 0x5e49a3bb, 2521343},
+};
+
 static FILE *outputFile;
 static u8 *contentBuffer;
 static size_t contentSize;
@@ -48,11 +60,12 @@ void savePic(u8 *picData, int width, int height, int picNum) {
 }
 
 void bench_init(int setting) {
-  contentBuffer = loadContent("input/test.h264", &contentSize);
+  ps = &settings[setting];
+  contentBuffer = loadContent(ps->input, &contentSize);
   outputFile = fopen("build/output.yuv", "w");
   numPics = 0;
 
-  bench_obuf_init(&obuf, 4096);
+  bench_obuf_init(&obuf, ps->olen);
 
   u32 status = h264bsdInit(&dec, HANTRO_FALSE);
   if (status != HANTRO_OK) {
@@ -95,15 +108,18 @@ uint64_t bench_run() {
       case H264BSD_PARAM_SET_ERROR: printf("Param set error\n"); bench_exit(1);
     }
   }
-  return 0;
+  return ps->ref_time;
 }
 
 int bench_validate() {
   h264bsdShutdown(&dec);
   printf("%d pictures decoded.\n", numPics);
   printf("Encode h264 size = %d bytes\n", contentSize);
-  printf("Decode data size = %d bytes\n", olen);
-  printf("h264 compression rate = %d*10^{-4}\n", (unsigned)(contentSize * 10000ull / olen));
+  printf("Decode data size = %d bytes\n", obuf.len);
+  printf("h264 compression rate = %d*10^{-4}\n", (unsigned)(contentSize * 10000ull / obuf.len));
+
+  uint32_t cs = bench_checksum(obuf.p, obuf.p + obuf.len);
+  int wrong = (cs != ps->cs);
 
   free(contentBuffer);
   if (outputFile)
@@ -111,5 +127,5 @@ int bench_validate() {
 
   free(obuf.p);
 
-  return 0;
+  return wrong;
 }
