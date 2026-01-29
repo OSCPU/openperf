@@ -11,6 +11,8 @@ static size_t contentSize;
 static storage_t dec;
 static int numPics;
 
+static Obuf obuf;
+
 u8 *loadContent(const char *contentPath, size_t *pContentSize) {
   FILE *input = fopen(contentPath, "r");
   assert(input != NULL);
@@ -35,9 +37,13 @@ u8 *loadContent(const char *contentPath, size_t *pContentSize) {
 
 void savePic(u8 *picData, int width, int height, int picNum) {
   size_t picSize = width * height * 3 / 2;
-  off_t offset = 0;
-  while (offset < picSize) {
-    offset += fwrite(picData + offset, sizeof(u8), picSize - offset, outputFile);
+  bench_obuf_append(&obuf, picData, picSize);
+
+  if (outputFile != NULL) {
+    off_t offset = 0;
+    while (offset < picSize) {
+      offset += fwrite(picData + offset, sizeof(u8), picSize - offset, outputFile);
+    }
   }
 }
 
@@ -45,6 +51,8 @@ void bench_init(int setting) {
   contentBuffer = loadContent("input/test.h264", &contentSize);
   outputFile = fopen("build/output.yuv", "w");
   numPics = 0;
+
+  bench_obuf_init(&obuf, 4096);
 
   u32 status = h264bsdInit(&dec, HANTRO_FALSE);
   if (status != HANTRO_OK) {
@@ -97,5 +105,8 @@ int bench_validate() {
   free(contentBuffer);
   if (outputFile)
     fclose(outputFile);
+
+  free(obuf.p);
+
   return 0;
 }
