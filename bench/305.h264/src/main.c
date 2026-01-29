@@ -2,42 +2,32 @@
 
 #include "h264bsd_decoder.h"
 #include "h264bsd_util.h"
-#include <fcntl.h>
+#include <klib.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <time.h>
-#include <unistd.h>
 
 static char *outputPath = NULL;
 static char *comparePath = NULL;
-static int repeatTest = 0;
 
-void createContentBuffer(char *contentPath, u8 **pContentBuffer, size_t *pContentSize) {
-  struct stat sb;
-  if (stat(contentPath, &sb) == -1) {
-    perror("stat failed");
-    exit(1);
-  }
-
-  *pContentSize = sb.st_size;
-  *pContentBuffer = (u8 *)malloc(*pContentSize);
-}
-
-void loadContent(char *contentPath, u8 *contentBuffer, size_t contentSize) {
+u8 *loadContent(char *contentPath, size_t *pContentSize) {
   FILE *input = fopen(contentPath, "r");
-  if (input == NULL) {
-    perror("open failed");
-    exit(1);
-  }
+  assert(input != NULL);
+
+  fseek(input, 0, SEEK_END);
+  size_t size = ftell(input);
+  fseek(input, 0, SEEK_SET);
+
+  u8 *contentBuffer = (u8 *)malloc(size);
+  assert(contentBuffer != NULL);
 
   off_t offset = 0;
-  while (offset < contentSize) {
-    offset += fread(contentBuffer + offset, sizeof(u8), contentSize - offset, input);
+  while (offset < size) {
+    offset += fread(contentBuffer + offset, sizeof(u8), size - offset, input);
   }
 
   fclose(input);
+
+  *pContentSize = size;
+  return contentBuffer;
 }
 
 static FILE *outputFile = NULL;
@@ -46,8 +36,7 @@ void savePic(u8 *picData, int width, int height, int picNum) {
   if (outputFile == NULL) {
     outputFile = fopen(outputPath, "w");
     if (outputFile == NULL) {
-      perror("output file open failed");
-      exit(1);
+      return;
     }
   }
 
@@ -56,71 +45,6 @@ void savePic(u8 *picData, int width, int height, int picNum) {
   while (offset < picSize) {
     offset += fwrite(picData + offset, sizeof(u8), picSize - offset, outputFile);
   }
-}
-
-static FILE *compareFile = NULL;
-static u8 *expectedData = NULL;
-
-int comparePics(u8 *actualData, int width, int height, int picNum) {
-  if (compareFile == NULL) {
-    compareFile = fopen(comparePath, "r");
-    if (compareFile == NULL) {
-      perror("compare file open failed");
-      exit(1);
-    }
-  }
-
-  size_t picSize = width * height * 3 / 2;
-  size_t uDataOffset = width * height;
-  size_t vDataOffset = width * height * 5 / 4;
-
-  if (!expectedData)
-    expectedData = (u8 *)malloc(picSize);
-
-  off_t offset = 0;
-  while (offset < picSize) {
-    offset += fread(expectedData + offset, sizeof(u8), picSize - offset, compareFile);
-  }
-
-  int numErrors = 0;
-
-  size_t yOffset = 0;
-  size_t uvOffset = 0;
-
-  u8 *yExpected = expectedData;
-  u8 *uExpected = expectedData + uDataOffset;
-  u8 *vExpected = expectedData + vDataOffset;
-
-  u8 *yActual = actualData;
-  u8 *uActual = actualData + uDataOffset;
-  u8 *vActual = actualData + vDataOffset;
-
-  for (int y = 0; y < height; ++y) {
-    for (int x = 0; x < width; ++x) {
-      int ySame = yActual[yOffset] == yExpected[yOffset];
-      int uSame = uActual[uvOffset] == uExpected[uvOffset];
-      int vSame = vActual[uvOffset] == vExpected[uvOffset];
-
-      if (!ySame || !uSame || !vSame) {
-        ++numErrors;
-        if (numErrors <= 5) {
-          printf("Pixel (%d,%d) is different. Expected (%d,%d,%d) but saw (%d,%d,%d).\n", x, y, yExpected[yOffset],
-                 uExpected[uvOffset], vExpected[uvOffset], yActual[yOffset], uActual[uvOffset], vActual[uvOffset]);
-        }
-
-        if (numErrors == 6)
-          printf("...\n");
-      }
-
-      ++yOffset;
-      if (yOffset % 1)
-        ++uvOffset;
-    }
-  }
-
-  if (numErrors > 0)
-    printf("%d pixels are different on frame %d.\n\n", numErrors, picNum);
-  return numErrors;
 }
 
 void decodeContent(u8 *contentBuffer, size_t contentSize) {
@@ -153,8 +77,6 @@ void decodeContent(u8 *contentBuffer, size_t contentSize) {
         ++numPics;
         if (outputPath)
           savePic(pic, width, height, numPics);
-        if (comparePath)
-          totalErrors += comparePics(pic, width, height, numPics);
         break;
       case H264BSD_HDRS_RDY:
         h264bsdCroppingParams(&dec, &croppingFlag, &left, &width, &top, &height);
@@ -182,22 +104,12 @@ void decodeContent(u8 *contentBuffer, size_t contentSize) {
 int main(int argc, char *argv[]) {
   char *contentPath = "input/test.h264";
   outputPath = "build/output.yuv";
-  u8 *contentBuffer;
-  size_t contentSize;
-  createContentBuffer(contentPath, &contentBuffer, &contentSize);
 
-  if (repeatTest) {
-    while (1) {
-      loadContent(contentPath, contentBuffer, contentSize);
-      decodeContent(contentBuffer, contentSize);
-    }
-  } else {
-    loadContent(contentPath, contentBuffer, contentSize);
-    decodeContent(contentBuffer, contentSize);
-  }
+  size_t contentSize;
+  u8 *contentBuffer = loadContent(contentPath, &contentSize);
+  decodeContent(contentBuffer, contentSize);
+  free(contentBuffer);
 
   if (outputFile)
     fclose(outputFile);
-  if (compareFile)
-    fclose(compareFile);
 }
