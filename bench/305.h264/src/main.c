@@ -100,7 +100,10 @@ uint64_t bench_run() {
 
 int bench_validate() {
   h264bsdShutdown(&dec);
-  printf("Test file complete. %d pictures decoded.\n", numPics);
+  printf("%d pictures decoded.\n", numPics);
+  printf("Encode h264 size = %d bytes\n", contentSize);
+  printf("Decode data size = %d bytes\n", olen);
+  printf("h264 compression rate = %d*10^{-4}\n", (unsigned)(contentSize * 10000ull / olen));
 
   free(contentBuffer);
   if (outputFile)
