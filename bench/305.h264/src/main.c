@@ -1,7 +1,7 @@
 /* Small application used to test teh h264bsd library on a posix compatible syste */
 
-#include "../src/h264bsd_decoder.h"
-#include "../src/h264bsd_util.h"
+#include "h264bsd_decoder.h"
+#include "h264bsd_util.h"
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -60,7 +60,6 @@ void savePic(u8 *picData, int width, int height, int picNum) {
 
 static FILE *compareFile = NULL;
 static u8 *expectedData = NULL;
-static int totalErrors = 0;
 
 int comparePics(u8 *actualData, int width, int height, int picNum) {
   if (compareFile == NULL) {
@@ -181,22 +180,8 @@ void decodeContent(u8 *contentBuffer, size_t contentSize) {
 }
 
 int main(int argc, char *argv[]) {
-  int c;
-  while ((c = getopt(argc, argv, "ro:c:")) != -1) {
-    switch (c) {
-      case 'o': outputPath = optarg; break;
-      case 'c': comparePath = optarg; break;
-      case 'r': repeatTest = 1; break;
-      default: abort();
-    }
-  }
-
-  if (argc < 2) {
-    fprintf(stderr, "Usage: %s [-r] [-c <compare.yuv>] [-o <output.yuv>] <test_video.h264>\n", argv[0]);
-    exit(1);
-  }
-
-  char *contentPath = argv[argc - 1];
+  char *contentPath = "input/test.h264";
+  outputPath = "build/output.yuv";
   u8 *contentBuffer;
   size_t contentSize;
   createContentBuffer(contentPath, &contentBuffer, &contentSize);

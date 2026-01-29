@@ -223,6 +223,8 @@ i32 h264bsdDecodePicOrderCnt(pocStorage_t *poc, seqParamSet_t *sps, sliceHeader_
         absFrameNum -= 1;
 
       /* step 3 */
+      picOrderCntCycleCnt = 0;
+      frameNumInPicOrderCntCycle = 0;
       if (absFrameNum > 0) {
         picOrderCntCycleCnt = (absFrameNum - 1) / sps->numRefFramesInPicOrderCntCycle;
         frameNumInPicOrderCntCycle = (absFrameNum - 1) % sps->numRefFramesInPicOrderCntCycle;
