@@ -2,13 +2,16 @@
 
 #include "h264bsd_decoder.h"
 #include "h264bsd_util.h"
-#include <klib.h>
+#include <bench.h>
 #include <stdio.h>
 
-static char *outputPath = NULL;
-static char *comparePath = NULL;
+static FILE *outputFile;
+static u8 *contentBuffer;
+static size_t contentSize;
+static storage_t dec;
+static int numPics;
 
-u8 *loadContent(char *contentPath, size_t *pContentSize) {
+u8 *loadContent(const char *contentPath, size_t *pContentSize) {
   FILE *input = fopen(contentPath, "r");
   assert(input != NULL);
 
@@ -30,16 +33,7 @@ u8 *loadContent(char *contentPath, size_t *pContentSize) {
   return contentBuffer;
 }
 
-static FILE *outputFile = NULL;
-
 void savePic(u8 *picData, int width, int height, int picNum) {
-  if (outputFile == NULL) {
-    outputFile = fopen(outputPath, "w");
-    if (outputFile == NULL) {
-      return;
-    }
-  }
-
   size_t picSize = width * height * 3 / 2;
   off_t offset = 0;
   while (offset < picSize) {
@@ -47,24 +41,25 @@ void savePic(u8 *picData, int width, int height, int picNum) {
   }
 }
 
-void decodeContent(u8 *contentBuffer, size_t contentSize) {
-  u32 status;
-  storage_t dec;
-  status = h264bsdInit(&dec, HANTRO_FALSE);
+void bench_init(int setting) {
+  contentBuffer = loadContent("input/test.h264", &contentSize);
+  outputFile = fopen("build/output.yuv", "w");
+  numPics = 0;
 
+  u32 status = h264bsdInit(&dec, HANTRO_FALSE);
   if (status != HANTRO_OK) {
     fprintf(stderr, "h264bsdInit failed\n");
-    exit(1);
+    bench_exit(1);
   }
+}
 
+uint64_t bench_run() {
   u8 *byteStrm = contentBuffer;
   u32 readBytes;
   u32 len = contentSize;
-  int numPics = 0;
   u8 *pic;
   u32 picId, isIdrPic, numErrMbs;
   u32 top, left, width, height, croppingFlag;
-  int totalErrors = 0;
 
   while (len > 0) {
     u32 result = h264bsdDecode(&dec, byteStrm, len, 0, &readBytes);
@@ -75,8 +70,7 @@ void decodeContent(u8 *contentBuffer, size_t contentSize) {
       case H264BSD_PIC_RDY:
         pic = h264bsdNextOutputPicture(&dec, &picId, &isIdrPic, &numErrMbs);
         ++numPics;
-        if (outputPath)
-          savePic(pic, width, height, numPics);
+        savePic(pic, width, height, numPics);
         break;
       case H264BSD_HDRS_RDY:
         h264bsdCroppingParams(&dec, &croppingFlag, &left, &width, &top, &height);
@@ -89,27 +83,19 @@ void decodeContent(u8 *contentBuffer, size_t contentSize) {
         printf("Decoded headers. Image size %s%dx%d.\n", cropped, width, height);
         break;
       case H264BSD_RDY: break;
-      case H264BSD_ERROR: printf("Error\n"); exit(1);
-      case H264BSD_PARAM_SET_ERROR: printf("Param set error\n"); exit(1);
+      case H264BSD_ERROR: printf("Error\n"); bench_exit(1);
+      case H264BSD_PARAM_SET_ERROR: printf("Param set error\n"); bench_exit(1);
     }
   }
-
-  h264bsdShutdown(&dec);
-
-  printf("Test file complete. %d pictures decoded.\n", numPics);
-  if (comparePath)
-    printf("%d errors found.\n", totalErrors);
+  return 0;
 }
 
-int main(int argc, char *argv[]) {
-  char *contentPath = "input/test.h264";
-  outputPath = "build/output.yuv";
+int bench_validate() {
+  h264bsdShutdown(&dec);
+  printf("Test file complete. %d pictures decoded.\n", numPics);
 
-  size_t contentSize;
-  u8 *contentBuffer = loadContent(contentPath, &contentSize);
-  decodeContent(contentBuffer, contentSize);
   free(contentBuffer);
-
   if (outputFile)
     fclose(outputFile);
+  return 0;
 }
