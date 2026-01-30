@@ -19,13 +19,13 @@ static const struct {
 
 static FILE *outputFile;
 static u8 *contentBuffer;
-static size_t contentSize;
+static long contentSize;
 static storage_t dec;
 static int numPics;
 
 static Obuf obuf;
 
-u8 *loadContent(const char *contentPath, size_t *pContentSize) {
+u8 *loadContent(const char *contentPath, long *pContentSize) {
   FILE *input = fopen(contentPath, "r");
   assert(input != NULL);
 
@@ -36,7 +36,7 @@ u8 *loadContent(const char *contentPath, size_t *pContentSize) {
   u8 *contentBuffer = (u8 *)malloc(size);
   assert(contentBuffer != NULL);
 
-  off_t offset = 0;
+  long offset = 0;
   while (offset < size) {
     offset += fread(contentBuffer + offset, sizeof(u8), size - offset, input);
   }
@@ -52,7 +52,7 @@ void savePic(u8 *picData, int width, int height, int picNum) {
   bench_obuf_append(&obuf, picData, picSize);
 
   if (outputFile != NULL) {
-    off_t offset = 0;
+    long offset = 0;
     while (offset < picSize) {
       offset += fwrite(picData + offset, sizeof(u8), picSize - offset, outputFile);
     }
@@ -114,8 +114,8 @@ uint64_t bench_run() {
 int bench_validate() {
   h264bsdShutdown(&dec);
   printf("%d pictures decoded.\n", numPics);
-  printf("Encode h264 size = %d bytes\n", contentSize);
-  printf("Decode data size = %d bytes\n", obuf.len);
+  printf("Encode h264 size = %ld bytes\n", contentSize);
+  printf("Decode data size = %ld bytes\n", obuf.len);
   printf("h264 compression rate = %d*10^{-4}\n", (unsigned)(contentSize * 10000ull / obuf.len));
 
   uint32_t cs = bench_checksum(obuf.p, obuf.p + obuf.len);
