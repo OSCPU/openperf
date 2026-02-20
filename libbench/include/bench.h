@@ -20,10 +20,18 @@ enum {
   BENCH_NR_SETTING,
 };
 
+typedef struct {
+  char *p;
+  int len;
+  int capicity;
+} Obuf;
+
 void bench_srand(uint32_t _seed);
 uint32_t bench_rand();
 uint64_t bench_uptime(); // unit: us
 void bench_exit(int status);
 uint32_t bench_checksum(const void *start, const void *end);
+void bench_obuf_init(Obuf *o, int len);
+void bench_obuf_append(Obuf *o, const void *p, int len);
 
 #endif

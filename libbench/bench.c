@@ -157,3 +157,28 @@ int main(MAIN_ARGS) {
 void bench_exit(int status) {
   EXIT_FUN(status);
 }
+
+static void bench_obuf_enlarge(Obuf *o, int inc) {
+  int newsize_min = o->capicity + inc;
+  int newsize = o->capicity * 2;
+  while (newsize < newsize_min) {
+    newsize *= 2;
+  }
+  o->p = realloc(o->p, newsize);
+  assert(o->p != NULL);
+  o->capicity = newsize;
+}
+
+void bench_obuf_init(Obuf *o, int len) {
+  o->p = malloc(len);
+  o->len = 0;
+  o->capicity = len;
+}
+
+void bench_obuf_append(Obuf *o, const void *p, int len) {
+  int remain = o->capicity - o->len;
+  if (remain < len)
+    bench_obuf_enlarge(o, len - remain);
+  memcpy(o->p + o->len, p, len);
+  o->len += len;
+}
