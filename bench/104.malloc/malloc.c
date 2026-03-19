@@ -115,7 +115,12 @@ void *my_realloc(void *ptr, size_t size) {
     return NULL;
   }
   void *ret = my_malloc(size);
-  memcpy(ret, ptr, size);
-  my_free(ptr);
+  if (ret) {
+    Header *hp = (Header *)ptr - 1;
+    size_t old_size = (hp->s.size - 1) * sizeof(Header);
+    size_t copy_size = size < old_size ? size : old_size;
+    memcpy(ret, ptr, copy_size);
+    my_free(ptr);
+  }
   return ret;
 }
