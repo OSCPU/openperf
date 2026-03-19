@@ -3,7 +3,8 @@ nproc=`nproc`
 
 cd ..
 
-dirs=`ls bench/ | grep -v "000.hello"`
+source scripts/benchlist/all.sh  # set benchlist
+
 mkdir -p result
 logfile=result/compile.log
 > $logfile
@@ -15,7 +16,7 @@ if [[ "$?" != "0" ]] ; then
   exit
 fi
 
-/bin/time parallel --bar -j $nproc echo 'Compiling {} ...' "&&" make -C bench/{} -j $nproc $args ">>" $logfile ::: $dirs
+/bin/time parallel --bar -j $nproc echo 'Compiling {} ...' "&&" make -C bench/{} -j $nproc $args ">>" $logfile ::: $benchlist
 if [[ "$?" != "0" ]] ; then
   echo -e "\n\nFail to compile"
   exit
@@ -28,10 +29,10 @@ echo -e "\nRunning ...\n"
      grep -A1 -a \'^\\\[RESULT\\\]\' "|" \
      tac "|" \
      tr '\\n' \' \' "|" \
-     sed -e \'s/\\\(.*\\\)/{}: \\1\\n/\' ::: $dirs
+     sed -e \'s/\\\(.*\\\)/{}: \\1\\n/\' ::: $benchlist
 
 echo -e "\n======== $@ =======\n"
-for d in $dirs; do
+for d in $benchlist; do
   res=`grep -A1 -a '^\[RESULT\]' result/$d.log | tac | tr '\n' ' '`
   score=`echo $res | grep -o '[0-9]* Marks' | awk '{print $1}' | xargs printf "%7d"`
   printf "%-15s: %s\n" $d "$res"
