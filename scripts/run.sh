@@ -24,7 +24,7 @@ fi
 
 echo -e "\nRunning ...\n"
 /bin/time parallel --bar -j $nproc \
-  make -C bench/{} $args run "|" \
+  "/bin/time -f '[WALL] %E' make -C bench/{} $args run 2>&1" "|" \
      tee result/{}.log "|" \
      grep -A1 -a \'^\\\[RESULT\\\]\' "|" \
      tac "|" \
@@ -34,8 +34,9 @@ echo -e "\nRunning ...\n"
 echo -e "\n======== $@ =======\n"
 for d in $benchlist; do
   res=`grep -A1 -a '^\[RESULT\]' result/$d.log | tac | tr '\n' ' '`
+  wall=`grep -a '^\[WALL\]' result/$d.log`
   score=`echo $res | grep -o '[0-9]* Marks' | awk '{print $1}' | xargs printf "%7d"`
-  printf "%-15s: %s\n" $d "$res"
+  printf "%-15s: %-100s %s\n" $d "$res" "$wall"
   array="$array$score, "
 done
 
