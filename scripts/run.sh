@@ -1,5 +1,6 @@
 args=$@
 nproc=`nproc`
+mytime="python3 $BENCH_HOME/scripts/monotonic_time.py"
 
 cd ..
 
@@ -24,7 +25,7 @@ fi
 
 echo -e "\nRunning ...\n"
 /bin/time parallel --bar -j $nproc \
-  "/bin/time -f '[WALL] %E' make -C bench/{} $args run 2>&1" "|" \
+  "$mytime make -C bench/{} $args run 2>&1" "|" \
      tee result/{}.log "|" \
      grep -A1 -a \'^\\\[RESULT\\\]\' "|" \
      tac "|" \
