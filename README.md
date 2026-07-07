@@ -1,5 +1,56 @@
 # ArchBench
 
+## 编译方法
+
+本项目依赖于[`abstract-machine`][am]或[`navy-apps`][navy]，需要提前设置`AM_HOME`或`NAVY_HOME`，具体方式请参考相应的仓库。
+
+[am]: https://github.com/NJU-ProjectN/abstract-machine
+[navy]: https://github.com/NJU-ProjectN/navy-apps
+
+首先设置环境变量`BENCH_HOME`为当前目录：
+```bash
+export BENCH_HOME=`pwd`
+```
+
+同一组程序支持四种规模的输入：test，train，ref和huge。
+
+| 名称  | 计分 | 建议使用场景  |
+| ----- | ---- | ----- |
+| test  |  X   | 正确性测试  |
+| train |  O   | 在RTL仿真环境中研究微结构行为 |
+| ref   |  O   | 在模拟器或FPGA环境中评估处理器性能 |
+| huge  |  O   | 衡量高性能处理器(如真机)的性能 |
+
+默认运行test数据规模，可通过`mainargs`选择其它的数据规模。
+
+然后在相应程序的目录下编译并执行, 例如:
+```bash
+cd bench/000.hello
+make ARCH=riscv32-nemu run   # 需要提前设置AM_HOME
+make TARGET=x86_64-linux-gnu run mainargs=huge  # 需要提前设置NAVY_HOME
+```
+
+## 评分根据
+
+每个benchmark都记录以`REF_CPU`为基础测得的运行时间微秒数。每个benchmark的评分是相对于`REF_CPU`的运行速度，与基准处理器一样快的得分为`REF_SCORE=1000000`。
+
+## 并行评测脚本
+
+本项目提供了一个并行评测脚本`scripts/run.sh`，当程序运行时间不受宿主机负载影响时（如RTL仿真），可考虑通过该脚本并行评测所有程序，如：
+```bash
+bash run.sh ARCH=riscv32e-npc mainargs=train
+```
+当程序运行时间受宿主机负载影响时（如模拟器或真机），可在使用单线程运行该脚本，如：
+```bash
+nproc=1 bash run.sh ARCH=native mainargs=huge
+```
+
+脚本最后还会统计所有benchmark得分的算术平均和几何平均。
+
+可以通过设置`benchlist`变量来指定需要运行哪些benchmark。具体可参考`scripts/benchlist/all.sh`。
+
+## 基准程序
+
 | 类型 | benchmark                    | 介绍                 | 说明            |
 |------|:----------------------------:|----------------------|-----------------|
 | 测试 |  000.hello                   | Hello程序            | 测试用          |
