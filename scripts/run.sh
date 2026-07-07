@@ -52,4 +52,4 @@ printf "GEOMEAN: %7d Marks\n" $geomean
 printf "   MEAN: %7d Marks\n" $mean
 printf "   vs.   %7d Marks @ AMD Ryzen(TM) 9 7950X3D\n" 1000000
 
-cd -
+cd - > /dev/null
