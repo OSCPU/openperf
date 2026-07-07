@@ -1,6 +1,8 @@
 args=$@
-nproc=`nproc`
 mytime="python3 $BENCH_HOME/scripts/monotonic_time.py"
+
+: "${nproc:=`nproc`}" # if nproc is not set, set it to `nproc`
+echo "Running using $nproc threads..."
 
 cd ..
 
