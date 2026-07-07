@@ -1,3 +1,5 @@
+# Example usage: [nproc=2] bash run.sh ARCH=native mainargs=train
+
 args=$@
 mytime="python3 $BENCH_HOME/scripts/monotonic_time.py"
 
