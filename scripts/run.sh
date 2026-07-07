@@ -42,7 +42,11 @@ for d in $benchlist; do
 done
 
 mean=`python -c "import numpy as np; print(int(np.mean([$array])))"`
-geomean=`python -c "import numpy as np; print(int(np.exp(np.log([$array]).mean())))"`
+if [[ $mean == "0" ]] ; then
+  geomean="0"
+else
+  geomean=`python -c "import numpy as np; print(int(np.exp(np.log([$array]).mean())))"`
+fi
 echo "$geomean, $mean, $array" > result/excel.txt
 printf "GEOMEAN: %7d Marks\n" $geomean
 printf "   MEAN: %7d Marks\n" $mean
