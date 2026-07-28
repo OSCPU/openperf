@@ -51,7 +51,7 @@ if [[ $mean == "0" ]] ; then
 else
   geomean=`python -c "import numpy as np; print(int(np.exp(np.log([$array]).mean())))"`
 fi
-echo "$geomean, $mean, $array" > result/excel.txt
+echo "$geomean, $mean, $array" | sed -e 's/ //g' | sed -e 's/,$//' | tee result/excel.txt
 printf "GEOMEAN: %7d Marks\n" $geomean
 printf "   MEAN: %7d Marks\n" $mean
 printf "   vs.   %7d Marks @ AMD Ryzen(TM) 9 7950X3D\n" 1000000
