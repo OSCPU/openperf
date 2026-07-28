@@ -17,6 +17,10 @@ else
 $(error Should specify ARCH=xxx for AM or TARGET=xxx for Navy-apps)
 endif
 
+ifdef diskfilelist
+$(shell bash $(BENCH_HOME)/scripts/select-input.sh "$(diskfilelist)" "$(mainargs)")
+endif
+
 LINKAGE += $(LIBBENCH_A)
 include $(MK)
 
